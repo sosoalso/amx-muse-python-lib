@@ -1,6 +1,8 @@
 # ---------------------------------------------------------------------------- #
-import threading
+# import threading
 import time
+
+from future.cocurrent import ThreadPoolExecutor
 
 # ---------------------------------------------------------------------------- #
 from eventmanager import EventManager
@@ -12,19 +14,18 @@ class ButtonHandler(EventManager):
         super().__init__("push", "release", "hold", "repeat")
         self.hold_time = hold_time  # 반복 간격 (초)
         self.repeat_interval = repeat_interval  # 반복 간격 (초)
-        self.repeat_thread = None
-        self.hold_thread = None
+        # self.repeat_thread = None
+        # self.hold_thread = None
+        self.executor = ThreadPoolExecutor(max_workers=2)
         self.is_pushed = False
         self.is_hold = False
         self.trigger_release_on_hold = trigger_release_on_hold  # 홀드 이벤트 트리거 시 릴리즈 이벤트 발생 여부 플래그
 
-    # ---------------------------------------------------------------------------- #
     def start_repeat(self):
         while self.is_pushed:
             self.trigger_event("repeat")
             time.sleep(self.repeat_interval)
 
-    # ---------------------------------------------------------------------------- #
     def start_hold(self):
         while self.is_pushed:
             time.sleep(self.hold_time)
@@ -32,17 +33,18 @@ class ButtonHandler(EventManager):
                 self.is_hold = True
                 self.trigger_event("hold")
 
-    # ---------------------------------------------------------------------------- #
     def handle_event(self, evt):
         if evt.value:  # 버튼이 눌림
             self.is_pushed = True
             self.trigger_event("push")
-            if self.repeat_thread is None or not self.repeat_thread.is_alive():
-                self.repeat_thread = threading.Thread(target=self.start_repeat)
-                self.repeat_thread.start()
-            if self.hold_thread is None or not self.hold_thread.is_alive():
-                self.hold_thread = threading.Thread(target=self.start_hold)
-                self.hold_thread.start()
+            self.executor.submit(self.start_hold)
+            self.executor.submit(self.start_repeat)
+            # if self.repeat_thread is None or not self.repeat_thread.is_alive():
+            #     self.repeat_thread = threading.Thread(target=self.start_repeat)
+            #     self.repeat_thread.start()
+            # if self.hold_thread is None or not self.hold_thread.is_alive():
+            #     self.hold_thread = threading.Thread(target=self.start_hold)
+            #     self.hold_thread.start()
         else:  # 버튼이 떼어짐
             self.is_pushed = False
             if self.trigger_release_on_hold and self.is_hold:
@@ -52,4 +54,6 @@ class ButtonHandler(EventManager):
             self.is_hold = False
 
 
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
