@@ -2,6 +2,7 @@
 import socket
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 # ---------------------------------------------------------------------------- #
 from eventmanager import EventManager
@@ -21,10 +22,8 @@ class TcpClient(EventManager):
         self.connected = False
         self.socket = None
         self.receive_callback = None
-        # ---------------------------------------------------------------------------- #
+        self.executor = ThreadPoolExecutor(max_workers=2)
         self.lock = threading.Lock()
-        self.thread_connect = None
-        self.thread_receive = None
 
     def set_receive_callback(self, callback):
         self.receive_callback = callback
@@ -32,10 +31,7 @@ class TcpClient(EventManager):
     def connect(self):
         if not self.connected:
             print(f"{self.name=} connect()")
-            self.thread_connect = threading.Thread(
-                target=self._connect, name=f"Thread-Connect--{self.name}", daemon=True
-            )
-            self.thread_connect.start()
+            self.executor.submit(self._connect)
 
     def _connect(self):
         while not self.connected:
@@ -52,7 +48,7 @@ class TcpClient(EventManager):
                 if not self.reconnect:
                     break
             except TimeoutError as e:
-                print(f"_connect()Connection timed out: {e}")
+                print(f"_connect() Connection timed out: {e}")
                 time.sleep(self.time_reconnect)
                 if not self.reconnect:
                     break
@@ -67,8 +63,7 @@ class TcpClient(EventManager):
             self.connect()
 
     def _run_thread_receive(self):
-        self.thread_receive = threading.Thread(target=self._receive, name=f"Thread-Receive--{self.name}", daemon=True)
-        self.thread_receive.start()
+        self.executor.submit(self._receive)
         self.trigger_event("connected")
 
     def _receive(self):
@@ -81,7 +76,7 @@ class TcpClient(EventManager):
             except Exception as e:
                 with self.lock:
                     self.connected = False
-                print(f"_recieve() error {e}")
+                print(f"_receive() error {e}")
                 if self.reconnect:
                     self.connect()
                 break
@@ -164,17 +159,16 @@ class UdpServer:
         self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(("", self.port))
-        self.server_thread = None
+        self.executor = ThreadPoolExecutor(max_workers=2)
         self.running = False
         self.receive_callback = None
 
     def start_server_thread(self):
-        self.server_thread = threading.Thread(target=self._start_server, daemon=True)
-        self.server_thread.start()
+        self.running = True
+        self.executor.submit(self._start_server)
         print("UDP server thread has started\n")
 
     def _start_server(self):
-        self.running = True
         print("UDP server is starting\n")
         while self.running:
             try:
@@ -189,6 +183,12 @@ class UdpServer:
 
     def set_receive_callback(self, callback):
         self.receive_callback = callback
+
+    def stop_server(self):
+        self.running = False
+        self.socket.close()
+        self.executor.shutdown(wait=True)
+        print("UDP server has stopped\n")
 
 
 # ---------------------------------------------------------------------------- #
