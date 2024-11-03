@@ -2,9 +2,6 @@
 import configparser
 import os
 
-# ---------------------------------------------------------------------------- #
-from lib_yeoul import err_with_name
-
 
 # ---------------------------------------------------------------------------- #
 class SimpleConfigManager:
@@ -28,8 +25,7 @@ class SimpleConfigManager:
     def get_items(self, section):
         conf = self.config
         if not conf.has_section(section):
-            err_with_name(ValueError, f"{section=} does not exist")
-
+            print(ValueError, f"{section=} does not exist")
         return conf.items(section)
 
     def get_sections(self):
@@ -41,26 +37,26 @@ class SimpleConfigManager:
             conf.add_section(section)
             self.save_config()
         else:
-            err_with_name(ValueError, f"{section=} already exists")
+            print(ValueError, f"{section=} already exists")
 
     def get_option(self, section, option, option_type, fallback_value=None):
         try:
             if option_type == "int":
                 value = self.config.get(section, option, fallback=fallback_value)
                 if value == "":
-                    err_with_name(ValueError, "Empty string cannot be converted to int")
+                    print(ValueError, "Empty string cannot be converted to int")
                 return int(value)
             elif option_type == "float":
                 value = self.config.get(section, option, fallback=fallback_value)
                 if value == "":
-                    err_with_name(ValueError, "Empty string cannot be converted to float")
+                    print(ValueError, "Empty string cannot be converted to float")
                 return float(value)
             elif option_type == "bool":
                 return self.config.getboolean(section, option, fallback=fallback_value)
             else:
                 return self.config.get(section, option, fallback=fallback_value)
         except ValueError as e:
-            err_with_name(ValueError, "Invalid value type")
+            print(ValueError, "Invalid value type")
 
     def get_default_option(self, option, option_type, fallback_value=None):
         return self.get_option(configparser.DEFAULTSECT, option, option_type, fallback_value)
@@ -68,7 +64,7 @@ class SimpleConfigManager:
     def set_option(self, section, option, value=None):
         conf = self.config
         if section != configparser.DEFAULTSECT and not conf.has_section(section):
-            err_with_name(ValueError, f"{section=} does not exist")
+            print(ValueError, f"{section=} does not exist")
         conf.set(section, option, str(value))
         self.save_config()
 
@@ -79,7 +75,7 @@ class SimpleConfigManager:
         conf = self.config
         self.load_config()
         if section == configparser.DEFAULTSECT:
-            err_with_name(ValueError, f"{section=} cannot be removed")
+            print(ValueError, f"{section=} cannot be removed")
         if conf.has_section(section):
             conf.remove_section(section)
             self.save_config()
@@ -88,12 +84,12 @@ class SimpleConfigManager:
         conf = self.config
         self.load_config()
         if not conf.has_section(section) and section != configparser.DEFAULTSECT:
-            err_with_name(ValueError, f"{section=} does not exist")
+            print(ValueError, f"{section=} does not exist")
         removed = conf.remove_option(section, option)
         if removed:
             self.save_config()
         else:
-            err_with_name(ValueError, f"{option=} not found in section {section=}")
+            print(ValueError, f"{option=} not found in section {section=}")
 
     def remove_default_option(self, option):
         self.remove_option(configparser.DEFAULTSECT, option)

@@ -1,8 +1,4 @@
 # ---------------------------------------------------------------------------- #
-from lib_yeoul import err_with_name, print_with_name
-
-
-# ---------------------------------------------------------------------------- #
 class EventManager:
     def __init__(self, *initial_events_name_list):
         # 초기 이벤트와 그에 대한 핸들러를 저장하는 딕셔너리 초기화
@@ -14,7 +10,7 @@ class EventManager:
             self.event_handlers[name] = []
         else:
             # 이벤트가 이미 존재하는 경우 로그 출력
-            print_with_name(f"Event already exists: {name=}")
+            print(f"Event already exists: {name=}")
 
     def remove_event(self, name):
         # 이벤트 제거
@@ -22,7 +18,7 @@ class EventManager:
             del self.event_handlers[name]
         except KeyError:
             # 이벤트가 존재하지 않는 경우 로그 출력
-            print_with_name(f"No such event: {name=}")
+            print(f"No such event: {name=}")
 
     def add_event_handler(self, name, handler):
         # 특정 이벤트에 대한 핸들러 추가
@@ -32,7 +28,7 @@ class EventManager:
             self.event_handlers[name].append(handler)
         else:
             # 핸들러가 이미 등록되어 있는 경우 로그 출력
-            print_with_name(f"Handler already registered for event: {name=}")
+            print(f"Handler already registered for event: {name=}")
 
     def remove_event_handler(self, name, handler):
         # 특정 이벤트의 핸들러 제거
@@ -40,20 +36,20 @@ class EventManager:
             self.event_handlers[name].remove(handler)
         except KeyError:
             # 이벤트가 존재하지 않는 경우 로그 출력
-            print_with_name(f"No such event: {name=}")
+            print(f"No such event: {name=}")
         except ValueError:
             # 핸들러가 목록에 없는 경우 로그 출력
-            print_with_name(f"Handler not found for event: {handler=}")
+            print(f"Handler not found for event: {handler=}")
 
     def trigger_event(self, name, *args, **kwargs):
         # 이벤트 발생 시 연결된 모든 핸들러 호출
         if name in self.event_handlers:
             for handler in self.event_handlers[name]:
-                print_with_name(f"{name=} {handler=}")
+                # print(f"{name=} {handler=}")
                 handler(*args, **kwargs)
         else:
             # 이벤트가 존재하지 않는 경우 로그 출력
-            err_with_name(f"No such event: {name=}")
+            print(f"No such event: {name=}")
 
 
 # ---------------------------------------------------------------------------- #

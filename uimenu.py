@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------- #
 from buttonhandler import ButtonHandler
-from tp import (
+from lib_tp import (
     tp_add_watcher,
     tp_hide_all_popup,
     tp_set_button_in_range,
@@ -46,7 +46,7 @@ class UIMenu:
     def setup(self):
         for idx in range(1, 10):
             menu_btn = ButtonHandler()
-            menu_btn.add_event_handler("push", lambda evt, idx=int(idx): self.select_menu(evt, int(idx)))
+            menu_btn.add_event_handler("push", lambda idx=int(idx): self.select_menu(int(idx)))
             tp_add_watcher(self.dv_tp, 1, idx + 10, menu_btn.handle_event)
 
         tp_add_watcher(self.dv_tp, 1, 100, self.close_menu)

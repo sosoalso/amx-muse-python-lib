@@ -1,11 +1,28 @@
 # ---------------------------------------------------------------------------- #
+import functools
 import inspect
+import threading
 
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
 get_device = context.devices.get
 get_service = context.services.get
+
+
+# ---------------------------------------------------------------------------- #
+def debounce(timeout_ms: float):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            if hasattr(wrapper, "func_timer") and wrapper.func_timer.is_alive():
+                wrapper.func_timer.cancel()  # 이미 실행 중인 타이머가 있다면 취소
+            wrapper.func_timer = threading.Timer(timeout_ms / 1000, func, args, kwargs)
+            wrapper.func_timer.start()  # 새로운 타이머 시작
+
+        return wrapper
+
+    return decorator
 
 
 # ---------------------------------------------------------------------------- #
@@ -44,7 +61,6 @@ def uni_log_error(msg):
 
 # ---------------------------------------------------------------------------- #
 def hello(device):
-
     print("=" * 79)
     print("hello")
     print("=" * 79)
@@ -82,7 +98,6 @@ def hello(device):
             # ---------------------------------------------------------------------------- #
         except Exception as e:
             print(f"Error accessing {attr}: {e}")
-
     print("=" * 79)
     print("=" * 79)
     print("=" * 79)
