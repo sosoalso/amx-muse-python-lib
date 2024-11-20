@@ -1,67 +1,65 @@
 # ---------------------------------------------------------------------------- #
-from lib_yeoul import err_with_name, print_with_name
-from simpleconfigmanager import SimpleConfigManager  # type: ignore
+import json
+import os
 
 
 # ---------------------------------------------------------------------------- #
 class CamtrackPreset:
-    def __init__(self, filename, max_preset_idx=10):
-        self.config = SimpleConfigManager(filename)
-        self.max_preset_idx = max_preset_idx
-        self.presets = self.make_dummy_presets()
-        self.load_preset_list()
-        self.save_preset_list()
+    def __init__(self, filename="camtrack_preset.json", max_preset_index=40):
+        self.filename = filename
+        self.max_preset_index = max_preset_index
+        self.presets = {}
+        self.init()
+
+    def init(self):
+        try:
+            if not os.path.exists(self.filename):
+                self.presets = self.make_dummy_presets()
+                self.save_file()
+            else:
+                self.load_file()
+        except Exception as e:
+            print(f"Error loading presets from file: {e}")
 
     def make_dummy_presets(self):
-        return [{"camera": 0, "preset": 0} for _ in range(self.max_preset_idx)]
+        return {"presets": [{"index": idx + 1, "camera": 0, "preset": 0} for idx in range(self.max_preset_index)]}
 
-    def load_preset_list(self):
-        self.config.load_config()
+    def load_file(self):
+        with open(self.filename, "r") as file:
+            self.presets = json.load(file)
+
+    def save_file(self):
         try:
-            for section in self.config.get_sections():
-                if not section:
-                    return
-                index = int(section.split("_")[-1])
-                idx = index - 1
-                if 0 <= idx < self.max_preset_idx:
-                    self.presets[idx] = {key: int(value) for key, value in self.config.get_items(section)}
-                    print_with_name(f"Loaded preset {idx}: {self.presets[idx]}")
+            with open(self.filename, "w", encoding="utf-8") as output_file:
+                json.dump(self.presets, output_file, indent=2)
+            return True
+        except Exception as error:
+            print(f"Error saving data: {error}")
+            return False
+
+    def sort_presets(self):
+        try:
+            self.presets["presets"].sort(key=lambda x: x["index"])
         except Exception as e:
-            err_with_name(IndexError, f"Error loading presets from file: {e}")
+            print(f"Error sorting presets: {e}")
 
-    def save_preset_list(self):
-        for idx, preset in enumerate(self.presets):
-            index = idx + 1
-            section = f"preset_{index}"
-            self.config.remove_section(section)
-            self.config.add_section(section)
-            for key, value in preset.items():
-                self.config.set_option(section, key, str(value))
-
-    def get_preset(self, idx):
-        self.config.load_config()
-        if 0 <= idx < self.max_preset_idx:
-            return self.presets[idx]
-        else:
-            err_with_name(IndexError, "Preset index out of range.")
+    def get_preset(self, index):
+        print(f"get_preset: {index}")
+        try:
+            return next((preset for preset in self.presets["presets"] if preset["index"] == index), None)
+        except Exception as e:
+            print(f"Error get_preset: {e}")
 
     def set_preset(self, idx, cam_no, preset_no):
-        if 0 <= idx < self.max_preset_idx:
-            self.presets[idx] = {"camera": cam_no, "preset": preset_no}
-            self.save_preset_list()
-        else:
-            err_with_name(IndexError, "Preset index out of range.")
-
-
-# ---------------------------------------------------------------------------- #
-# ---------------------------------------------------------------------------- #
-# ---------------------------------------------------------------------------- #
-# from CamtrackPreset import CamtrackPreset
-
-# my_camtrack_preset = CamtrackPreset("camtrack.ini", 5)
-# my_camtrack_preset.set_preset(0, 1, 1)
-# print(my_camtrack_preset.get_preset(0))
-# my_camtrack_preset.set_preset(1, 2, 2)
-# print(my_camtrack_preset.get_preset(1))
-# my_camtrack_preset.set_preset(2, 3, 3)
-# print(my_camtrack_preset.get_preset(2))
+        print(f"set_preset: {idx}, {cam_no}, {preset_no}")
+        try:
+            target_preset = self.get_preset(idx)
+            if target_preset:
+                target_preset["camera"] = cam_no
+                target_preset["preset"] = preset_no
+                self.sort_presets()
+                self.save_file()
+            else:
+                print(f"Preset with index {idx} not found")
+        except Exception as e:
+            print(f"Error in set_preset: {e}")

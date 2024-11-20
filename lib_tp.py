@@ -105,7 +105,7 @@ def tp_set_button(tp, index_port, index_btn, value):
         print(f"Error setting button {__name__=} {index_port=} {index_btn=} : {e}")
 
 
-# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #m
 def tp_set_button_in_range(tp, port, index_btn_start, index_btn_range, index_condition):
     """
     tp_set_button_in_range 함수는 tp 객체의 모든 요소에 대해 지정된 port와 btn의 상태[켜짐|꺼짐] 를 설정합니다.

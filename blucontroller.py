@@ -1,10 +1,13 @@
 # ---------------------------------------------------------------------------- #
+from stub_objectstorage import ObjectStorage
+
+# ---------------------------------------------------------------------------- #
 MIN_VAL = -60
 MAX_VAL = 6
 UNIT_VAL = 1
+
+
 # ---------------------------------------------------------------------------- #
-
-
 def db_to_tp(x):
     try:
         x_min = MIN_VAL
@@ -51,6 +54,8 @@ class BluComponentState:
     def __init__(self):
         self._states = {}
         self._event = BluSimpleObserver()
+        self._storage = ObjectStorage(db_name="blu_component_state.db")
+        self.load()  # 초기화 시 저장된 상태 로드
 
     def update_state(self, key, val):
         # print(f"BluComponentState update_state: {key=}, {val=}")
@@ -74,10 +79,17 @@ class BluComponentState:
     def unsubscribe(self, observer):
         self._event.unsubscribe(observer)
 
+    def save(self):
+        self._storage.save_json_object("states", self._states)
+
+    def load(self):
+        loaded_states = self._storage.load_json_object("states")
+        if loaded_states:
+            self._states = loaded_states
+
 
 # ---------------------------------------------------------------------------- #
 class BluController:
-
     def __init__(self, device, component_states):
         self.device = device
         self.component_states = component_states
@@ -93,7 +105,7 @@ class BluController:
                         component.watch(lambda evt, path=path: self.component_states.update_state(path, evt.value))
                         self.component_states.override_notify(path)
         except Exception as e:
-            # print(f"Error in BluController.init: {path=} {e}")
+            print(f"Error in BluController.init: {path=} {e}")
 
     def get_component(self, path):
         if not isinstance(path, tuple):
