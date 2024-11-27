@@ -1,7 +1,8 @@
 # ---------------------------------------------------------------------------- #
-from stub_objectstorage import ObjectStorage
-
+# from stub_objectstorage import ObjectStorage
+# from userdata import UserData
 # ---------------------------------------------------------------------------- #
+# TODO : MIN-MAX 값은 외부로 노출돼있는데 내부로 감추고 보다 편하게 지정할 수 있도록 수정 예정
 MIN_VAL = -60
 MAX_VAL = 6
 UNIT_VAL = 1
@@ -33,29 +34,12 @@ def tp_to_db(x):
 
 
 # ---------------------------------------------------------------------------- #
-class BluSimpleObserver:
-    def __init__(self):
-        self._observers = []
-
-    def subscribe(self, observer):
-        self._observers.append(observer)
-
-    def unsubscribe(self, observer):
-        self._observers.remove(observer)
-
-    def notify(self, *args, **kwargs):
-        # print(f"BluSimpleObserver notify: {args=} {kwargs=}")
-        for observer in self._observers:
-            observer(*args, **kwargs)
-
-
-# ---------------------------------------------------------------------------- #
 class BluComponentState:
     def __init__(self):
         self._states = {}
         self._event = BluSimpleObserver()
-        self._storage = ObjectStorage(db_name="blu_component_state.db")
-        self.load()  # 초기화 시 저장된 상태 로드
+        # self._storage = ObjectStorage(db_name="blu_component_state.db")
+        # self._userdata = UserData("blu_component_state.json")
 
     def update_state(self, key, val):
         # print(f"BluComponentState update_state: {key=}, {val=}")
@@ -79,13 +63,34 @@ class BluComponentState:
     def unsubscribe(self, observer):
         self._event.unsubscribe(observer)
 
-    def save(self):
-        self._storage.save_json_object("states", self._states)
+    # def save(self):
+    #     self._userdata.save()
+    #     # self._storage.save_json_object("states", self._states)
+    # def load(self):
+    #     # loaded_states = self._storage.load_json_object("states")
+    #     # if loaded_states:
+    #     #     self._states = loaded_states
+    #     try:
+    #         self._states = self._userdata.load()
+    #     except Exception as e:
+    #         print(f"Error in BluComponentState.load: {e}")
 
-    def load(self):
-        loaded_states = self._storage.load_json_object("states")
-        if loaded_states:
-            self._states = loaded_states
+
+# ---------------------------------------------------------------------------- #
+class BluSimpleObserver:
+    def __init__(self):
+        self._observers = []
+
+    def subscribe(self, observer):
+        self._observers.append(observer)
+
+    def unsubscribe(self, observer):
+        self._observers.remove(observer)
+
+    def notify(self, *args, **kwargs):
+        # print(f"BluSimpleObserver notify: {args=} {kwargs=}")
+        for observer in self._observers:
+            observer(*args, **kwargs)
 
 
 # ---------------------------------------------------------------------------- #
@@ -118,82 +123,55 @@ class BluController:
         except Exception as e:
             return None
 
-    def vol_up(self, path):
+    # ---------------------------------------------------------------------------- #
+    def _update_component_value(self, path, new_value):
         if self.device.isOffline():
             return
         component = self.get_component(path)
+        if component is not None:
+            component.value = new_value
+
+    def vol_up(self, path):
         val = self.component_states.get_state(path)
-        if val is None:
-            return
-        if val <= MAX_VAL - UNIT_VAL:
-            component.value = round(val + 1.0)
+        if val is not None and val <= MAX_VAL - UNIT_VAL:
+            self._update_component_value(path, round(val + UNIT_VAL))
 
     def vol_down(self, path):
-        if self.device.isOffline():
-            return
-        component = self.get_component(path)
         val = self.component_states.get_state(path)
-        if val is None:
-            return
-        if val >= MIN_VAL + UNIT_VAL:
-            component.value = round(val - 1.0)
+        if val is not None and val >= MIN_VAL + UNIT_VAL:
+            self._update_component_value(path, round(val - UNIT_VAL))
 
     def set_vol(self, path, val: float):
-        if self.device.isOffline():
-            return
-        component = self.get_component(path)
-        if val is None:
-            return
-        if val >= MIN_VAL and val <= MAX_VAL:
-            component.value = round(val)
+        if val is not None and MIN_VAL <= val <= MAX_VAL:
+            self._update_component_value(path, round(val))
 
     def toggle_on_off(self, path, *args):
-        if self.device.isOffline():
-            return
-        component = self.get_component(path)
         val = self.component_states.get_state(path)
-        if val is None:
-            return
-        elif val == "On":
-            component.value = "Off"
+        if val == "On":
+            self._update_component_value(path, "Off")
         elif val == "Off":
-            component.value = "On"
+            self._update_component_value(path, "On")
 
     def set_on(self, path):
-        if self.device.isOffline():
-            return
-        component = self.get_component(path)
-        component.value = "On"
+        self._update_component_value(path, "On")
 
     def set_off(self, path):
-        if self.device.isOffline():
-            return
-        component = self.get_component(path)
-        component.value = "Off"
+        self._update_component_value(path, "Off")
 
     def toggle_muted_unmuted(self, path):
-        if self.device.isOffline():
-            return
-        component = self.get_component(path)
         val = self.component_states.get_state(path)
         if val == "Muted":
-            component.value = "Unmuted"
+            self._update_component_value(path, "Unmuted")
         elif val == "Unmuted":
-            component.value = "Muted"
+            self._update_component_value(path, "Muted")
 
     def set_muted(self, path):
-        if self.device.isOffline():
-            return
-        component = self.get_component(path)
-        val = self.component_states.get_state(path)
-        component.value = "Muted"
+        self._update_component_value(path, "Muted")
 
     def set_unmuted(self, path):
-        if self.device.isOffline():
-            return
-        component = self.get_component(path)
-        val = self.component_states.get_state(path)
-        component.value = "Unmuted"
+        self._update_component_value(path, "Unmuted")
+
+    # ---------------------------------------------------------------------------- #
 
 
 # ---------------------------------------------------------------------------- #

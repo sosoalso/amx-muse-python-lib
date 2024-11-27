@@ -10,9 +10,6 @@ def tp_get_device_state(tp):
 
 
 def tp_show_watcher(tp, index_port, index_btn):
-    """
-    tp_show_watcher 함수는 tp 객체의 모든 요소에 대해 지정된 port와 btn의 상태를 반환합니다.
-    """
     if tp_get_device_state(tp) is False:
         return
     try:
@@ -28,56 +25,47 @@ def tp_show_watcher(tp, index_port, index_btn):
 
 # ---------------------------------------------------------------------------- #
 def tp_add_watcher(tp, index_port, index_btn, callback):
-    """
-    tp_add_watcher 함수는 tp 객체의 모든 요소에 대해 지정된 idx_port와 idx_btn에 대한 callback 함수를 등록합니다.
-    """
-    if tp_get_device_state(tp) is False:
-        return
-    tp_clear_watcher(tp, index_port, index_btn)
+    # if tp_get_device_state(tp) is False:
+        # return
+    # tp_clear_watcher(tp, index_port, index_btn)
     try:
         tp.port[index_port].button[index_btn].watch(callback)
     except Exception as e:
         print(f"Error adding watcher: {e}")
 
 
-def tp_clear_watcher(tp, index_port, index_btn):
-    if tp_get_device_state(tp) is False:
-        return
-    if isinstance(tp.port[index_port].button[index_btn].pythonWatchers, list):
-        try:
-            tp.port[index_port].button[index_btn].pythonWatchers.clear()
-        except Exception as e:
-            print(f"Error removing watcher: {e}")
+# def tp_clear_watcher(tp, index_port, index_btn):
+#     if tp_get_device_state(tp) is False:
+#         return
+#     if isinstance(tp.port[index_port].button[index_btn].pythonWatchers, list):
+#         try:
+#             tp.port[index_port].button[index_btn].pythonWatchers.clear()
+#         except Exception as e:
+#             print(f"Error removing watcher: {e}")
 
 
 def tp_add_watcher_level(tp, index_port, index_level, callback):
-    """
-    tp_add_watcher 함수는 tp 객체의 모든 요소에 대해 지정된 port와 btn에 대한 callback 함수를 등록합니다.
-    """
-    if tp_get_device_state(tp) is False:
-        return
-    tp_clear_watcher_level(tp, index_port, index_level)
+    # if tp_get_device_state(tp) is False:
+        # return
+    # tp_clear_watcher_level(tp, index_port, index_level)
     try:
         tp.port[index_port].button[index_level].watch(callback)
     except Exception as e:
         print(f"Error adding watcher: {e}")
 
 
-def tp_clear_watcher_level(tp, index_port, index_level):
-    if tp_get_device_state(tp) is False:
-        return
-    if isinstance(tp.port[index_port].level[index_level].pythonWatchers, list):
-        try:
-            tp.port[index_port].level[index_level].pythonWatchers.clear()
-        except Exception as e:
-            print(f"Error removing watcher: {e}")
+# def tp_clear_watcher_level(tp, index_port, index_level):
+#     if tp_get_device_state(tp) is False:
+#         return
+#     if isinstance(tp.port[index_port].level[index_level].pythonWatchers, list):
+#         try:
+#             tp.port[index_port].level[index_level].pythonWatchers.clear()
+#         except Exception as e:
+#             print(f"Error removing watcher: {e}")
 
 
 # ---------------------------------------------------------------------------- #
 def tp_send_command(tp, index_port, command_string):
-    """
-    tp_send_command 함수는 tp 객체의 모든 요소에 대해 지정된 index_port command를 전송합니다.
-    """
     pass
     if tp_get_device_state(tp) is False:
         # print(f"warn tp_send_command() {tp=} {index_port=} Device not running")
