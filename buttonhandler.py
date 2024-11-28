@@ -46,10 +46,7 @@ class ButtonHandler(EventManager):
             self.executor.submit(self.start_repeat)
         else:
             self.is_pushed = False
-            if self.trigger_release_on_hold:
-                if self.is_hold:
-                    self.trigger_event("release")
-            else:
+            if self.trigger_release_on_hold or not self.is_hold:
                 self.trigger_event("release")
             self.is_hold = False
 
