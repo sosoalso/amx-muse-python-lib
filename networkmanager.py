@@ -4,7 +4,6 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-# ---------------------------------------------------------------------------- #
 from eventmanager import EventManager
 
 
@@ -30,7 +29,7 @@ class TcpClient(EventManager):
 
     def connect(self):
         if not self.connected:
-            print(f"{self.name=} connect()")
+            # print(f"{self.name=} connect()")
             self.executor.submit(self._connect)
 
     def _connect(self):
@@ -40,20 +39,20 @@ class TcpClient(EventManager):
                     self.socket = socket.create_connection((self.ip, self.port))
                     if self.socket:
                         self.connected = True
-                        print(f"{self.name} _connect()")
+                        # print(f"{self.name} _connect()")
                         self._run_thread_receive()
             except ConnectionRefusedError as e:
-                print(f"_connect() Connection refused: {e}")
+                # print(f"_connect() Connection refused: {e}")
                 time.sleep(self.time_reconnect)
                 if not self.reconnect:
                     break
             except TimeoutError as e:
-                print(f"_connect() Connection timed out: {e}")
+                # print(f"_connect() Connection timed out: {e}")
                 time.sleep(self.time_reconnect)
                 if not self.reconnect:
                     break
             except Exception as e:
-                print(f"_connect() error {e}")
+                # print(f"_connect() error {e}")
                 time.sleep(self.time_reconnect)
                 if not self.reconnect:
                     break
@@ -67,7 +66,7 @@ class TcpClient(EventManager):
         self.trigger_event("connected")
 
     def _receive(self):
-        print(f"{self.name=} _receive()")
+        # print(f"{self.name=} _receive()")
         while self.socket and self.connected:
             try:
                 msg = self.socket.recv(self.BUFFER_SIZE)
@@ -76,7 +75,7 @@ class TcpClient(EventManager):
             except Exception as e:
                 with self.lock:
                     self.connected = False
-                print(f"_receive() error {e}")
+                # print(f"_receive() error {e}")
                 if self.reconnect:
                     self.connect()
                 break
@@ -88,7 +87,7 @@ class TcpClient(EventManager):
             except Exception as e:
                 with self.lock:
                     self.connected = False
-                print(f"send_byte() error {e}")
+                # print(f"send_byte() error {e}")
                 self._handle_reconnect()
 
     def send(self, message):
@@ -98,7 +97,7 @@ class TcpClient(EventManager):
             except Exception as e:
                 with self.lock:
                     self.connected = False
-                print(f"send() error {e}")
+                # print(f"send() error {e}")
                 self._handle_reconnect()
 
     def disconnect(self):
@@ -109,7 +108,7 @@ class TcpClient(EventManager):
                 with self.lock:
                     self.socket = None
                     self.connected = False
-                print(f"disconnected")
+                # print(f"disconnected")
 
     def is_connected(self):
         return self.connected
@@ -126,29 +125,33 @@ class UdpClient:
     def send(self, message):
         try:
             self.socket.sendto(bytes(message, "UTF-8"), (self.ip, self.port))
-            print(f"message sent")
+            # print(f"message sent")
         except Exception as e:
-            print(f"error {e}")
+            pass
+            # print(f"error {e}")
 
     def send_byte(self, message):
         try:
             self.socket.sendto(message, (self.ip, self.port))
             # see hex representation of message
-            print(f"message sent: {message.hex()}")
+            # print(f"message sent: {message.hex()}")
         except Exception as e:
-            print(f"error {e}")
+            pass
+            # print(f"error {e}")
 
     def close(self):
         try:
             self.socket.close()
         except Exception as e:
-            print(f"error {e}")
+            pass
+            # print(f"error {e}")
 
     def open(self):
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         except Exception as e:
-            print(f"error {e}")
+            pass
+            # print(f"error {e}")
 
 
 # ---------------------------------------------------------------------------- #
@@ -166,18 +169,18 @@ class UdpServer:
     def start_server_thread(self):
         self.running = True
         self.executor.submit(self._start_server)
-        print("UDP server thread has started\n")
+        # print("UDP server thread has started\n")
 
     def _start_server(self):
-        print("UDP server is starting\n")
+        # print("UDP server is starting\n")
         while self.running:
             try:
                 data, addr = self.socket.recvfrom(self.BUFFER_SIZE)
-                print(f"Received message: {data=} from {addr=}")
+                # print(f"Received message: {data=} from {addr=}")
                 if self.receive_callback is not None:
                     self.receive_callback(data=data, addr=addr)
             except Exception as e:
-                print(f"An error occurred: {e}")
+                # print(f"An error occurred: {e}")
                 if not self.running:
                     break
 
@@ -188,7 +191,7 @@ class UdpServer:
         self.running = False
         self.socket.close()
         self.executor.shutdown(wait=True)
-        print("UDP server has stopped\n")
+        # print("UDP server has stopped\n")
 
 
 # ---------------------------------------------------------------------------- #

@@ -1,7 +1,4 @@
 # ---------------------------------------------------------------------------- #
-# from stub_objectstorage import ObjectStorage
-# from userdata import UserData
-# ---------------------------------------------------------------------------- #
 # TODO : MIN-MAX 값은 외부로 노출돼있는데 내부로 감추고 보다 편하게 지정할 수 있도록 수정 예정
 MIN_VAL = -60
 MAX_VAL = 6
@@ -38,16 +35,12 @@ class BluComponentState:
     def __init__(self):
         self._states = {}
         self._event = BluSimpleObserver()
-        # self._storage = ObjectStorage(db_name="blu_component_state.db")
-        # self._userdata = UserData("blu_component_state.json")
 
     def update_state(self, key, val):
-        # print(f"BluComponentState update_state: {key=}, {val=}")
         self.set_state(key, val)
         self._event.notify(key)
 
     def override_notify(self, key):
-        # print(f"BluComponentState override_notify: {key=}")
         self._event.notify(key)
 
     # 키-값을 반환
@@ -63,18 +56,6 @@ class BluComponentState:
     def unsubscribe(self, observer):
         self._event.unsubscribe(observer)
 
-    # def save(self):
-    #     self._userdata.save()
-    #     # self._storage.save_json_object("states", self._states)
-    # def load(self):
-    #     # loaded_states = self._storage.load_json_object("states")
-    #     # if loaded_states:
-    #     #     self._states = loaded_states
-    #     try:
-    #         self._states = self._userdata.load()
-    #     except Exception as e:
-    #         print(f"Error in BluComponentState.load: {e}")
-
 
 # ---------------------------------------------------------------------------- #
 class BluSimpleObserver:
@@ -88,7 +69,6 @@ class BluSimpleObserver:
         self._observers.remove(observer)
 
     def notify(self, *args, **kwargs):
-        # print(f"BluSimpleObserver notify: {args=} {kwargs=}")
         for observer in self._observers:
             observer(*args, **kwargs)
 
@@ -106,7 +86,6 @@ class BluController:
                     component = self.get_component(path)
                     if component is not None:
                         self.component_states.update_state(path, component.value)
-                        # print(f"{path=}, {component.value=} {self.component_states.get_state(path)=}")
                         component.watch(lambda evt, path=path: self.component_states.update_state(path, evt.value))
                         self.component_states.override_notify(path)
         except Exception as e:
@@ -170,8 +149,6 @@ class BluController:
 
     def set_unmuted(self, path):
         self._update_component_value(path, "Unmuted")
-
-    # ---------------------------------------------------------------------------- #
 
 
 # ---------------------------------------------------------------------------- #

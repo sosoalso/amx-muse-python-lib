@@ -27,13 +27,14 @@ class MicManager(EventManager):
             last_mic = self.last_on_mics[-1]
             self.turn_mic_on(last_mic)
         else:
-            print("turn_last_mic_on() No last mic to turn on.")
+            pass
+            # print("turn_last_mic_on() No last mic to turn on.")
             # self.trigger_event("all_off")
 
     def turn_mic_on(self, mic_id: int):
         if 0 <= mic_id <= self.max_mic_idx:
             self.mics_on[mic_id] = True
-            print(f"{mic_id=} is on.")
+            # print(f"{mic_id=} is on.")
             # 마지막으로 켜진 마이크 순서 업데이트
             if mic_id in self.last_on_mics:
                 self.last_on_mics.remove(mic_id)
@@ -42,28 +43,31 @@ class MicManager(EventManager):
             if self.isLastMicEnabled:
                 self.trigger_event("on", mic_id)
         else:
-            print(f"turn_mic_on() {mic_id=} is already on or does not exist.")
+            pass
+            # print(f"turn_mic_on() {mic_id=} is already on or does not exist.")
 
     def turn_mic_off(self, mic_id: int):
         # self.mics_on에 mic_id가 존재하는지 확인
         if 0 <= mic_id <= self.max_mic_idx:
             self.mics_on[int(mic_id)] = False
-            print(f"{mic_id=} is off.")
+            # print(f"{mic_id=} is off.")
             # 마이크가 꺼지면 리스트에서 제거
             if mic_id in self.last_on_mics:
                 self.last_on_mics.remove(mic_id)
             # ---------------------------------------------------------------------------- #
             if self.last_on_mics:
-                print(f"last mic is {self.get_last_on_mic()=}")
+                # print(f"last mic is {self.get_last_on_mic()=}")
                 self.trigger_event("off", mic_id)
                 if self.isLastMicEnabled:
                     self.trigger_event("on", mic_id, self.get_last_on_mic())
             else:
-                print("turn_mic_off() No mics are currently on.")
+                pass
+                # print("turn_mic_off() No mics are currently on.")
             if not self.last_on_mics:
                 self.trigger_event("all_off")
         else:
-            print(f"turn_mic_off() mic {mic_id} is already off or does not exist.")
+            pass
+            # print(f"turn_mic_off() mic {mic_id} is already off or does not exist.")
 
     def get_mic_status(self, mic_id: int):
         return self.mics_on[mic_id]
