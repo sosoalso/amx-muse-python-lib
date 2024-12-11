@@ -48,5 +48,26 @@ class ButtonHandler(EventManager):
 
 
 # ---------------------------------------------------------------------------- #
+class LevelHandler(EventManager):
+    def __init__(self):
+        super().__init__("level")
+
+    def add_event_handler(self, handler):
+        if "level" not in self.event_handlers:
+            self.event_handlers["level"] = [handler]
+        elif handler not in self.event_handlers["level"]:
+            self.event_handlers["level"].append(handler)
+        else:
+            print("Handler already registered for event: level")
+
+    def handle_event(self, evt):
+        try:
+            value = int(evt.value)
+            self.trigger_event("level", value=value)
+        except (ValueError, AttributeError):
+            pass
+
+
+# ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #

@@ -14,80 +14,89 @@ def tp_show_watcher(tp, index_port, index_btn):
         return
     try:
         button = tp.port[index_port].button[index_btn]
-        print(button)
         if button.pythonWatchers and isinstance(button.pythonWatchers, list):
-            print(button.pythonWatchers)
             for watcher in button.pythonWatchers:
                 print(f"watcher: {watcher}")
     except Exception as e:
-        print(f"Error showing watcher: {e}")
+        return
 
 
 # ---------------------------------------------------------------------------- #
 def tp_add_watcher(tp, index_port, index_btn, callback):
-    # if tp_get_device_state(tp) is False:
-    # return
     tp_clear_watcher(tp, index_port, index_btn)
     try:
         tp.port[index_port].button[index_btn].watch(callback)
     except Exception as e:
-        print(f"Error adding watcher: {e}")
+        return
 
 
 def tp_clear_watcher(tp, index_port, index_btn):
-    # if tp_get_device_state(tp) is False:
-    #     return
     if isinstance(tp.port[index_port].button[index_btn].pythonWatchers, list):
         try:
             tp.port[index_port].button[index_btn].pythonWatchers.clear()
         except Exception as e:
-            print(f"Error removing watcher: {e}")
+            return
 
 
+# ---------------------------------------------------------------------------- #
 def tp_add_watcher_level(tp, index_port, index_level, callback):
-    # if tp_get_device_state(tp) is False:
-    # return
     tp_clear_watcher_level(tp, index_port, index_level)
     try:
-        tp.port[index_port].button[index_level].watch(callback)
+        tp.port[index_port].level[index_level].watch(callback)
     except Exception as e:
-        print(f"Error adding watcher: {e}")
+        return
 
 
 def tp_clear_watcher_level(tp, index_port, index_level):
-    # if tp_get_device_state(tp) is False:
-    #     return
     if isinstance(tp.port[index_port].level[index_level].pythonWatchers, list):
         try:
             tp.port[index_port].level[index_level].pythonWatchers.clear()
         except Exception as e:
-            print(f"Error removing watcher: {e}")
+            return
 
 
 # ---------------------------------------------------------------------------- #
 def tp_send_command(tp, index_port, command_string):
-    pass
     if tp_get_device_state(tp) is False:
-        # print(f"warn tp_send_command() {tp=} {index_port=} Device not running")
+        print(f"warn tp_send_command() {tp=} {index_port=} Device not running")
         return
     try:
         tp.port[index_port].send_command(command_string)
     except Exception as e:
-        print(f"Error sending command_string: {e}")
+        return
+
+
+# ---------------------------------------------------------------------------- #
+def tp_get_button_pushed(tp, index_port, index_btn):
+    if tp_get_device_state(tp) is False:
+        return False
+    try:
+        return tp.port[index_port].button[index_btn].value == True
+    except Exception as e:
+        return
+
+
+# ---------------------------------------------------------------------------- #
+def tp_get_button_state(tp, index_port, index_btn):
+    if tp_get_device_state(tp) is False:
+        return False
+    try:
+        return tp.port[index_port].channel[index_btn].value == True
+    except Exception as e:
+        return
 
 
 # ---------------------------------------------------------------------------- #
 def tp_set_button(tp, index_port, index_btn, value):
     if tp_get_device_state(tp) is False:
-        # print(f"warn tp_set_button() {tp=} {index_port=} {index_btn=} Device not running")
         return
-    # print(f"warn tp_set_button {tp=} {index_port=} {index_btn=} {value=}")
+    print(f"warn tp_set_button {tp=} {index_port=} {index_btn=} {value=}")
     try:
         if value is None:
             value = False
         tp.port[index_port].channel[index_btn].value = value
     except Exception as e:
-        print(f"Error setting button {__name__=} {index_port=} {index_btn=} : {e}")
+        return
 
 
 # ---------------------------------------------------------------------------- #m
@@ -99,15 +108,24 @@ def tp_set_button_in_range(tp, port, index_btn_start, index_btn_range, index_con
 # ---------------------------------------------------------------------------- #
 def tp_send_level(tp, index_port, index_lvl, value):
     if tp_get_device_state(tp) is False:
-        # print(f"warn tp_send_level() {tp=} {index_port=} {index_lvl=} Device not running")
         return
     try:
         if value is None:
             value = 0
         tp.port[index_port].level[index_lvl].value = value
-        # print(f"warn tp_send_level {tp=} {index_port=} {index_lvl=} {value=}")
+        print(f"warn tp_send_level {tp=} {index_port=} {index_lvl=} {value=}")
     except Exception as e:
-        print(f"Error setting level {__name__=} {index_port=} {index_lvl=} : {e}")
+        return
+
+
+# ---------------------------------------------------------------------------- #
+def tp_get_level(tp, index_port, index_lvl):
+    if tp_get_device_state(tp) is False:
+        return
+    try:
+        return int(tp.port[index_port].level[index_lvl].value)
+    except Exception as e:
+        return
 
 
 # ---------------------------------------------------------------------------- #
