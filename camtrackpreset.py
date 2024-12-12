@@ -23,7 +23,11 @@ class CamtrackPreset:
             pass
 
     def make_dummy_presets(self):
-        return {"presets": [{"index": idx + 1, "camera": 0, "preset": 0} for idx in range(self.max_preset_index)]}
+        return {
+            "presets": [
+                {"index": preset_index + 1, "camera": 0, "preset": 0} for preset_index in range(self.max_preset_index)
+            ]
+        }
 
     def load_file(self):
         with open(self.filename, "r") as file:
@@ -53,17 +57,17 @@ class CamtrackPreset:
             # print(f"Error get_preset: {e}")
             pass
 
-    def set_preset(self, idx, cam_no, preset_no):
-        # print(f"set_preset: {idx}, {cam_no}, {preset_no}")
+    def set_preset(self, preset_index, cam_no, preset_no):
+        # print(f"set_preset: {preset_index}, {cam_no}, {preset_no}")
         try:
-            target_preset = self.get_preset(idx)
+            target_preset = self.get_preset(preset_index)
             if target_preset:
                 target_preset["camera"] = cam_no
                 target_preset["preset"] = preset_no
                 self.sort_presets()
                 self.save_file()
             else:
-                # print(f"Preset with index {idx} not found")
+                # print(f"Preset with index {preset_index} not found")
                 pass
         except Exception as e:
             # print(f"Error in set_preset: {e}")

@@ -58,7 +58,7 @@ def tp_clear_watcher_level(tp, index_port, index_level):
 # ---------------------------------------------------------------------------- #
 def tp_send_command(tp, index_port, command_string):
     if tp_get_device_state(tp) is False:
-        print(f"warn tp_send_command() {tp=} {index_port=} Device not running")
+        # print(f"warn tp_send_command() {tp=} {index_port=} Device not running")
         return
     try:
         tp.port[index_port].send_command(command_string)
@@ -90,7 +90,7 @@ def tp_get_button_state(tp, index_port, index_btn):
 def tp_set_button(tp, index_port, index_btn, value):
     if tp_get_device_state(tp) is False:
         return
-    print(f"warn tp_set_button {tp=} {index_port=} {index_btn=} {value=}")
+    # print(f"warn tp_set_button {tp=} {index_port=} {index_btn=} {value=}")
     try:
         if value is None:
             value = False
@@ -113,7 +113,7 @@ def tp_send_level(tp, index_port, index_lvl, value):
         if value is None:
             value = 0
         tp.port[index_port].level[index_lvl].value = value
-        print(f"warn tp_send_level {tp=} {index_port=} {index_lvl=} {value=}")
+        # print(f"warn tp_send_level {tp=} {index_port=} {index_lvl=} {value=}")
     except Exception as e:
         return
 
