@@ -4,7 +4,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from eventmanager import EventManager
+from lib.eventmanager import EventManager
 
 
 # ---------------------------------------------------------------------------- #

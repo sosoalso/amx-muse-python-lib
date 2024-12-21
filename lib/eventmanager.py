@@ -44,12 +44,13 @@ class EventManager:
     def remove_event_handler(self, name, handler):
         self.event_handlers[name].remove(handler)
 
-    @simple_exception_handler
+    @simple_exception_handler()
     def trigger_event(self, name, *args, **kwargs):
         if name in self.event_handlers:
             for handler in self.event_handlers[name]:
                 # print(f"{name=} {handler=}")
                 handler(*args, **kwargs)
+        else:
             print(f"No such event: {name=}")
 
 

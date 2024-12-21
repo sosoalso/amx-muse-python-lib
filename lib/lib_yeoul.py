@@ -29,7 +29,7 @@ def simple_exception_handler(*exceptions):
 
 
 # ---------------------------------------------------------------------------- #
-@simple_exception_handler
+@simple_exception_handler()
 def debounce(timeout_ms: float):
     def decorator(func):
         @functools.wraps(func)
@@ -45,48 +45,48 @@ def debounce(timeout_ms: float):
 
 
 # ---------------------------------------------------------------------------- #
-@simple_exception_handler
+@simple_exception_handler()
 def print_with_name(msg):
     current_method = inspect.currentframe().f_back.f_code.co_name
     print(f"{current_method}() >> {msg}")
 
 
-@simple_exception_handler
+@simple_exception_handler()
 def info_with_name(msg):
     current_method = inspect.currentframe().f_back.f_code.co_name
     uni_log_info(f"{current_method}() >> {msg}")
 
 
-@simple_exception_handler
+@simple_exception_handler()
 def warn_with_name(msg):
     current_method = inspect.currentframe().f_back.f_code.co_name
     uni_log_warn(f"{current_method}() >> {msg}")
 
 
-@simple_exception_handler
+@simple_exception_handler()
 def err_with_name(err, msg):
     current_method = inspect.currentframe().f_back.f_code.co_name
     raise err(f"{current_method}() {msg}")
 
 
 # ---------------------------------------------------------------------------- #
-@simple_exception_handler
+@simple_exception_handler()
 def uni_log_info(msg):
     print(("info " + msg).encode("utf-16").decode("utf-16"))
 
 
-@simple_exception_handler
+@simple_exception_handler()
 def uni_log_warn(msg):
     print(("warn " + msg).encode("utf-16").decode("utf-16"))
 
 
-@simple_exception_handler
+@simple_exception_handler()
 def uni_log_error(msg):
     print(("error " + msg).encode("utf-16").decode("utf-16"))
 
 
 # ---------------------------------------------------------------------------- #
-@simple_exception_handler
+@simple_exception_handler()
 def hello(device):
     print("=" * 79)
     print(device)

@@ -2,7 +2,7 @@
 import concurrent.futures
 import time
 
-from eventmanager import EventManager
+from lib.eventmanager import EventManager
 
 
 # ---------------------------------------------------------------------------- #
@@ -34,18 +34,19 @@ class ButtonHandler(EventManager):
         self.is_hold = False
         self.trigger_release_on_hold = trigger_release_on_hold
 
-    @simple_exception_handler
+    @simple_exception_handler()
     def init_executor(self):
         self._executor.shutdown(wait=False)
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
-    @simple_exception_handler
+    @simple_exception_handler()
     def start_repeat(self):
+        time.sleep(self.repeat_interval)
         while self.is_pushed:
             self.trigger_event("repeat")
             time.sleep(self.repeat_interval)
 
-    @simple_exception_handler
+    @simple_exception_handler()
     def start_hold(self):
         while self.is_pushed:
             time.sleep(self.hold_time)
@@ -53,7 +54,7 @@ class ButtonHandler(EventManager):
                 self.is_hold = True
                 self.trigger_event("hold")
 
-    @simple_exception_handler
+    @simple_exception_handler()
     def handle_event(self, evt):
         if evt.value:
             self.is_pushed = True
@@ -73,7 +74,7 @@ class LevelHandler(EventManager):
     def __init__(self):
         super().__init__("level")
 
-    @simple_exception_handler
+    @simple_exception_handler()
     def add_event_handler(self, handler):
         if "level" not in self.event_handlers:
             self.event_handlers["level"] = [handler]

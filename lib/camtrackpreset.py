@@ -29,7 +29,7 @@ class CamtrackPreset:
         self.presets = {}
         self.init()
 
-    @simple_exception_handler
+    @simple_exception_handler()
     def init(self):
         try:
             if not os.path.exists(self.filename):
@@ -41,7 +41,7 @@ class CamtrackPreset:
             # print(f"Error loading presets from file: {e}")
             pass
 
-    @simple_exception_handler
+    @simple_exception_handler()
     def make_dummy_presets(self):
         return {
             "presets": [
@@ -49,26 +49,26 @@ class CamtrackPreset:
             ]
         }
 
-    @simple_exception_handler
+    @simple_exception_handler()
     def load_file(self):
         with open(self.filename, "r") as file:
             self.presets = json.load(file)
 
-    @simple_exception_handler
+    @simple_exception_handler()
     def save_file(self):
         with open(self.filename, "w", encoding="utf-8") as output_file:
             json.dump(self.presets, output_file, indent=2)
         return True
 
-    @simple_exception_handler
+    @simple_exception_handler()
     def sort_presets(self):
         self.presets["presets"].sort(key=lambda x: x["index"])
 
-    @simple_exception_handler
+    @simple_exception_handler()
     def get_preset(self, index):
         return next((preset for preset in self.presets["presets"] if preset["index"] == index), None)
 
-    @simple_exception_handler
+    @simple_exception_handler()
     def set_preset(self, preset_index, cam_no, preset_no):
         target_preset = self.get_preset(preset_index)
         if target_preset:
