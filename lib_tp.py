@@ -1,170 +1,150 @@
 # ---------------------------------------------------------------------------- #
-def tp_get_device_state(tp):
-    try:
-        if tp.isOnline:
-            return tp.isOnline() is True
-        else:
-            return False
-    except AttributeError:
-        return False
+def simple_exception_handler(*exceptions):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except exceptions as e:
+                print(f"Exception occurred in {func.__name__}: {e}")
+                return None
+            except Exception as e:
+                print(f"Exception occurred in {func.__name__}: {e}")
+                return None
 
+        return wrapper
 
-def tp_show_watcher(tp, index_port, index_btn):
-    if tp_get_device_state(tp) is False:
-        return
-    try:
-        button = tp.port[index_port].button[index_btn]
-        if button.pythonWatchers and isinstance(button.pythonWatchers, list):
-            for watcher in button.pythonWatchers:
-                print(f"watcher: {watcher}")
-    except Exception as e:
-        return
+    return decorator
 
 
 # ---------------------------------------------------------------------------- #
-def tp_add_watcher(tp, index_port, index_btn, callback):
-    tp_clear_watcher(tp, index_port, index_btn)
-    try:
-        tp.port[index_port].button[index_btn].watch(callback)
-    except Exception as e:
+@simple_exception_handler
+def tp_get_device_state(tp, *args):
+    if tp.isOnline:
+        return tp.isOnline() is True
+    else:
+        return False
+
+
+@simple_exception_handler
+def tp_show_watcher(tp, index_port, index_btn, *args):
+    if tp_get_device_state(tp) is False:
         return
+    button = tp.port[index_port].button[index_btn]
+    if button.pythonWatchers and isinstance(button.pythonWatchers, list):
+        print(f"watchers : {tp.id=} {index_port=} {index_btn=}")
+        watchers = [str(watcher.__name__) for watcher in button.pythonWatchers]
+        print(f"{watchers=}")
 
 
-def tp_clear_watcher(tp, index_port, index_btn):
+@simple_exception_handler
+def tp_add_watcher(tp, index_port, index_btn, callback, *args):
+    tp.port[index_port].button[index_btn].watch(callback)
+
+
+@simple_exception_handler
+def tp_clear_watcher(tp, index_port, index_btn, *args):
     if isinstance(tp.port[index_port].button[index_btn].pythonWatchers, list):
-        try:
-            tp.port[index_port].button[index_btn].pythonWatchers.clear()
-        except Exception as e:
-            return
+        tp.port[index_port].button[index_btn].pythonWatchers.clear()
 
 
-# ---------------------------------------------------------------------------- #
-def tp_add_watcher_level(tp, index_port, index_level, callback):
-    tp_clear_watcher_level(tp, index_port, index_level)
-    try:
-        tp.port[index_port].level[index_level].watch(callback)
-    except Exception as e:
-        return
+@simple_exception_handler
+def tp_add_watcher_level(tp, index_port, index_level, callback, *args):
+    tp.port[index_port].level[index_level].watch(callback)
 
 
-def tp_clear_watcher_level(tp, index_port, index_level):
+@simple_exception_handler
+def tp_clear_watcher_level(tp, index_port, index_level, *args):
     if isinstance(tp.port[index_port].level[index_level].pythonWatchers, list):
-        try:
-            tp.port[index_port].level[index_level].pythonWatchers.clear()
-        except Exception as e:
-            return
+        tp.port[index_port].level[index_level].pythonWatchers.clear()
 
 
-# ---------------------------------------------------------------------------- #
-def tp_send_command(tp, index_port, command_string):
+@simple_exception_handler
+def tp_send_command(tp, index_port, command_string, *args):
     if tp_get_device_state(tp) is False:
-        # print(f"warn tp_send_command() {tp=} {index_port=} Device not running")
         return
-    try:
-        tp.port[index_port].send_command(command_string)
-    except Exception as e:
-        return
+    tp.port[index_port].send_command(command_string)
 
 
-# ---------------------------------------------------------------------------- #
-def tp_get_button_pushed(tp, index_port, index_btn):
+@simple_exception_handler
+def tp_get_button_pushed(tp, index_port, index_btn, *args):
     if tp_get_device_state(tp) is False:
         return False
-    try:
-        return tp.port[index_port].button[index_btn].value == True
-    except Exception as e:
-        return
+    return tp.port[index_port].button[index_btn].value == True
 
 
-# ---------------------------------------------------------------------------- #
-def tp_get_button_state(tp, index_port, index_btn):
+@simple_exception_handler
+def tp_get_button_state(tp, index_port, index_btn, *args):
     if tp_get_device_state(tp) is False:
         return False
-    try:
-        return tp.port[index_port].channel[index_btn].value == True
-    except Exception as e:
-        return
+    return tp.port[index_port].channel[index_btn].value == True
 
 
-# ---------------------------------------------------------------------------- #
-def tp_set_button(tp, index_port, index_btn, value):
+@simple_exception_handler
+def tp_set_button(tp, index_port, index_btn, value, *args):
     if tp_get_device_state(tp) is False:
         return
-    # print(f"warn tp_set_button {tp=} {index_port=} {index_btn=} {value=}")
-    try:
-        if value is None:
-            value = False
-        tp.port[index_port].channel[index_btn].value = value
-    except Exception as e:
-        return
+    if value is None:
+        value = False
+    tp.port[index_port].channel[index_btn].value = value
 
 
-# ---------------------------------------------------------------------------- #m
-def tp_set_button_in_range(tp, port, index_btn_start, index_btn_range, index_condition):
+@simple_exception_handler
+def tp_set_button_in_range(tp, port, index_btn_start, index_btn_range, index_condition, *args):
     for i in range(index_btn_start, index_btn_start + index_btn_range + 1):
         tp_set_button(tp, port, i, index_condition == (i - index_btn_start + 1))
 
 
-# ---------------------------------------------------------------------------- #
-def tp_send_level(tp, index_port, index_lvl, value):
+@simple_exception_handler
+def tp_send_level(tp, index_port, index_lvl, value, *args):
     if tp_get_device_state(tp) is False:
         return
-    try:
-        if value is None:
-            value = 0
-        tp.port[index_port].level[index_lvl].value = value
-        # print(f"warn tp_send_level {tp=} {index_port=} {index_lvl=} {value=}")
-    except Exception as e:
-        return
+    if value is None:
+        value = 0
+    tp.port[index_port].level[index_lvl].value = value
 
 
-# ---------------------------------------------------------------------------- #
-def tp_get_level(tp, index_port, index_lvl):
+@simple_exception_handler
+def tp_get_level(tp, index_port, index_lvl, *args):
     if tp_get_device_state(tp) is False:
         return
-    try:
-        return int(tp.port[index_port].level[index_lvl].value)
-    except Exception as e:
-        return
+    return int(tp.port[index_port].level[index_lvl].value)
 
 
-# ---------------------------------------------------------------------------- #
-def convert_text_to_unicode(text):
+@simple_exception_handler
+def convert_text_to_unicode(text, *args):
     return "".join(format(ord(char), "04X") for char in text)
 
 
-# ---------------------------------------------------------------------------- #
-def tp_set_button_text_unicode(tp, index_port, index_addr, text):
+@simple_exception_handler
+def tp_set_button_text_unicode(tp, index_port, index_addr, text, *args):
     tp_send_command(tp, index_port, f"^UNI-{index_addr},0,{convert_text_to_unicode(text)}")
 
 
-# ---------------------------------------------------------------------------- #
-def tp_set_button_text(tp, index_port, index_addr, text):
+@simple_exception_handler
+def tp_set_button_text(tp, index_port, index_addr, text, *args):
     tp_send_command(tp, index_port, f"^TXT-{index_addr},0,{text}")
 
 
-# ---------------------------------------------------------------------------- #
-def tp_set_button_show_hide(tp, index_port, index_addr, value):
+@simple_exception_handler
+def tp_set_button_show_hide(tp, index_port, index_addr, value, *args):
     state_str = 1 if value else 0
     tp.port[index_port].send_command(f"^SHO-{index_addr},{state_str}")
     tp.port[index_port].send_command(f"^ENA-{index_addr},{state_str}")
 
 
-# ---------------------------------------------------------------------------- #
-def tp_set_page(tp, page_name):
+@simple_exception_handler
+def tp_set_page(tp, page_name, *args):
     tp_send_command(tp, 1, f"^PGE-{page_name}")
 
 
-# ---------------------------------------------------------------------------- #
-def tp_show_popup(tp, popup_name):
+@simple_exception_handler
+def tp_show_popup(tp, popup_name, *args):
     tp_send_command(tp, 1, f"^PPN-{popup_name}")
 
 
-# ---------------------------------------------------------------------------- #
-def tp_hide_all_popup(tp):
+@simple_exception_handler
+def tp_hide_all_popup(tp, *args):
     tp_send_command(tp, 1, "^PPX")
 
 
-# ---------------------------------------------------------------------------- #
-# ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #

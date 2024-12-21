@@ -4,6 +4,24 @@ import os
 
 
 # ---------------------------------------------------------------------------- #
+def simple_exception_handler(*exceptions):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except exceptions as e:
+                print(f"Exception occurred in {func.__name__}: {e}")
+                return None
+            except Exception as e:
+                print(f"Exception occurred in {func.__name__}: {e}")
+                return None
+
+        return wrapper
+
+    return decorator
+
+
+# ---------------------------------------------------------------------------- #
 class CamtrackPreset:
     def __init__(self, filename="camtrack_preset.json", max_preset_index=40):
         self.filename = filename
@@ -11,6 +29,7 @@ class CamtrackPreset:
         self.presets = {}
         self.init()
 
+    @simple_exception_handler
     def init(self):
         try:
             if not os.path.exists(self.filename):
@@ -22,6 +41,7 @@ class CamtrackPreset:
             # print(f"Error loading presets from file: {e}")
             pass
 
+    @simple_exception_handler
     def make_dummy_presets(self):
         return {
             "presets": [
@@ -29,51 +49,33 @@ class CamtrackPreset:
             ]
         }
 
+    @simple_exception_handler
     def load_file(self):
         with open(self.filename, "r") as file:
             self.presets = json.load(file)
 
+    @simple_exception_handler
     def save_file(self):
-        try:
-            with open(self.filename, "w", encoding="utf-8") as output_file:
-                json.dump(self.presets, output_file, indent=2)
-            return True
-        except Exception as error:
-            # print(f"Error saving data: {error}")
-            return False
+        with open(self.filename, "w", encoding="utf-8") as output_file:
+            json.dump(self.presets, output_file, indent=2)
+        return True
 
+    @simple_exception_handler
     def sort_presets(self):
-        try:
-            self.presets["presets"].sort(key=lambda x: x["index"])
-        except Exception as e:
-            # print(f"Error sorting presets: {e}")
-            pass
+        self.presets["presets"].sort(key=lambda x: x["index"])
 
+    @simple_exception_handler
     def get_preset(self, index):
-        # print(f"get_preset: {index}")
-        try:
-            return next((preset for preset in self.presets["presets"] if preset["index"] == index), None)
-        except Exception as e:
-            # print(f"Error get_preset: {e}")
-            pass
+        return next((preset for preset in self.presets["presets"] if preset["index"] == index), None)
 
+    @simple_exception_handler
     def set_preset(self, preset_index, cam_no, preset_no):
-        # print(f"set_preset: {preset_index}, {cam_no}, {preset_no}")
-        try:
-            target_preset = self.get_preset(preset_index)
-            if target_preset:
-                target_preset["camera"] = cam_no
-                target_preset["preset"] = preset_no
-                self.sort_presets()
-                self.save_file()
-            else:
-                # print(f"Preset with index {preset_index} not found")
-                pass
-        except Exception as e:
-            # print(f"Error in set_preset: {e}")
-            pass
+        target_preset = self.get_preset(preset_index)
+        if target_preset:
+            target_preset["camera"] = cam_no
+            target_preset["preset"] = preset_no
+            self.sort_presets()
+            self.save_file()
 
 
-# ---------------------------------------------------------------------------- #
-# ---------------------------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #

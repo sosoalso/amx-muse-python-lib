@@ -4,12 +4,31 @@ import time
 
 
 # ---------------------------------------------------------------------------- #
+def simple_exception_handler(*exceptions):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except exceptions as e:
+                print(f"Exception occurred in {func.__name__}: {e}")
+                return None
+            except Exception as e:
+                print(f"Exception occurred in {func.__name__}: {e}")
+                return None
+
+        return wrapper
+
+    return decorator
+
+
+# ---------------------------------------------------------------------------- #
 class Scheduler:
     def __init__(self, name=None):
         self.name = name
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.scheduled_tasks = []
 
+    @simple_exception_handler
     def set_interval(self, func, interval):
         def wrapper():
             while True:
@@ -19,6 +38,7 @@ class Scheduler:
         future = self.executor.submit(wrapper)
         self.scheduled_tasks.append(future)
 
+    @simple_exception_handler
     def set_timeout(self, func, delay):
         def wrapper():
             time.sleep(delay)
@@ -27,6 +47,7 @@ class Scheduler:
         future = self.executor.submit(wrapper)
         self.scheduled_tasks.append(future)
 
+    @simple_exception_handler
     def shutdown(self):
         for task in self.scheduled_tasks:
             task.cancel()
