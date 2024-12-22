@@ -4,21 +4,15 @@ import os
 
 
 # ---------------------------------------------------------------------------- #
-def simple_exception_handler(*exceptions):
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            except exceptions as e:
-                print(f"Exception occurred in {func.__name__}: {e}")
-                return None
-            except Exception as e:
-                print(f"Exception occurred in {func.__name__}: {e}")
-                return None
+def handle_exception(func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            print(f"Exception occurred in {func.__name__}: {e}")
+            return None
 
-        return wrapper
-
-    return decorator
+    return wrapper
 
 
 # ---------------------------------------------------------------------------- #
@@ -30,11 +24,11 @@ class UserData:
         self.data = None
         self.init()
 
-    @simple_exception_handler()
+    @handle_exception
     def get_file_path(self):
         return f"{self.foldername}/" + self.filename if self.foldername is not None else self.filename
 
-    @simple_exception_handler()
+    @handle_exception
     def init(self):
         try:
             if self.foldername:
@@ -53,23 +47,23 @@ class UserData:
         except Exception as e:
             print(f"init() Error :: {e}")
 
-    @simple_exception_handler()
+    @handle_exception
     def load_file(self):
         with open(self.filepath, "r") as file:
             self.data = json.load(file)
 
-    @simple_exception_handler()
+    @handle_exception
     def save_file(self):
         with open(self.filepath, "w", encoding="utf-8") as output_file:
             json.dump(self.data, output_file, indent=2)
 
-    @simple_exception_handler()
+    @handle_exception
     def set_value(self, key, value):
         self.data[key] = value
         print(f"set_value() :: {key=} {value=}")
         self.save_file()
 
-    @simple_exception_handler()
+    @handle_exception
     def get_value(self, key):
         return self.data.get(key)
 

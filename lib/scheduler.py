@@ -1,24 +1,19 @@
 # ---------------------------------------------------------------------------- #
 import concurrent.futures
+import threading
 import time
 
 
 # ---------------------------------------------------------------------------- #
-def simple_exception_handler(*exceptions):
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            except exceptions as e:
-                print(f"Exception occurred in {func.__name__}: {e}")
-                return None
-            except Exception as e:
-                print(f"Exception occurred in {func.__name__}: {e}")
-                return None
+def handle_exception(func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            print(f"Exception occurred in {func.__name__}: {e}")
+            return None
 
-        return wrapper
-
-    return decorator
+    return wrapper
 
 
 # ---------------------------------------------------------------------------- #
@@ -28,26 +23,28 @@ class Scheduler:
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.scheduled_tasks = []
 
-    @simple_exception_handler()
+    @handle_exception
     def set_interval(self, func, interval):
         def wrapper():
             while True:
-                time.sleep(interval)
+                # time.sleep(interval)
+                threading.Event().wait(interval)
                 func()
 
         future = self.executor.submit(wrapper)
         self.scheduled_tasks.append(future)
 
-    @simple_exception_handler()
+    @handle_exception
     def set_timeout(self, func, delay):
         def wrapper():
-            time.sleep(delay)
+            threading.Event().wait(delay)
+            # time.sleep(delay)
             func()
 
         future = self.executor.submit(wrapper)
         self.scheduled_tasks.append(future)
 
-    @simple_exception_handler()
+    @handle_exception
     def shutdown(self):
         for task in self.scheduled_tasks:
             task.cancel()

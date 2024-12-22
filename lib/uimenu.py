@@ -10,72 +10,70 @@ from lib.lib_tp import (
 
 
 # ---------------------------------------------------------------------------- #
-def simple_exception_handler(*exceptions):
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            except exceptions as e:
-                print(f"Exception occurred in {func.__name__}: {e}")
-                return None
-            except Exception as e:
-                print(f"Exception occurred in {func.__name__}: {e}")
-                return None
+def handle_exception(func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            print(f"Exception occurred in {func.__name__}: {e}")
+            return None
 
-        return wrapper
-
-    return decorator
+    return wrapper
 
 
 # ---------------------------------------------------------------------------- #
 class UIMenu:
-    def __init__(self, dv_tp):
-        self.dv_tp = dv_tp
+    def __init__(self, tp):
+        self.tp = tp
         self.selected_menu = 0
-        self.setup()
 
-    @simple_exception_handler()
-    def set_page(self, pagename):
-        tp_set_page(self.dv_tp, pagename)
+    @handle_exception
+    def set_page(self, pagename, *args):
+        tp_set_page(self.tp, pagename)
 
-    @simple_exception_handler()
-    def show_popup(self, popupname):
-        tp_show_popup(self.dv_tp, popupname)  #
+    @handle_exception
+    def show_popup(self, popupname, *args):
+        tp_show_popup(self.tp, popupname)  #
         self.selected_menu = int(popupname)
 
-    @simple_exception_handler()
-    def hide_all_popup(self):
+    @handle_exception
+    def hide_all_popup(self, *args):
         self.selected_menu = 0
-        tp_hide_all_popup(self.dv_tp)
+        tp_hide_all_popup(self.tp)
 
-    @simple_exception_handler()
-    def fb_menu(self):
-        tp_set_button_in_range(self.dv_tp, 1, 11, 10, self.selected_menu)
+    @handle_exception
+    def ui_refresh_menu_buttons(self, *args):
+        tp_set_button_in_range(self.tp, 1, 11, 10, self.selected_menu)
 
-    @simple_exception_handler()
-    def select_menu(self, idx_menu):
-        self.selected_menu = int(idx_menu)
-        self.show_popup("{0:0>3d}".format(idx_menu))
-        self.fb_menu()
+    @handle_exception
+    def select_menu(self, index_menu, *args):
+        """_summary_
 
-    @simple_exception_handler()
-    def close_menu(self, evt):
-        if evt.value:
+        Args:
+            index_menu (int): 1~100 까지 메뉴 번호, 001 ~ 100 까지 팝업 열기
+        """
+        self.selected_menu = int(index_menu)
+        self.show_popup("{0:0>3d}".format(index_menu))
+        self.ui_refresh_menu_buttons()
+
+    @handle_exception
+    def close_menu(self, *args):
+        if args[0].value:
             self.hide_all_popup()
-            self.fb_menu()
+            self.ui_refresh_menu_buttons()
 
-    @simple_exception_handler()
-    def show_notification(self, adr, txt):
-        self.dv_tp.port[1].send_command(f"'^UNI-', {adr}, ',0,', {txt}")
+    @handle_exception
+    def show_notification(self, adr, txt, *args):
+        self.tp.port[1].send_command(f"'^UNI-', {adr}, ',0,', {txt}")
 
-    @simple_exception_handler()
-    def setup(self):
+    @handle_exception
+    def ui_register(self, *args):
         for idx in range(1, 10):
             menu_btn = ButtonHandler()
             menu_btn.add_event_handler("push", lambda idx=int(idx): self.select_menu(int(idx)))
-            tp_add_watcher(self.dv_tp, 1, idx + 10, menu_btn.handle_event)
-        tp_add_watcher(self.dv_tp, 1, 100, self.close_menu)
-        tp_set_button_in_range(self.dv_tp, 1, 11, 10, False)
+            tp_add_watcher(self.tp, 1, idx + 10, menu_btn.handle_event)
+        tp_add_watcher(self.tp, 1, 100, self.close_menu)
+        tp_set_button_in_range(self.tp, 1, 11, 10, False)
 
 
 # ---------------------------------------------------------------------------- #

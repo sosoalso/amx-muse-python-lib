@@ -3,21 +3,15 @@ from lib.eventmanager import EventManager
 
 
 # ---------------------------------------------------------------------------- #
-def simple_exception_handler(*exceptions):
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            except exceptions as e:
-                print(f"Exception occurred in {func.__name__}: {e}")
-                return None
-            except Exception as e:
-                print(f"Exception occurred in {func.__name__}: {e}")
-                return None
+def handle_exception(func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            print(f"Exception occurred in {func.__name__}: {e}")
+            return None
 
-        return wrapper
-
-    return decorator
+    return wrapper
 
 
 # ---------------------------------------------------------------------------- #
@@ -29,29 +23,29 @@ class MicManager(EventManager):
         self.last_on_mics = []  # 마지막으로 켜진 마이크의 순서를 저장하는 리스트
         self.last_mic_enabled = last_mic_enabled
 
-    @simple_exception_handler()
+    @handle_exception
     def index_to_idx(self, mic_index):
         if 0 < mic_index <= self.max_mic_index:
             return mic_index - 1
         else:
             return None
 
-    @simple_exception_handler()
+    @handle_exception
     def get_last_mic_enabled(self) -> bool:
         return self.last_mic_enabled
 
-    @simple_exception_handler()
+    @handle_exception
     def set_last_mic_enabled(self, is_enabled: bool) -> bool:
         self.last_mic_enabled = is_enabled
         return self.get_last_mic_enabled()
 
-    @simple_exception_handler()
-    @simple_exception_handler()
+    @handle_exception
+    @handle_exception
     def turn_all_mic_off(self):
         for idx in range(self.max_mic_index):
             self.turn_mic_off(idx)
 
-    @simple_exception_handler()
+    @handle_exception
     def turn_last_mic_on(self):
         if self.last_on_mics:
             last_mic = self.last_on_mics[-1]
@@ -61,7 +55,7 @@ class MicManager(EventManager):
             # print("turn_last_mic_on() No last mic to turn on.")
             # self.trigger_event("all_off")
 
-    @simple_exception_handler()
+    @handle_exception
     def turn_mic_on(self, mic_index):
         mic_idx = self.index_to_idx(mic_index)
         if mic_idx is not None:
@@ -79,7 +73,7 @@ class MicManager(EventManager):
             pass
             # print(f"turn_mic_on() {mic_idx=} is already on or does not exist.")
 
-    @simple_exception_handler()
+    @handle_exception
     def turn_mic_off(self, mic_index):
         mic_idx = self.index_to_idx(mic_index)
         if mic_idx is not None:
@@ -106,7 +100,7 @@ class MicManager(EventManager):
             pass
             # print(f"turn_mic_off() mic {mic_idx} is already off or does not exist.")
 
-    @simple_exception_handler()
+    @handle_exception
     def get_mic_status(self, mic_index):
         mic_idx = self.index_to_idx(mic_index)
         # print(f"get_mic_status {mic_idx=}")
@@ -114,7 +108,7 @@ class MicManager(EventManager):
         if mic_idx is not None:
             return self.mics_on[mic_idx]
 
-    @simple_exception_handler()
+    @handle_exception
     def get_last_on_mic(self):
         return self.last_on_mics[-1] + 1 if self.last_on_mics else None
 

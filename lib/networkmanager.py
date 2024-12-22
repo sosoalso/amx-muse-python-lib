@@ -1,7 +1,8 @@
 # ---------------------------------------------------------------------------- #
 import socket
 import threading
-import time
+
+# import time
 from concurrent.futures import ThreadPoolExecutor
 
 from lib.eventmanager import EventManager
@@ -9,6 +10,69 @@ from lib.eventmanager import EventManager
 
 # ---------------------------------------------------------------------------- #
 class TcpClient(EventManager):
+    """
+    TcpClient 클래스는 TCP 클라이언트 소켓을 관리하고 서버와의 통신을 처리합니다.
+    Attributes:
+        BUFFER_SIZE (int): 수신 버퍼 크기.
+        name (str): 클라이언트 이름.
+        ip (str): 서버 IP 주소.
+        port (int): 서버 포트 번호.
+        reconnect (bool): 재연결 여부.
+        time_reconnect (int): 재연결 시도 간격 (초).
+        connected (bool): 연결 상태.
+        socket (socket): 소켓 객체.
+        receive_callback (function): 수신 콜백 함수.
+        executor (ThreadPoolExecutor): 스레드 풀 실행자.
+        lock (threading.Lock): 스레드 동기화용 락.
+    """
+
+    """
+    TcpClient의 생성자.
+    Args:
+        name (str): 클라이언트 이름.
+        ip (str): 서버 IP 주소.
+        port (int): 서버 포트 번호.
+        reconnect (bool, optional): 재연결 여부. 기본값은 True.
+        time_reconnect (int, optional): 재연결 시도 간격 (초). 기본값은 5.
+    """
+    """
+    수신 콜백 함수를 설정합니다.
+    Args:
+        callback (function): 수신 콜백 함수.
+    """
+    """
+    서버에 연결을 시도합니다.
+    """
+    """
+    서버에 연결을 시도하고, 연결이 실패하면 재연결을 시도합니다.
+    """
+    """
+    재연결을 처리합니다.
+    """
+    """
+    수신 스레드를 실행합니다.
+    """
+    """
+    서버로부터 메시지를 수신하고, 수신 콜백 함수를 호출합니다.
+    """
+    """
+    바이트 메시지를 서버로 전송합니다.
+    Args:
+        message (bytes): 전송할 바이트 메시지.
+    """
+    """
+    문자열 메시지를 서버로 전송합니다.
+    Args:
+        message (str): 전송할 문자열 메시지.
+    """
+    """
+    서버와의 연결을 종료합니다.
+    """
+    """
+    연결 상태를 반환합니다.
+    Returns:
+        bool: 연결 상태.
+    """
     BUFFER_SIZE = 1024
 
     def __init__(self, name, ip, port, reconnect=True, time_reconnect=5):
@@ -40,15 +104,19 @@ class TcpClient(EventManager):
                         self.connected = True
                         self._run_thread_receive()
             except ConnectionRefusedError as e:
-                time.sleep(self.time_reconnect)
+                # time.sleep(self.time_reconnect)
+                threading.Event().wait(self.time_reconnect)
+
                 if not self.reconnect:
                     break
             except TimeoutError as e:
-                time.sleep(self.time_reconnect)
+                # time.sleep(self.time_reconnect)
+                threading.Event().wait(self.time_reconnect)
                 if not self.reconnect:
                     break
             except Exception as e:
-                time.sleep(self.time_reconnect)
+                # time.sleep(self.time_reconnect)
+                threading.Event().wait(self.time_reconnect)
                 if not self.reconnect:
                     break
 
