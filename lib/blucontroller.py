@@ -202,27 +202,5 @@ class BluController:
     def set_unmuted(self, path):
         self._update_component_value(path, "Unmuted")
 
-    def toggle_on_off(self, path, *args):
-        val = self.component_states.get_state(path)
-        val_str = "Off" if val == "On" else "Off"
-        self._update_component_value(path, val_str)
-
-    def set_on(self, path):
-        self._update_component_value(path, "On")
-
-    def set_off(self, path):
-        self._update_component_value(path, "Off")
-
-    def toggle_muted_unmuted(self, path):
-        val = self.component_states.get_state(path)
-        val_str = "Unmuted" if val == "Muted" else "Muted"
-        self._update_component_value(path, val_str)
-
-    def set_muted(self, path):
-        self._update_component_value(path, "Muted")
-
-    def set_unmuted(self, path):
-        self._update_component_value(path, "Unmuted")
-
 
 # ---------------------------------------------------------------------------- #
