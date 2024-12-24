@@ -60,6 +60,7 @@ class BluComponentState:
 
     @handle_exception
     def update_state(self, key, val):
+        # TODO: 테스트
         self.set_state(key, val)  # 상태 업데이트
         self._event.notify(key)  # 상태 변경 알림
 
@@ -81,18 +82,6 @@ class BluComponentState:
 
 # ---------------------------------------------------------------------------- #
 class BluController:
-    @property
-    def MIN_VAL(self):
-        return self.MIN_VAL
-
-    @property
-    def MAX_VAL(self):
-        return self.MAX_VAL
-
-    @property
-    def UNIT_VAL(self):
-        return self.UNIT_VAL
-
     # ---------------------------------------------------------------------------- #
     def __init__(
         self,
@@ -143,6 +132,10 @@ class BluController:
                     self.component_states.override_notify(path)
 
     # ---------------------------------------------------------------------------- #
+    def subscribe(self, observer):
+        self.component_states.subscribe(observer)
+
+    # ---------------------------------------------------------------------------- #
     # 컴포넌트 가져오기
     @handle_exception
     def get_component(self, path: tuple[str, ...]):
@@ -166,13 +159,20 @@ class BluController:
     # ---------------------------------------------------------------------------- #
     # 사용자 함수
     # ---------------------------------------------------------------------------- #
+    def check_val_convert_float(val):
+        # var_str = "".join(char for char in val if char.isdigit() or char == ".")
+        if any(char.isdigit() for char in val):
+            return float(val)
+        else:
+            return None
+
     def vol_up(self, path):
-        val = self.component_states.get_state(path)
+        val = self.check_val_convert_float(self.component_states.get_state(path))
         if val is not None and val <= self.MAX_VAL - self.UNIT_VAL:
             self._update_component_value(path, round(val + self.UNIT_VAL))
 
     def vol_down(self, path):
-        val = self.component_states.get_state(path)
+        val = self.check_val_convert_float(self.component_states.get_state(path))
         if val is not None and val >= self.MIN_VAL + self.UNIT_VAL:
             self._update_component_value(path, round(val - self.UNIT_VAL))
 
