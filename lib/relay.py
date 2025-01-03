@@ -7,8 +7,8 @@ from lib.lib_yeoul import handle_exception, pulse
 
 # ---------------------------------------------------------------------------- #
 class Relay:
-    def __init__(self, devchan_list: list[tuple] = [], tp_list: list = None, port: int = 0, pulse_time: float = 0.5):
-        self.devchan_list = devchan_list
+    def __init__(self, devchan_list: list[tuple] = None, tp_list: list = None, port: int = 0, pulse_time: float = 0.5):
+        self.devchan_list = devchan_list if devchan_list else []
         self.relay_state = [False] * len(devchan_list)
         self.tp_list = tp_list
         self.pulse_time = pulse_time

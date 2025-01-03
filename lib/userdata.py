@@ -30,26 +30,20 @@ class UserData:
 
     @handle_exception
     def init(self):
-        try:
-            if self.foldername:
-                try:
-                    if not os.path.exists(self.foldername):
-                        os.makedirs(self.foldername)
-                except Exception as e:
-                    print(f"init() Error creating folder: {e}")
-            if not os.path.exists(self.filepath):
-                print(f"init() :: File {self.filepath} not found, creating new file")
-                self.data = {}
-                self.save_file()
-            else:
-                print(f"init() :: File {self.filepath} Loading")
-                self.load_file()
-        except Exception as e:
-            print(f"init() Error :: {e}")
+        if self.foldername:
+            if not os.path.exists(self.foldername):
+                os.makedirs(self.foldername)
+        if not os.path.exists(self.filepath):
+            print(f"init() :: File {self.filepath} not found, creating new file")
+            self.data = {}
+            self.save_file()
+        else:
+            print(f"init() :: File {self.filepath} Loading")
+            self.load_file()
 
     @handle_exception
     def load_file(self):
-        with open(self.filepath, "r") as file:
+        with open(self.filepath, "r", encoding="utf-8") as file:
             self.data = json.load(file)
 
     @handle_exception

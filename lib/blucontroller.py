@@ -60,7 +60,6 @@ class BluComponentState:
 
     @handle_exception
     def update_state(self, key, val):
-        # TODO: 테스트
         self.set_state(key, val)  # 상태 업데이트
         self._event.notify(key)  # 상태 변경 알림
 
@@ -92,8 +91,9 @@ class BluController:
         unit_val=UNIT_VAL,
     ):
         self.device = device  # 장치 설정
-        self.component_states = BluComponentState() if component_states is None else component_states
-        # 컴포넌트 상태 설정
+        self.component_states = (
+            BluComponentState() if component_states is None else component_states
+        )  # 컴포넌트 상태 설정
         self.MIN_VAL = min_val  # 최소 값 설정
         self.MAX_VAL = max_val  # 최대 값 설정
         self.UNIT_VAL = unit_val  # 볼륨 조절 단위 값 설정
@@ -137,7 +137,8 @@ class BluController:
         self.component_states.subscribe(observer)
 
     # ---------------------------------------------------------------------------- #
-    # 컴포넌트 가져오기
+    # NOTE : 컴포넌트 가져오기
+    # ---------------------------------------------------------------------------- #
     @handle_exception
     def get_component(self, path: tuple[str, ...]):
         if not isinstance(path, tuple):
@@ -148,7 +149,8 @@ class BluController:
         return nested_component
 
     # ---------------------------------------------------------------------------- #
-    # 컴포넌트 값 업데이트
+    # NOTE : 컴포넌트 값 업데이트
+    # ---------------------------------------------------------------------------- #
     @handle_exception
     def _update_component_value(self, path: tuple[str, ...], new_value: Union[str, float]):
         if self.device.isOffline():
@@ -158,7 +160,7 @@ class BluController:
             component.value = new_value
 
     # ---------------------------------------------------------------------------- #
-    # 사용자 함수
+    # INFO : 사용자 함수
     # ---------------------------------------------------------------------------- #
     def check_val_convert_float(self, val):
         # var_str = "".join(char for char in val if char.isdigit() or char == ".")
