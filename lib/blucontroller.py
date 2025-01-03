@@ -86,13 +86,14 @@ class BluController:
     def __init__(
         self,
         device,
-        component_states=BluComponentState(),
+        component_states=None,
         min_val=MIN_VAL,
         max_val=MAX_VAL,
         unit_val=UNIT_VAL,
     ):
         self.device = device  # 장치 설정
-        self.component_states = component_states  # 컴포넌트 상태 설정
+        self.component_states = BluComponentState() if component_states is None else component_states
+        # 컴포넌트 상태 설정
         self.MIN_VAL = min_val  # 최소 값 설정
         self.MAX_VAL = max_val  # 최대 값 설정
         self.UNIT_VAL = unit_val  # 볼륨 조절 단위 값 설정
@@ -159,7 +160,7 @@ class BluController:
     # ---------------------------------------------------------------------------- #
     # 사용자 함수
     # ---------------------------------------------------------------------------- #
-    def check_val_convert_float(val):
+    def check_val_convert_float(self, val):
         # var_str = "".join(char for char in val if char.isdigit() or char == ".")
         if any(char.isdigit() for char in val):
             return float(val)
@@ -201,6 +202,3 @@ class BluController:
 
     def set_unmuted(self, path):
         self._update_component_value(path, "Unmuted")
-
-
-# ---------------------------------------------------------------------------- #
