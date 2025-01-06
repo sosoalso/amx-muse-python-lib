@@ -50,7 +50,7 @@ def tp_show_watcher(tp, index_port, index_btn, *args):
         return
     button = tp.port[index_port].button[index_btn]
     if button.pythonWatchers and isinstance(button.pythonWatchers, list):
-        print(f"name={tp.id} {index_port=} {index_btn=} num_of_watchers={len(button.pythonWatchers)}")
+        print(f"name={tp.id} {index_port=} {index_btn=} num_watcher={len(button.pythonWatchers)}")
 
 
 # ---------------------------------------------------------------------------- #
@@ -60,14 +60,14 @@ def tp_show_watcher(tp, index_port, index_btn, *args):
 def tp_get_button_pushed(tp, index_port, index_btn, *args):
     if tp_get_device_state(tp) is False:
         return False
-    return tp.port[index_port].button[index_btn].value == True
+    return tp.port[index_port].button[index_btn].value
 
 
 @handle_exception
 def tp_get_button_state(tp, index_port, index_btn, *args):
     if tp_get_device_state(tp) is False:
         return False
-    return tp.port[index_port].channel[index_btn].value == True
+    return tp.port[index_port].channel[index_btn].value
 
 
 @handle_exception
