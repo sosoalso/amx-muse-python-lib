@@ -1,7 +1,6 @@
 # ---------------------------------------------------------------------------- #
-import concurrent.futures
 import threading
-import time
+from concurrent.futures import ThreadPoolExecutor
 
 from lib.eventmanager import EventManager
 
@@ -27,7 +26,7 @@ class ButtonHandler(EventManager):
         # 반복 이벤트 간격
         self.repeat_interval = repeat_interval
         # 스레드 풀 초기화
-        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+        self._executor = ThreadPoolExecutor(max_workers=2)
         # 버튼이 눌렸는지 여부
         self.is_pushed = False
         # 버튼이 홀드 상태인지 여부
@@ -40,7 +39,7 @@ class ButtonHandler(EventManager):
         # 기존 스레드 풀 종료
         self._executor.shutdown(wait=False)
         # 새로운 스레드 풀 초기화
-        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+        self._executor = ThreadPoolExecutor(max_workers=2)
 
     @handle_exception
     def start_repeat(self):
