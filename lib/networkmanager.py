@@ -230,7 +230,8 @@ class UdpClient(EventManager):
         self._thread_receive = None
         self.lock = threading.Lock()
         self.receive = self.ReceiveHandler(self)
-        self.port_bind = self.port if port_bind is None else port_bind
+        self.port_bind = port_bind if port_bind is not None else 0
+        self.bound_port = None
 
     class ReceiveHandler:
         def __init__(self, client):
@@ -251,6 +252,8 @@ class UdpClient(EventManager):
                     self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                     # 수신을 위해 소켓에 로컬 포트를 바인딩합니다.
                     self.socket.bind(("", 0 if self.port_bind is None else self.port_bind))
+                    self.bound_port = self.socket.getsockname()[1]
+                    print("_connect() Bound to port:", self.bound_port)
                     if self.socket:
                         self.connected = True
                         self._run_thread_receive()
