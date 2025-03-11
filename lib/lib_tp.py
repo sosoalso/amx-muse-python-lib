@@ -152,3 +152,8 @@ def tp_show_popup(tp, popup_name, *args):
 @handle_exception
 def tp_hide_all_popup(tp, *args):
     tp_send_command(tp, 1, "^PPX")
+
+
+# ---------------------------------------------------------------------------- #
+if __name__ == "__main__":
+    pass

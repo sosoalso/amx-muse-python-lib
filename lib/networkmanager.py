@@ -194,24 +194,138 @@ class TcpClient(EventManager):
 
 
 # ---------------------------------------------------------------------------- #
-class UdpClient:
-    def __init__(self, name, ip, port):
+# class UdpClient:
+#     def __init__(self, name, ip, port):
+#         self.name = name
+#         self.ip = ip
+#         self.port = port
+#         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+#     def send(self, message):
+#         self.socket.sendto(bytes(message, "UTF-8"), (self.ip, self.port))
+
+#     def send_byte(self, message):
+#         self.socket.sendto(message, (self.ip, self.port))
+
+#     def close(self):
+#         self.socket.close()
+
+
+#     def open(self):
+#         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+class UdpClient(EventManager):
+
+    def __init__(self, name, ip, port, reconnect=True, time_reconnect=5, buffer_size=BUFFER_SIZE, port_bind=None):
+        super().__init__("connected", "received")
         self.name = name
         self.ip = ip
         self.port = port
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.reconnect = reconnect
+        self.time_reconnect = time_reconnect
+        self.BUFFER_SIZE = buffer_size
+        self.connected = False
+        self.socket = None
+        self.receive_callback = None
+        self._thread_connect = None
+        self._thread_receive = None
+        self.lock = threading.Lock()
+        self.receive = self.ReceiveHandler(self)
+        self.port_bind = self.port if port_bind is None else port_bind
 
-    def send(self, message):
-        self.socket.sendto(bytes(message, "UTF-8"), (self.ip, self.port))
+    class ReceiveHandler:
+        def __init__(self, client):
+            self.client = client
+
+        def listen(self, listener):
+            self.client.add_event_handler("received", listener)
+
+    def connect(self):
+        if not self.connected:
+            self._thread_connect = threading.Thread(target=self._connect, daemon=True)
+            self._thread_connect.start()
+
+    def _connect(self):
+        while not self.connected:
+            try:
+                with self.lock:
+                    self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    # 수신을 위해 소켓에 로컬 포트를 바인딩합니다.
+                    self.socket.bind(("", 0 if self.port_bind is None else self.port_bind))
+                    if self.socket:
+                        self.connected = True
+                        self._run_thread_receive()
+            except ConnectionRefusedError:
+                print("_connect() Connection refused")
+                threading.Event().wait(self.time_reconnect)
+                if not self.reconnect:
+                    break
+            except TimeoutError:
+                print("_connect() Connection timed out")
+                threading.Event().wait(self.time_reconnect)
+                if not self.reconnect:
+                    break
+            except Exception:
+                print("_connect() error")
+                threading.Event().wait(self.time_reconnect)
+                if not self.reconnect:
+                    break
+
+    def _handle_reconnect(self):
+        if self.reconnect:
+            self.connect()
+
+    def _run_thread_receive(self):
+        self._thread_receive = threading.Thread(target=self._receive, daemon=True)
+        self._thread_receive.start()
+
+    def _receive(self):
+        self.trigger_event("connected")
+        while self.connected:
+            try:
+                msg, addr = self.socket.recvfrom(self.BUFFER_SIZE)
+                if msg:
+                    print("msg: ", msg)
+                    event = SimpleNamespace()
+                    event.source = self
+                    event.arguments = {"data": msg, "address": addr}
+                    self.trigger_event("received", event)
+            except Exception:
+                with self.lock:
+                    self.connected = False
+                print("_receive() error")
+                if self.reconnect:
+                    self.connect()
+                break
 
     def send_byte(self, message):
-        self.socket.sendto(message, (self.ip, self.port))
+        if self.socket and self.connected:
+            try:
+                self.socket.sendto(message, (self.ip, self.port))
+            except Exception:
+                with self.lock:
+                    self.connected = False
+                self._handle_reconnect()
 
-    def close(self):
-        self.socket.close()
+    def send(self, message):
+        if self.socket and self.connected:
+            try:
+                self.socket.sendto(bytes(message, "UTF-8"), (self.ip, self.port))
+            except Exception:
+                with self.lock:
+                    self.connected = False
+                self._handle_reconnect()
 
-    def open(self):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    def disconnect(self):
+        if self.socket and self.connected:
+            try:
+                self.socket.close()
+            finally:
+                with self.lock:
+                    self.socket = None
+                    self.connected = False
+
+    def is_connected(self):
+        return self.connected
 
 
 # ---------------------------------------------------------------------------- #
@@ -223,6 +337,7 @@ class UdpServer(EventManager):
         self.BUFFER_SIZE = buffer_size
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(("", self.port))
+        print("UDP server bound to port:", self.socket.getsockname()[1])
         self._server_thread = None
         self.running = False
         self.receive = self.ReceiveHandler(self)
@@ -257,3 +372,5 @@ class UdpServer(EventManager):
 
 
 # ---------------------------------------------------------------------------- #
+if __name__ == "__main__":
+    pass

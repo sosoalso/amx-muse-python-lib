@@ -204,3 +204,7 @@ class BluController:
 
     def set_unmuted(self, path):
         self._update_component_value(path, "Unmuted")
+
+
+if __name__ == "__main__":
+    pass

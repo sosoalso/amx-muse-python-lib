@@ -22,14 +22,14 @@ class Scheduler:
         self.name = name
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.scheduled_tasks = []
+        self.task_executor = concurrent.futures.ThreadPoolExecutor()
 
     @handle_exception
     def set_interval(self, func, interval):
         def wrapper():
             while True:
-                # time.sleep(interval)
                 threading.Event().wait(interval)
-                func()
+                self.task_executor.submit(func)
 
         future = self.executor.submit(wrapper)
         self.scheduled_tasks.append(future)
@@ -38,8 +38,7 @@ class Scheduler:
     def set_timeout(self, func, delay):
         def wrapper():
             threading.Event().wait(delay)
-            # time.sleep(delay)
-            func()
+            self.task_executor.submit(func)
 
         future = self.executor.submit(wrapper)
         self.scheduled_tasks.append(future)
@@ -49,6 +48,34 @@ class Scheduler:
         for task in self.scheduled_tasks:
             task.cancel()
         self.executor.shutdown()
+        self.task_executor.shutdown()
+
+    # @handle_exception
+    # def set_interval(self, func, interval):
+    #     def wrapper():
+    #         while True:
+    #             # time.sleep(interval)
+    #             threading.Event().wait(interval)
+    #             func()
+
+    #     future = self.executor.submit(wrapper)
+    #     self.scheduled_tasks.append(future)
+
+    # @handle_exception
+    # def set_timeout(self, func, delay):
+    #     def wrapper():
+    #         threading.Event().wait(delay)
+    #         # time.sleep(delay)
+    #         func()
+
+    #     future = self.executor.submit(wrapper)
+    #     self.scheduled_tasks.append(future)
+
+    # @handle_exception
+    # def shutdown(self):
+    #     for task in self.scheduled_tasks:
+    #         task.cancel()
+    #     self.executor.shutdown()
 
 
 # ---------------------------------------------------------------------------- #
@@ -71,3 +98,7 @@ class Scheduler:
 # # 10초 후에 스케줄러 종료
 # time.sleep(10)
 # scheduler.shutdown()
+
+# ---------------------------------------------------------------------------- #
+if __name__ == "__main__":
+    pass

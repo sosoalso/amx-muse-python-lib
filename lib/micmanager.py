@@ -1,4 +1,4 @@
-# ---------------------------------------------------------------------------- #
+\\\\\\\\\\\\\\\# ---------------------------------------------------------------------------- #
 from lib.eventmanager import EventManager
 
 
@@ -27,8 +27,7 @@ class MicManager(EventManager):
     def index_to_idx(self, mic_index):
         if 0 < mic_index <= self.max_mic_index:
             return mic_index - 1
-        else:
-            return None
+        return None
 
     @handle_exception
     def get_last_mic_enabled(self) -> bool:
@@ -39,20 +38,81 @@ class MicManager(EventManager):
         self.last_mic_enabled = is_enabled
         return self.get_last_mic_enabled()
 
-    @handle_exception
-    @handle_exception
+    # ---------------------------------------------------------------------------- #
+    def turn_mic_on(self, mic_index):
+
+
+
+
+
+
+
+
+
+
+
+
+\
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        \\\\\\\\\\
+        self.handle_mic_on(mic_index)
+
+    def turn_mic_off(self, mic_index):
+        self.handle_mic_off(mic_index)
+
     def turn_all_mic_off(self):
-        for idx in range(self.max_mic_index):
-            self.turn_mic_off(idx)
+        self.handle_all_mic_off()
+
+    def turn_last_mic_on(self):
+        self.handle_list_mic_on()
+
+    # ---------------------------------------------------------------------------- #
 
     @handle_exception
-    def turn_last_mic_on(self):
+    def handle_all_mic_off(self):
+        for idx in range(self.max_mic_index):
+            self.handle_mic_off(idx)
+
+    @handle_exception
+    def handle_last_mic_on(self):
         if self.last_on_mics:
             last_mic = self.last_on_mics[-1]
-            self.turn_mic_on(last_mic)
+            self.handle_mic_on(last_mic)
 
     @handle_exception
-    def turn_mic_on(self, mic_index):
+    def handle_mic_on(self, mic_index):
         mic_idx = self.index_to_idx(mic_index)
         if mic_idx is not None:
             self.mics_on[mic_idx] = True
@@ -63,7 +123,7 @@ class MicManager(EventManager):
             self.trigger_event("on", mic_index)
 
     @handle_exception
-    def turn_mic_off(self, mic_index):
+    def handle_mic_off(self, mic_index):
         mic_idx = self.index_to_idx(mic_index)
         if mic_idx is not None:
             self.mics_on[mic_idx] = False
@@ -92,5 +152,43 @@ class MicManager(EventManager):
 
 
 # ---------------------------------------------------------------------------- #
-# ---------------------------------------------------------------------------- #
-# ---------------------------------------------------------------------------- #
+if __name__ == "__main__":
+    pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\
