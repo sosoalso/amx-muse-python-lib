@@ -1,88 +1,83 @@
 # ---------------------------------------------------------------------------- #
 import socket
 import threading
-import time
+from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 
 from lib.eventmanager import EventManager
 
 # ---------------------------------------------------------------------------- #
 BUFFER_SIZE = 1024
+
+
 # ---------------------------------------------------------------------------- #
+class TcpServer(EventManager):
+    def __init__(self, port, buffer_size=BUFFER_SIZE):
+        super().__init__("received")
+        self.port = port
+        self.clients = []
+        self.buffer_size = buffer_size
+        self.sock = None
+        self.lock = threading.Lock()
+        # ---------------------------------------------------------------------------- #
+        self.receive = self.ReceiveHandler(self)
 
-# # ---------------------------------------------------------------------------- #
-# class TCPServer(EventManager):
-#     def __init__(self, port, buffer_size=BUFFER_SIZE, connections=10):
-#         super().__init__("received")
-#         self.config = {"port": port, "buffer_size": buffer_size, "connections": connections}
-#         self.port = port
-#         self.connections = connections
-#         self.clients = []
-#         self.server = None
-#         self._executor = ThreadPoolExecutor(max_workers=connections + 2)
-#         self.lock = threading.Lock()
-#         self.running = False
-#         self.receive = self.ReceiveHandler(self)
+    def connect(self, handler):
+        self.add_event_handler("connected", handler)
 
-#     class ReceiveHandler:
-#         def __init__(self, client):
-#             self.client = client
+    def disconnect(self, handler):
+        self.add_event_handler("disconnected", handler)
 
-#         def listen(self, listener):
-#             self.client.add_event_handler("received", listener)
+    class ReceiveHandler:
+        def __init__(self, this):
+            self.this = this
 
-#     def get_client(self, client, addr):
-#         while self.running:
-#             data = client.recv(1024)
-#             if data:
-#                 event = SimpleNamespace()
-#                 event.arguments = {"data": data, "address": addr}
-#                 self.trigger_event("received", event)
-#             else:
-#                 client.close()
-#                 self.clients.remove(client)
-#                 print(f"Connection closed from {addr}")
+        def listen(self, listener):
+            self.this.add_event_handler("received", listener)
 
-#     def send_clients(self, data):
-#         if not self.clients:
-#             print("No clients connected")
-#             return
-#         for client in self.clients:
-#             client.sendall(data)
+        # ---------------------------------------------------------------------------- #
 
-#     def send_client(self, client, data):
-#         if client in self.clients:
-#             client.sendall(data)
+    def start(self):
+        self.listen()
 
-#     def start_server_thread(self):
-#         self.running = True
-#         self._executor.submit(self._start_server)
+    def listen(self):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sock.bind(("", self.port))
+        self.sock.listen()
+        while True:
+            client, address = self.sock.accept()
+            self.clients.append(client)
+            self.trigger_event("connected", client, address)
+            threading.Thread(target=self.listen_to_client, args=(client, address)).start()
 
-#     def _start_server(self):
-#         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#         self.server.bind((socket.gethostname(), self.port))
-#         self.server.listen(self.connections)  # max connections
-#         # print(f"TCP Server Listening on {self.host}:{self.port}")
-#         while self.running:
-#             try:
-#                 (client_sock, client_addr) = self.server.accept()
-#                 if client_sock:
-#                     self.clients.append(client_sock)
-#                     self._executor.submit(self.get_client, args=(client_sock, client_addr))
-#             except (socket.error, socket.timeout):
-#                 if not self.running:
-#                     break
+    def listen_to_client(self, client, address):
+        while True:
+            try:
+                data = client.recv(self.buffer_size)
+                if data:
+                    event = SimpleNamespace()
+                    event.source = self
+                    event.arguments = {"data": data}
+                    self.trigger_event("received", event)
+                else:
+                    raise ValueError("CLIENT Disconnected")
+            except Exception as e:
+                client.close()
+                with self.lock:
+                    if client in self.clients:
+                        self.clients.remove(client)
+                print(f"Error with client {address}: {e}")
+                break
+        self.trigger_event("disconnected")
 
-#     def stop_server(self):
-#         self.running = False
-#         self.server.close()
-#         self._executor.shutdown(wait=True)
-#         # print(f"TCP Server Disconnected from {self.host}:{self.port}")
+    def send_all(self, data):
+        for client in self.clients:
+            client.send(data)
 
 
 # ---------------------------------------------------------------------------- #
 class TcpClient(EventManager):
-
     def __init__(self, name, ip, port, reconnect=True, time_reconnect=5, buffer_size=BUFFER_SIZE):
         super().__init__("connected", "received")
         self.name = name
@@ -97,15 +92,19 @@ class TcpClient(EventManager):
         self._thread_connect = None
         self._thread_receive = None
         self.lock = threading.Lock()
+        # ---------------------------------------------------------------------------- #
         self.receive = self.ReceiveHandler(self)
+        # ---------------------------------------------------------------------------- #
 
+    # ---------------------------------------------------------------------------- #
     class ReceiveHandler:
-        def __init__(self, client):
-            self.client = client
+        def __init__(self, this):
+            self.this = this
 
         def listen(self, listener):
-            self.client.add_event_handler("received", listener)
+            self.this.add_event_handler("received", listener)
 
+    # ---------------------------------------------------------------------------- #
     def connect(self):
         if not self.connected:
             self._thread_connect = threading.Thread(target=self._connect, daemon=True)
@@ -200,21 +199,15 @@ class TcpClient(EventManager):
 #         self.ip = ip
 #         self.port = port
 #         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
 #     def send(self, message):
 #         self.socket.sendto(bytes(message, "UTF-8"), (self.ip, self.port))
-
 #     def send_byte(self, message):
 #         self.socket.sendto(message, (self.ip, self.port))
-
 #     def close(self):
 #         self.socket.close()
-
-
 #     def open(self):
 #         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 class UdpClient(EventManager):
-
     def __init__(self, name, ip, port, reconnect=True, time_reconnect=5, buffer_size=BUFFER_SIZE, port_bind=None):
         super().__init__("connected", "received")
         self.name = name
@@ -234,11 +227,11 @@ class UdpClient(EventManager):
         self.bound_port = None
 
     class ReceiveHandler:
-        def __init__(self, client):
-            self.client = client
+        def __init__(self, this):
+            self.this = this
 
         def listen(self, listener):
-            self.client.add_event_handler("received", listener)
+            self.this.add_event_handler("received", listener)
 
     def connect(self):
         if not self.connected:
@@ -333,7 +326,6 @@ class UdpClient(EventManager):
 
 # ---------------------------------------------------------------------------- #
 class UdpServer(EventManager):
-
     def __init__(self, port, buffer_size=BUFFER_SIZE):
         super().__init__("received")
         self.port = port
@@ -346,22 +338,23 @@ class UdpServer(EventManager):
         self.receive = self.ReceiveHandler(self)
 
     class ReceiveHandler:
-        def __init__(self, server):
-            self.server = server
+        def __init__(self, this):
+            self.this = this
 
         def listen(self, listener):
-            self.server.add_event_handler("received", listener)
+            self.this.add_event_handler("received", listener)
 
-    def start_server_thread(self):
-        self._server_thread = threading.Thread(target=self._start_server, daemon=True)
+    def start(self):
+        self._server_thread = threading.Thread(target=self._start, daemon=True)
         self._server_thread.start()
 
-    def _start_server(self):
+    def _start(self):
         self.running = True
         while self.running:
             try:
                 data, addr = self.socket.recvfrom(self.BUFFER_SIZE)
                 if data:
+                    print(data)
                     event = SimpleNamespace()
                     event.arguments = {"data": data, "address": addr}
                     self.trigger_event("received", event)
