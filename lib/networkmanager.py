@@ -42,16 +42,16 @@ class TcpServer(EventManager):
 
     def listen(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind(("", self.port))
         self.sock.listen()
         while True:
             client, address = self.sock.accept()
             self.clients.append(client)
             self.trigger_event("connected", client, address)
-            threading.Thread(target=self.listen_to_client, args=(client, address)).start()
+            threading.Thread(target=self.handle_client, args=(client, address)).start()
 
-    def listen_to_client(self, client, address):
+    def handle_client(self, client, address):
         while True:
             try:
                 data = client.recv(self.buffer_size)
@@ -62,7 +62,7 @@ class TcpServer(EventManager):
                     self.trigger_event("received", event)
                 else:
                     raise ValueError("CLIENT Disconnected")
-            except Exception as e:
+            except (socket.error, ValueError) as e:
                 client.close()
                 with self.lock:
                     if client in self.clients:
