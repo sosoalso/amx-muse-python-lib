@@ -62,6 +62,37 @@ class UserData:
         return self.data.get(key)
 
 
+# 간소화 버전
+class Var:
+    @classmethod
+    def as_dict(cls):
+        return {
+            attr: getattr(cls, attr)
+            for attr in dir(cls)
+            if not attr.startswith("_") and not callable(getattr(cls, attr))
+        }
+
+    @classmethod
+    def save_to_json(cls, filepath):
+        with open(filepath, "w", encoding="UTF-8") as f:
+            json.dump(cls.as_dict(), f, ensure_ascii=False, indent=4)
+
+    @classmethod
+    def from_dict(cls, data):
+        # 저장된 키가 클래스에 존재하면 속성값을 재할당
+        for key, value in data.items():
+            if hasattr(cls, key):
+                setattr(cls, key, value)
+            else:
+                print(f"Key '{key}' not found in class '{cls.__name__}'")
+
+    @classmethod
+    def load_from_json(cls, filepath):
+        with open(filepath, "r", encoding="UTF-8") as f:
+            data = json.load(f)
+        cls.from_dict(data)
+
+
 # ---------------------------------------------------------------------------- #
 if __name__ == "__main__":
     pass

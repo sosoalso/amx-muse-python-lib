@@ -163,23 +163,34 @@ class BluController:
     # INFO : 사용자 함수
     # ---------------------------------------------------------------------------- #
     def check_val_convert_float(self, val):
-        # var_str = "".join(char for char in val if char.isdigit() or char == ".")
-        if any(char.isdigit() for char in val):
+        if isinstance(val, (int, float)):
             return float(val)
+        elif isinstance(val, str):
+            # 숫자가 포함되어 있는 경우 처리
+            if any(char.isdigit() for char in val):
+                try:
+                    return float(val)
+                except ValueError:
+                    return None
+            else:
+                return None
         else:
             return None
 
     def vol_up(self, path):
         val = self.check_val_convert_float(self.component_states.get_state(path))
+        print(f"{val=}")
         if val is not None and val <= self.MAX_VAL - self.UNIT_VAL:
             self._update_component_value(path, round(val + self.UNIT_VAL))
 
     def vol_down(self, path):
         val = self.check_val_convert_float(self.component_states.get_state(path))
+        print(f"{val=}")
         if val is not None and val >= self.MIN_VAL + self.UNIT_VAL:
             self._update_component_value(path, round(val - self.UNIT_VAL))
 
     def set_vol(self, path, val: float):
+        print(f"{val=}")
         if val is not None and self.MIN_VAL <= val <= self.MAX_VAL:
             self._update_component_value(path, round(val))
 

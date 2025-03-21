@@ -1,13 +1,39 @@
 # ---------------------------------------------------------------------------- #
+import asyncio
 import socket
 import threading
-from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 
 from lib.eventmanager import EventManager
 
 # ---------------------------------------------------------------------------- #
 BUFFER_SIZE = 1024
+
+
+# ---------------------------------------------------------------------------- #
+async def async_send_tcp_message_once(ip: str, port: int, message, timeout: float = 5):
+    data = None
+    try:
+        reader, writer = await asyncio.wait_for(asyncio.open_connection(ip, port), timeout)
+        print(f"send_tcp_message_once send: {ip}:{port} {message=}")
+        writer.write(message.encode())
+        data = await asyncio.wait_for(reader.read(100), timeout)
+    except asyncio.TimeoutError:
+        print(f"async_send_tcp_message_once {ip}:{port} Error: The connection attempt timed out.")
+    except ConnectionRefusedError:
+        print(f"async_send_tcp_message_once {ip}:{port} Error: Connection was refused.")
+    except Exception as e:
+        print(f"async_send_tcp_message_once {ip}:{port} An unexpected error occurred: {e}")
+    finally:
+        if "writer" in locals() and not writer.is_closing():
+            print(f"async_send_tcp_message_once {ip}:{port} Close the connection")
+            writer.close()
+            await writer.wait_closed()
+    return data
+
+
+def send_tcp_message_once(ip: str, port: int, message, timeout: float = 5):
+    return asyncio.run(async_send_tcp_message_once(ip, port, message, timeout))
 
 
 # ---------------------------------------------------------------------------- #
@@ -19,6 +45,7 @@ class TcpServer(EventManager):
         self.buffer_size = buffer_size
         self.sock = None
         self.lock = threading.Lock()
+        self.echo = False
         # ---------------------------------------------------------------------------- #
         self.receive = self.ReceiveHandler(self)
 
@@ -60,6 +87,8 @@ class TcpServer(EventManager):
                     event.source = self
                     event.arguments = {"data": data}
                     self.trigger_event("received", event)
+                    if self.echo:
+                        self.send_all(data)
                 else:
                     raise ValueError("CLIENT Disconnected")
             except (socket.error, ValueError) as e:
