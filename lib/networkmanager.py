@@ -117,7 +117,7 @@ class TcpClient(EventManager):
         self.BUFFER_SIZE = buffer_size
         self.connected = False
         self.socket = None
-        self.receive_callback = None
+        # self.receive_callback = None
         self._thread_connect = None
         self._thread_receive = None
         self.lock = threading.Lock()
@@ -182,6 +182,13 @@ class TcpClient(EventManager):
                     event.source = self
                     event.arguments = {"data": msg}
                     self.trigger_event("received", event)
+                else:
+                    with self.lock:
+                        self.connected = False
+                        print("_receive() none")
+                        if self.reconnect:
+                            self.connect()
+                    break
             except Exception:
                 with self.lock:
                     self.connected = False
@@ -247,7 +254,7 @@ class UdpClient(EventManager):
         self.BUFFER_SIZE = buffer_size
         self.connected = False
         self.socket = None
-        self.receive_callback = None
+        # self.receive_callback = None
         self._thread_connect = None
         self._thread_receive = None
         self.lock = threading.Lock()
@@ -272,7 +279,7 @@ class UdpClient(EventManager):
             try:
                 with self.lock:
                     self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    # 수신을 위해 소켓에 로컬 포트를 바인딩합니다.
+                    # 수신을 위해 소켓에 로컬 포트를 바인딩
                     self.socket.bind(("", 0 if self.port_bind is None else self.port_bind))
                     self.bound_port = self.socket.getsockname()[1]
                     print("_connect() Bound to port:", self.bound_port)
