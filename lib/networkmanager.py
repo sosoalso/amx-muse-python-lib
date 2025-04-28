@@ -3,6 +3,7 @@ import asyncio
 import socket
 import threading
 from types import SimpleNamespace
+
 from lib.eventmanager import EventManager
 
 # ---------------------------------------------------------------------------- #
@@ -47,8 +48,6 @@ class TcpServer(EventManager):
         self.lock = threading.Lock()
         self.echo = False
         self.receive = self.ReceiveHandler(self)
-        self.start()
-        # ---------------------------------------------------------------------------- #
 
     # ---------------------------------------------------------------------------- #
     def log(self, msg):
@@ -125,7 +124,6 @@ class TcpClient(EventManager):
         self.lock = threading.Lock()
         # ---------------------------------------------------------------------------- #
         self.receive = self.ReceiveHandler(self)
-        self.connect()
 
     # ---------------------------------------------------------------------------- #
     def log(self, msg):
@@ -250,8 +248,6 @@ class UdpClient(EventManager):
         self.receive = self.ReceiveHandler(self)
         self.port_bind = port_bind if port_bind is not None else 0
         self.bound_port = None
-        # ---------------------------------------------------------------------------- #
-        self.connect()
 
     # ---------------------------------------------------------------------------- #
     def log(self, msg):
@@ -359,8 +355,6 @@ class UdpServer(EventManager):
         self.running = False
         self.receive = self.ReceiveHandler(self)
         # ---------------------------------------------------------------------------- #
-        self.start()
-        self.log(f"UDP server bound to port: {self.socket.getsockname()[1]}")
 
     def log(self, msg):
         if self.debug:
@@ -378,6 +372,7 @@ class UdpServer(EventManager):
     def start(self):
         self._server_thread = threading.Thread(target=self._start, daemon=True)
         self._server_thread.start()
+        self.log(f"UDP server bound to port: {self.socket.getsockname()[1]}")
 
     def _start(self):
         self.running = True
