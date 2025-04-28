@@ -6,3 +6,5 @@
 *.json
 .vscode
 .venv
+test_2/index.py
+test_2/requirements.txt

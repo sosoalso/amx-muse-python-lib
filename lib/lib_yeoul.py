@@ -2,7 +2,6 @@
 import functools
 import inspect
 import threading
-import time
 from functools import wraps
 
 # ---------------------------------------------------------------------------- #
@@ -66,15 +65,15 @@ def debounce(timeout_ms: float):
 
 # ---------------------------------------------------------------------------- #
 def uni_log_info(msg):
-    print(("info " + msg).encode("utf-16").decode("utf-16"))
+    context.log.info(msg.encode("utf-16").decode("utf-16"))
 
 
 def uni_log_warn(msg):
-    print(("warn " + msg).encode("utf-16").decode("utf-16"))
+    context.log.warn(msg.encode("utf-16").decode("utf-16"))
 
 
 def uni_log_error(msg):
-    print(("error " + msg).encode("utf-16").decode("utf-16"))
+    context.log.error(msg.encode("utf-16").decode("utf-16"))
 
 
 @handle_exception

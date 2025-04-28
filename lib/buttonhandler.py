@@ -2,6 +2,7 @@
 import threading
 from concurrent.futures import ThreadPoolExecutor
 
+# ---------------------------------------------------------------------------- #
 from lib.eventmanager import EventManager
 
 
@@ -21,25 +22,17 @@ def handle_exception(func):
 class ButtonHandler(EventManager):
     def __init__(self, hold_time=2.0, repeat_interval=0.5, trigger_release_on_hold=False):
         super().__init__("push", "release", "hold", "repeat")
-        # 버튼을 누르고 있는 시간
-        self.hold_time = hold_time
-        # 반복 이벤트 간격
-        self.repeat_interval = repeat_interval
-        # 스레드 풀 초기화
-        self._executor = ThreadPoolExecutor(max_workers=2)
-        # 버튼이 눌렸는지 여부
-        self.is_pushed = False
-        # 버튼이 홀드 상태인지 여부
-        self.is_hold = False
-        # 홀드 상태에서 릴리즈 트리거 여부
-        self.trigger_release_on_hold = trigger_release_on_hold
+        self.hold_time = hold_time  # 버튼을 누르고 있는 시간
+        self.repeat_interval = repeat_interval  # 반복 이벤트 간격
+        self._executor = ThreadPoolExecutor(max_workers=2)  # 스레드 풀 초기화
+        self.is_pushed = False  # 버튼이 눌렸는지 여부
+        self.is_hold = False  # 버튼이 홀드 상태인지 여부
+        self.trigger_release_on_hold = trigger_release_on_hold  # 홀드 상태에서 릴리즈 트리거 여부
 
     @handle_exception
     def init_executor(self):
-        # 기존 스레드 풀 종료
-        self._executor.shutdown(wait=False)
-        # 새로운 스레드 풀 초기화
-        self._executor = ThreadPoolExecutor(max_workers=2)
+        self._executor.shutdown(wait=False)  # 기존 스레드 풀 종료
+        self._executor = ThreadPoolExecutor(max_workers=2)  # 새로운 스레드 풀 초기화
 
     @handle_exception
     def start_repeat(self):

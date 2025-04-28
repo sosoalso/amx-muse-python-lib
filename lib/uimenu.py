@@ -26,6 +26,16 @@ class UIMenu:
     def __init__(self, tp):
         self.tp = tp
         self.selected_menu = 0
+        self.init()
+
+    @handle_exception
+    def init(self, *args):
+        for i in range(1, 10):
+            menu_btn = ButtonHandler()
+            menu_btn.add_event_handler("push", lambda idx=int(i): self.select_menu(int(idx)))
+            tp_add_watcher(self.tp, 1, i + 10, menu_btn.handle_event)
+        tp_add_watcher(self.tp, 1, 100, self.close_menu)
+        tp_set_button_in_range(self.tp, 1, 11, 10, False)
 
     @handle_exception
     def set_page(self, pagename, *args):
@@ -47,13 +57,13 @@ class UIMenu:
 
     @handle_exception
     def select_menu(self, index_menu, *args):
-        """_summary_
-
+        """
+        select_menu()
         Args:
             index_menu (int): 1~100 까지 메뉴 번호, 001 ~ 100 까지 팝업 열기
         """
         self.selected_menu = int(index_menu)
-        self.show_popup("{0:0>3d}".format(index_menu))
+        self.show_popup(f"{self.selected_menu:0>3d}")
         self.ui_refresh_menu_buttons()
 
     @handle_exception
@@ -65,15 +75,6 @@ class UIMenu:
     @handle_exception
     def show_notification(self, adr, txt, *args):
         self.tp.port[1].send_command(f"'^UNI-', {adr}, ',0,', {txt}")
-
-    @handle_exception
-    def ui_register(self, *args):
-        for idx in range(1, 10):
-            menu_btn = ButtonHandler()
-            menu_btn.add_event_handler("push", lambda idx=int(idx): self.select_menu(int(idx)))
-            tp_add_watcher(self.tp, 1, idx + 10, menu_btn.handle_event)
-        tp_add_watcher(self.tp, 1, 100, self.close_menu)
-        tp_set_button_in_range(self.tp, 1, 11, 10, False)
 
 
 # ---------------------------------------------------------------------------- #

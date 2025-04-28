@@ -56,7 +56,7 @@ class SimpleConfigManager:
             else:
                 return self.config.get(section, option, fallback=fallback_value)
         except ValueError as e:
-            print(ValueError, "Invalid value type")
+            print(ValueError, f"Invalid value type error={e}")
 
     def get_default_option(self, option, option_type, fallback_value=None):
         return self.get_option(configparser.DEFAULTSECT, option, option_type, fallback_value)

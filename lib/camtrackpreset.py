@@ -46,7 +46,7 @@ class CamtrackPreset:
     @handle_exception
     def load_file(self):
         # 파일에서 프리셋 데이터 로드
-        with open(self.filename, "r") as file:
+        with open(self.filename, "r", encoding="utf-8") as file:
             self.presets = json.load(file)
 
     @handle_exception
