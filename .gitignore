@@ -3,8 +3,8 @@
 /__pycache__/
 /garbage
 /test
+/test_2
 *.json
 .vscode
 .venv
-test_2/index.py
-test_2/requirements.txt
+.site_packages
