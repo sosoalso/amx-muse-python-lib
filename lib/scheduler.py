@@ -1,14 +1,16 @@
 import concurrent.futures
 import threading
+import time
 
 from lib.lib_yeoul import uni_log_debug
 
 
 # ---------------------------------------------------------------------------- #
 class Scheduler:
-    def __init__(self, name=None):
+    def __init__(self, max_workers=1, name="Scheduler"):
         self.name = name
-        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        self.max_workers = max_workers
+        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers)
         self.scheduled_tasks = []
         self.task_executor = concurrent.futures.ThreadPoolExecutor()
 
@@ -17,25 +19,34 @@ class Scheduler:
 
             def wrapper():
                 while True:
-                    threading.Event().wait(interval)
+                    time.sleep(interval)
                     self.task_executor.submit(func)
 
             future = self.executor.submit(wrapper)
             self.scheduled_tasks.append(future)
         except Exception as e:
-            uni_log_debug(f"set_interval 에러: {e}")
+            uni_log_debug(f"{self.name} set_interval 에러: {e}")
+        finally:
+            self.clean()
 
     def set_timeout(self, func, delay):
         try:
 
             def wrapper():
-                threading.Event().wait(delay)
+                time.sleep(delay)
                 self.task_executor.submit(func)
 
             future = self.executor.submit(wrapper)
             self.scheduled_tasks.append(future)
         except Exception as e:
-            uni_log_debug(f"set_timeout 에러: {e}")
+            uni_log_debug(f"{self.name} set_timeout 에러: {e}")
+        finally:
+            self.clean()
+
+    def clean(self):
+        for future in self.scheduled_tasks:
+            if future.done():
+                self.scheduled_tasks.remove(future)
 
     def shutdown(self):
         try:
@@ -44,7 +55,7 @@ class Scheduler:
             self.executor.shutdown()
             self.task_executor.shutdown()
         except Exception as e:
-            uni_log_debug(f"shutdown 에러: {e}")
+            uni_log_debug(f"{self.name} shutdown 에러: {e}")
 
 
 # ---------------------------------------------------------------------------- #

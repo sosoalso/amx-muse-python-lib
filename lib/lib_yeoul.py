@@ -15,15 +15,6 @@ def get_timeline():
 
 
 # ---------------------------------------------------------------------------- #
-ENABLE_DEBUG = False
-
-
-def enable_debug(value: bool):
-    global ENABLE_DEBUG
-    ENABLE_DEBUG = value
-
-
-# ---------------------------------------------------------------------------- #
 def handle_exception(func):
     def wrapper(*args, **kwargs):
         try:
@@ -100,8 +91,6 @@ def uni_log_debug(msg):
 
 @handle_exception
 def debug(max_depth=7):
-    if not ENABLE_DEBUG:
-        return
     log_message = ""
     current_frame = inspect.currentframe()
     depth = 0
@@ -109,14 +98,14 @@ def debug(max_depth=7):
         if depth > 1:
             func_name = current_frame.f_code.co_name if current_frame else "Unknown"
             args, _, _, values = inspect.getargvalues(current_frame)
-            args_str = ", ".join(f"{arg}={values[arg]}" for arg in args)
+            args_str = "*args: " + ", ".join(f"{arg}={values[arg]}" for arg in args) if args else ""
             kwargs_str = ", ".join(f"{key}={value}" for key, value in values.get("kwargs", {}).items())
             if kwargs_str:
-                args_str += f", **{kwargs_str}"
-            log_message += f" $ c{depth}f: {func_name}({args_str})"
+                args_str += f" **kwargs: {kwargs_str}"
+            log_message += f"  c{depth}f$ {func_name}({args_str})"
         current_frame = current_frame.f_back
         depth += 1
-    log_message = log_message.removeprefix(" $ ")
+    # log_message = log_message.removeprefix(" $ ")
     uni_log_debug(log_message)  # Uncommented to log the debug message
 
 

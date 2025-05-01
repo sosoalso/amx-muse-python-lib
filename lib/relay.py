@@ -2,7 +2,7 @@ from functools import partial
 
 from lib.buttonhandler import ButtonHandler
 from lib.lib_tp import tp_add_watcher, tp_set_button
-from lib.lib_yeoul import pulse, uni_log_debug
+from lib.lib_yeoul import pulse, uni_log_debug, uni_log_error
 
 
 # ---------------------------------------------------------------------------- #
@@ -11,7 +11,7 @@ def handle_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            uni_log_debug(f"Relay 에러: {e}")
+            uni_log_error(f"Relay 에러: {e}")
             return None
 
     return wrapper
