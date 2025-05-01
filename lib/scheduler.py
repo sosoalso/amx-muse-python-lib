@@ -1,8 +1,7 @@
-# ---------------------------------------------------------------------------- #
 import concurrent.futures
 import threading
 
-from mojo import context
+from lib.lib_yeoul import uni_log_debug
 
 
 # ---------------------------------------------------------------------------- #
@@ -24,7 +23,7 @@ class Scheduler:
             future = self.executor.submit(wrapper)
             self.scheduled_tasks.append(future)
         except Exception as e:
-            context.log.debug(f"Error in set_interval: {e}")
+            uni_log_debug(f"set_interval 에러: {e}")
 
     def set_timeout(self, func, delay):
         try:
@@ -36,7 +35,7 @@ class Scheduler:
             future = self.executor.submit(wrapper)
             self.scheduled_tasks.append(future)
         except Exception as e:
-            context.log.debug(f"Error in set_timeout: {e}")
+            uni_log_debug(f"set_timeout 에러: {e}")
 
     def shutdown(self):
         try:
@@ -45,15 +44,15 @@ class Scheduler:
             self.executor.shutdown()
             self.task_executor.shutdown()
         except Exception as e:
-            context.log.debug(f"Error in shutdown: {e}")
+            uni_log_debug(f"shutdown 에러: {e}")
 
 
 # ---------------------------------------------------------------------------- #
 # 사용 예제
 # def interval_task():
-#     context.log.debug("Interval task executed")
+#     uni_log_debug("Interval task executed")
 # def timeout_task():
-#     context.log.debug("Timeout task executed")
+#     uni_log_debug("Timeout task executed")
 # scheduler = Scheduler()
 # scheduler.set_interval(interval_task, 1)  # 1초마다 실행
 # scheduler.set_timeout(timeout_task, 5)  # 5초 후에 실행

@@ -1,4 +1,3 @@
-# ---------------------------------------------------------------------------- #
 from lib.buttonhandler import ButtonHandler
 from lib.lib_tp import (
     tp_add_watcher,
@@ -39,11 +38,7 @@ class UIMenu:
         tp_set_button_in_range(self.tp, 1, 11, 10, self.selected_menu)
 
     def select_menu(self, index_menu, *args):
-        """
-        select_menu()
-        Args:
-            index_menu (int): 1~100 까지 메뉴 번호, 001 ~ 100 까지 팝업 열기
-        """
+        # index_menu (int): 1~100 까지 메뉴 번호, 001 ~ 100 까지 팝업 열기
         self.selected_menu = int(index_menu)
         self.show_popup(f"{self.selected_menu:0>3d}")
         self.ui_refresh_menu_buttons()
@@ -55,6 +50,3 @@ class UIMenu:
 
     def show_notification(self, adr, txt, *args):
         self.tp.port[1].send_command(f"'^UNI-', {adr}, ',0,', {txt}")
-
-
-# ---------------------------------------------------------------------------- #

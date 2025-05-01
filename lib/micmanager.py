@@ -1,4 +1,3 @@
-# ---------------------------------------------------------------------------- #
 from lib.eventmanager import EventManager
 
 
@@ -80,6 +79,3 @@ class MicManager(EventManager):
 
     def get_last_on_mic(self):
         return self.last_on_mics[-1] + 1 if self.last_on_mics else None
-
-
-# ---------------------------------------------------------------------------- #

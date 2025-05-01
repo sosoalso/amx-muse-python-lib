@@ -1,11 +1,10 @@
-# ---------------------------------------------------------------------------- #
 import threading
 
-from lib.eventmanager import EventManager
 from mojo import context
 
+from lib.eventmanager import EventManager
 
-# ---------------------------------------------------------------------------- #
+
 class ButtonHandler(EventManager):
     def __init__(self, hold_time=2.0, repeat_interval=0.5, trigger_release_on_hold=False):
         super().__init__("push", "release", "hold", "repeat")

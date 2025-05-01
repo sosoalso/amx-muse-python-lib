@@ -1,9 +1,20 @@
-from functools import partial as bind
+from functools import partial
 
 from lib.buttonhandler import ButtonHandler
 from lib.lib_tp import tp_add_watcher, tp_set_button
-from lib.lib_yeoul import handle_exception, pulse
-from mojo import context
+from lib.lib_yeoul import pulse, uni_log_debug
+
+
+# ---------------------------------------------------------------------------- #
+def handle_exception(func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            uni_log_debug(f"Relay 에러: {e}")
+            return None
+
+    return wrapper
 
 
 # ---------------------------------------------------------------------------- #
@@ -52,19 +63,19 @@ class Relay:
     def set_relay_on(self, idx):
         self.set_relay_state(idx, True)
         self.update_relay_state(idx)
-        self.ui_refresh(idx)
+        self.refresh(idx)
 
     @handle_exception
     def set_relay_off(self, idx):
         self.set_relay_state(idx, False)
         self.update_relay_state(idx)
-        self.ui_refresh(idx)
+        self.refresh(idx)
 
     @handle_exception
     def set_relay_toggle(self, idx):
         self.set_relay_state(idx, not self.get_relay_state(idx))
         self.update_relay_state(idx)
-        self.ui_refresh(idx)
+        self.refresh(idx)
 
     @handle_exception
     def set_relay_pulse(self, idx):
@@ -72,7 +83,7 @@ class Relay:
         def inner():
             self.set_relay_on(idx)
             self.update_relay_state(idx)
-            self.ui_refresh(idx)
+            self.refresh(idx)
 
         inner()
 
@@ -83,19 +94,19 @@ class Relay:
 
     # ---------------------------------------------------------------------------- #
     @handle_exception
-    def ui_register(self):
+    def add_button(self):
         for idx in range(len(self.devchan_list)):
             button_relay_on = ButtonHandler()
-            button_relay_on.add_event_handler("push", bind(self.set_relay_on, idx))
+            button_relay_on.add_event_handler("push", partial(self.set_relay_on, idx))
             button_relay_off = ButtonHandler()
-            button_relay_off.add_event_handler("push", bind(self.set_relay_off, idx))
+            button_relay_off.add_event_handler("push", partial(self.set_relay_off, idx))
             button_relay_pulse = ButtonHandler()
-            button_relay_pulse.add_event_handler("push", bind(self.set_relay_pulse, idx))
+            button_relay_pulse.add_event_handler("push", partial(self.set_relay_pulse, idx))
             button_relay_toggle = ButtonHandler()
-            button_relay_toggle.add_event_handler("push", bind(self.set_relay_toggle, idx))
+            button_relay_toggle.add_event_handler("push", partial(self.set_relay_toggle, idx))
             button_relay_momentary = ButtonHandler()
-            button_relay_momentary.add_event_handler("push", bind(self.set_relay_on, idx))
-            button_relay_momentary.add_event_handler("release", bind(self.set_relay_off, idx))
+            button_relay_momentary.add_event_handler("push", partial(self.set_relay_on, idx))
+            button_relay_momentary.add_event_handler("release", partial(self.set_relay_off, idx))
             for tp in self.tp_list:
                 tp_add_watcher(tp, self.tp_port, idx + 1, button_relay_on.handle_event)
                 tp_add_watcher(tp, self.tp_port, idx + 101, button_relay_off.handle_event)
@@ -104,18 +115,13 @@ class Relay:
                 tp_add_watcher(tp, self.tp_port, idx + 401, button_relay_momentary.handle_event)
 
     @handle_exception
-    def ui_refresh(self, idx):
-        # self.ui_show_all_relay_state()
+    def refresh(self, idx):
+        # self.show_all_relay_state()
         for tp in self.tp_list:
             tp_set_button(tp, self.tp_port, idx + 1, self.get_relay_state(idx))
             tp_set_button(tp, self.tp_port, idx + 101, not self.get_relay_state(idx))
 
-    def ui_show_all_relay_state(self):
+    def show_all_relay_state(self):
         for idx in range(len(self.devchan_list)):
-            context.log.debug(f"{idx=} {self.relay_state[idx]['state']=}")
-            context.log.debug(f"{idx=} {self._get_relay_devchan_state(idx)=}")
-
-
-# ---------------------------------------------------------------------------- #
-if __name__ == "__main__":
-    pass
+            uni_log_debug(f"{idx=} {self.relay_state[idx]['state']=}")
+            uni_log_debug(f"{idx=} {self._get_relay_devchan_state(idx)=}")

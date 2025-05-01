@@ -1,4 +1,3 @@
-# ---------------------------------------------------------------------------- #
 import functools
 import inspect
 import threading
@@ -9,23 +8,19 @@ from mojo import context
 
 get_device = context.devices.get
 get_service = context.services.get
-# ---------------------------------------------------------------------------- #
-D = False
-# ---------------------------------------------------------------------------- #
-
-
-def enable_debug(value: bool):
-    global D
-    D = value
-
-
-# ---------------------------------------------------------------------------- #
-
-# ---------------------------------------------------------------------------- #
 
 
 def get_timeline():
-    return context.services.get("timeline")
+    return get_service("timeline")
+
+
+# ---------------------------------------------------------------------------- #
+ENABLE_DEBUG = False
+
+
+def enable_debug(value: bool):
+    global ENABLE_DEBUG
+    ENABLE_DEBUG = value
 
 
 # ---------------------------------------------------------------------------- #
@@ -34,10 +29,13 @@ def handle_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            context.log.debug(f"Exception occurred in {func.__name__}: {e}")
+            uni_log_debug(f"함수 {func.__name__} 에러 발생: {e}")
             return None
 
     return wrapper
+
+
+# ---------------------------------------------------------------------------- #
 
 
 class pulse:
@@ -97,9 +95,12 @@ def uni_log_debug(msg):
     context.log.debug(msg.encode("utf-16").decode("utf-16"))
 
 
+# ---------------------------------------------------------------------------- #
+
+
 @handle_exception
 def debug(max_depth=7):
-    if not D:
+    if not ENABLE_DEBUG:
         return
     log_message = ""
     current_frame = inspect.currentframe()
@@ -154,6 +155,3 @@ def hello(device):
             context.log.debug(f"this is Attribute -- {attr} : {value}")
         # ---------------------------------------------------------------------------- #
     context.log.debug("=" * 79)
-
-
-# ---------------------------------------------------------------------------- #

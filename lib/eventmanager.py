@@ -1,5 +1,4 @@
-# ---------------------------------------------------------------------------- #
-from mojo import context
+from lib.lib_yeoul import uni_log_debug, uni_log_error
 
 
 # ---------------------------------------------------------------------------- #
@@ -8,7 +7,7 @@ def handle_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            context.log.error(f"Exception occurred in {func.__name__}: {e}")
+            uni_log_error(f"EventManager 에러: {e}")
             return None
 
     return wrapper
@@ -24,7 +23,7 @@ class EventManager:
         if name not in self.event_handlers:
             self.event_handlers[name] = []
         else:
-            context.log.debug(f"Event already exists: {name=}")
+            uni_log_debug(f"이벤트가 이미 존재합니다. {name=}")
 
     @handle_exception
     def remove_event(self, name):
@@ -36,7 +35,7 @@ class EventManager:
         elif handler not in self.event_handlers[name]:
             self.event_handlers[name].append(handler)
         else:
-            context.log.debug(f"Handler already registered for event: {name=}")
+            uni_log_debug(f"해당 이벤트의 핸들러가 이미 등록돼있습니다. {name=}")
 
     @handle_exception
     def remove_event_handler(self, name, handler):
@@ -48,7 +47,4 @@ class EventManager:
             for handler in self.event_handlers[name]:
                 handler(*args, **kwargs)
         else:
-            context.log.debug(f"No such event: {name=}")
-
-
-# ---------------------------------------------------------------------------- #
+            uni_log_debug(f"해당 이벤트가 없습니다 {name=}")

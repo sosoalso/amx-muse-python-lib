@@ -1,4 +1,3 @@
-# ---------------------------------------------------------------------------- #
 from typing import Union
 
 from mojo import context
@@ -182,6 +181,3 @@ def tp_show_popup_ss(tp: Union[list, tuple], popup_name):
 
 def tp_hide_all_popup_ss(tp: Union[list, tuple]):
     tp_send_command_ss(tp, 1, "^PPX")
-
-
-# ---------------------------------------------------------------------------- #
