@@ -116,8 +116,6 @@ def tp_set_level_ss(tp: Union[list, tuple], index_port, index_lvl, value, *args)
 
 
 # ---------------------------------------------------------------------------- #
-
-
 def convert_text_to_unicode(text):
     return "".join(format(ord(char), "04X") for char in text)
 
@@ -171,7 +169,6 @@ def tp_show_popup(tp, popup_name):
 
 def tp_hide_all_popup(tp):
     tp_send_command(tp, 1, "^PPX")
-    1
 
 
 # ---------------------------------------------------------------------------- #
