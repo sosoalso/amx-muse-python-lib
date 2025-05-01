@@ -2,6 +2,8 @@
 import json
 import sqlite3
 
+from mojo import context
+
 
 # ---------------------------------------------------------------------------- #
 class ObjectStorage:
@@ -27,7 +29,7 @@ class ObjectStorage:
     def load_json_object(self, name="user_data"):
         self.cursor.execute("""SELECT object FROM json_objects WHERE name = ?""", (name,))
         result = self.cursor.fetchone()
-        print(result)
+        context.log.debug(result)
         return json.loads(result[0]) if result else None
 
     def close(self):

@@ -2,6 +2,8 @@
 import json
 import os
 
+from mojo import context
+
 
 # ---------------------------------------------------------------------------- #
 def handle_exception(func):
@@ -9,7 +11,7 @@ def handle_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            print(f"Exception occurred in {func.__name__}: {e}")
+            context.log.error(f"Exception occurred in {func.__name__}: {e}")
             return None
 
     return wrapper

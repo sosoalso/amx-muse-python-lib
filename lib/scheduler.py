@@ -1,19 +1,8 @@
 # ---------------------------------------------------------------------------- #
 import concurrent.futures
 import threading
-import time
 
-
-# ---------------------------------------------------------------------------- #
-def handle_exception(func):
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            print(f"Exception occurred in {func.__name__}: {e}")
-            return None
-
-    return wrapper
+from mojo import context
 
 
 # ---------------------------------------------------------------------------- #
@@ -24,81 +13,50 @@ class Scheduler:
         self.scheduled_tasks = []
         self.task_executor = concurrent.futures.ThreadPoolExecutor()
 
-    @handle_exception
     def set_interval(self, func, interval):
-        def wrapper():
-            while True:
-                threading.Event().wait(interval)
+        try:
+
+            def wrapper():
+                while True:
+                    threading.Event().wait(interval)
+                    self.task_executor.submit(func)
+
+            future = self.executor.submit(wrapper)
+            self.scheduled_tasks.append(future)
+        except Exception as e:
+            context.log.debug(f"Error in set_interval: {e}")
+
+    def set_timeout(self, func, delay):
+        try:
+
+            def wrapper():
+                threading.Event().wait(delay)
                 self.task_executor.submit(func)
 
-        future = self.executor.submit(wrapper)
-        self.scheduled_tasks.append(future)
+            future = self.executor.submit(wrapper)
+            self.scheduled_tasks.append(future)
+        except Exception as e:
+            context.log.debug(f"Error in set_timeout: {e}")
 
-    @handle_exception
-    def set_timeout(self, func, delay):
-        def wrapper():
-            threading.Event().wait(delay)
-            self.task_executor.submit(func)
-
-        future = self.executor.submit(wrapper)
-        self.scheduled_tasks.append(future)
-
-    @handle_exception
     def shutdown(self):
-        for task in self.scheduled_tasks:
-            task.cancel()
-        self.executor.shutdown()
-        self.task_executor.shutdown()
-
-    # @handle_exception
-    # def set_interval(self, func, interval):
-    #     def wrapper():
-    #         while True:
-    #             # time.sleep(interval)
-    #             threading.Event().wait(interval)
-    #             func()
-
-    #     future = self.executor.submit(wrapper)
-    #     self.scheduled_tasks.append(future)
-
-    # @handle_exception
-    # def set_timeout(self, func, delay):
-    #     def wrapper():
-    #         threading.Event().wait(delay)
-    #         # time.sleep(delay)
-    #         func()
-
-    #     future = self.executor.submit(wrapper)
-    #     self.scheduled_tasks.append(future)
-
-    # @handle_exception
-    # def shutdown(self):
-    #     for task in self.scheduled_tasks:
-    #         task.cancel()
-    #     self.executor.shutdown()
+        try:
+            for task in self.scheduled_tasks:
+                task.cancel()
+            self.executor.shutdown()
+            self.task_executor.shutdown()
+        except Exception as e:
+            context.log.debug(f"Error in shutdown: {e}")
 
 
 # ---------------------------------------------------------------------------- #
-# ---------------------------------------------------------------------------- #
-# ---------------------------------------------------------------------------- #
-
-# # 사용 예제
+# 사용 예제
 # def interval_task():
-#     print("Interval task executed")
-
-
+#     context.log.debug("Interval task executed")
 # def timeout_task():
-#     print("Timeout task executed")
-
-
+#     context.log.debug("Timeout task executed")
 # scheduler = Scheduler()
 # scheduler.set_interval(interval_task, 1)  # 1초마다 실행
 # scheduler.set_timeout(timeout_task, 5)  # 5초 후에 실행
-
 # # 10초 후에 스케줄러 종료
 # time.sleep(10)
 # scheduler.shutdown()
-
-# ---------------------------------------------------------------------------- #
-if __name__ == "__main__":
-    pass

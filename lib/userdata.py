@@ -2,6 +2,8 @@
 import json
 import os
 
+from mojo import context
+
 
 # ---------------------------------------------------------------------------- #
 def handle_exception(func):
@@ -9,7 +11,7 @@ def handle_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            print(f"Exception occurred in {func.__name__}: {e}")
+            context.log.error(f"Exception occurred in {func.__name__}: {e}")
             return None
 
     return wrapper
@@ -34,11 +36,11 @@ class UserData:
             if not os.path.exists(self.foldername):
                 os.makedirs(self.foldername)
         if not os.path.exists(self.filepath):
-            print(f"init() :: File {self.filepath} not found, creating new file")
+            context.log.debug(f"init() :: File {self.filepath} not found, creating new file")
             self.data = {}
             self.save_file()
         else:
-            print(f"init() :: File {self.filepath} Loading")
+            context.log.debug(f"init() :: File {self.filepath} Loading")
             self.load_file()
 
     @handle_exception
@@ -54,7 +56,7 @@ class UserData:
     @handle_exception
     def set_value(self, key, value):
         self.data[key] = value
-        print(f"set_value() :: {key=} {value=}")
+        context.log.debug(f"set_value() :: {key=} {value=}")
         self.save_file()
 
     @handle_exception
@@ -84,7 +86,7 @@ class Var:
             if hasattr(cls, key):
                 setattr(cls, key, value)
             else:
-                print(f"Key '{key}' not found in class '{cls.__name__}'")
+                context.log.debug(f"Key '{key}' not found in class '{cls.__name__}'")
 
     @classmethod
     def load_from_json(cls, filepath):
@@ -94,5 +96,3 @@ class Var:
 
 
 # ---------------------------------------------------------------------------- #
-if __name__ == "__main__":
-    pass

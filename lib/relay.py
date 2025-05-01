@@ -3,6 +3,7 @@ from functools import partial as bind
 from lib.buttonhandler import ButtonHandler
 from lib.lib_tp import tp_add_watcher, tp_set_button
 from lib.lib_yeoul import handle_exception, pulse
+from mojo import context
 
 
 # ---------------------------------------------------------------------------- #
@@ -111,8 +112,8 @@ class Relay:
 
     def ui_show_all_relay_state(self):
         for idx in range(len(self.devchan_list)):
-            print(f"{idx=} {self.relay_state[idx]['state']=}")
-            print(f"{idx=} {self._get_relay_devchan_state(idx)=}")
+            context.log.debug(f"{idx=} {self.relay_state[idx]['state']=}")
+            context.log.debug(f"{idx=} {self._get_relay_devchan_state(idx)=}")
 
 
 # ---------------------------------------------------------------------------- #

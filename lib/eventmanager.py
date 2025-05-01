@@ -1,10 +1,14 @@
 # ---------------------------------------------------------------------------- #
+from mojo import context
+
+
+# ---------------------------------------------------------------------------- #
 def handle_exception(func):
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            print(f"Exception occurred in {func.__name__}: {e}")
+            context.log.error(f"Exception occurred in {func.__name__}: {e}")
             return None
 
     return wrapper
@@ -20,7 +24,7 @@ class EventManager:
         if name not in self.event_handlers:
             self.event_handlers[name] = []
         else:
-            print(f"Event already exists: {name=}")
+            context.log.debug(f"Event already exists: {name=}")
 
     @handle_exception
     def remove_event(self, name):
@@ -32,7 +36,7 @@ class EventManager:
         elif handler not in self.event_handlers[name]:
             self.event_handlers[name].append(handler)
         else:
-            print(f"Handler already registered for event: {name=}")
+            context.log.debug(f"Handler already registered for event: {name=}")
 
     @handle_exception
     def remove_event_handler(self, name, handler):
@@ -42,12 +46,9 @@ class EventManager:
     def trigger_event(self, name, *args, **kwargs):
         if name in self.event_handlers:
             for handler in self.event_handlers[name]:
-                # print(f"{name=} {handler=}")
                 handler(*args, **kwargs)
         else:
-            print(f"No such event: {name=}")
+            context.log.debug(f"No such event: {name=}")
 
 
 # ---------------------------------------------------------------------------- #
-if __name__ == "__main__":
-    pass

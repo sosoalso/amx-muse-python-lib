@@ -9,6 +9,23 @@ from mojo import context
 
 get_device = context.devices.get
 get_service = context.services.get
+# ---------------------------------------------------------------------------- #
+D = False
+# ---------------------------------------------------------------------------- #
+
+
+def enable_debug(value: bool):
+    global D
+    D = value
+
+
+# ---------------------------------------------------------------------------- #
+
+# ---------------------------------------------------------------------------- #
+
+
+def get_timeline():
+    return context.services.get("timeline")
 
 
 # ---------------------------------------------------------------------------- #
@@ -17,7 +34,7 @@ def handle_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            print(f"Exception occurred in {func.__name__}: {e}")
+            context.log.debug(f"Exception occurred in {func.__name__}: {e}")
             return None
 
     return wrapper
@@ -76,67 +93,67 @@ def uni_log_error(msg):
     context.log.error(msg.encode("utf-16").decode("utf-16"))
 
 
-@handle_exception
-def print_with_name(msg):
-    current_method = inspect.currentframe().f_back.f_code.co_name
-    print(f"{current_method}() >> {msg}")
+def uni_log_debug(msg):
+    context.log.debug(msg.encode("utf-16").decode("utf-16"))
 
 
 @handle_exception
-def info_with_name(msg):
-    current_method = inspect.currentframe().f_back.f_code.co_name
-    uni_log_info(f"{current_method}() >> {msg}")
-
-
-@handle_exception
-def warn_with_name(msg):
-    current_method = inspect.currentframe().f_back.f_code.co_name
-    uni_log_warn(f"{current_method}() >> {msg}")
-
-
-@handle_exception
-def err_with_name(err, msg):
-    current_method = inspect.currentframe().f_back.f_code.co_name
-    raise err(f"{current_method}() {msg}")
+def debug(max_depth=7):
+    if not D:
+        return
+    log_message = ""
+    current_frame = inspect.currentframe()
+    depth = 0
+    while current_frame and (depth < max_depth + 2):
+        if depth > 1:
+            func_name = current_frame.f_code.co_name if current_frame else "Unknown"
+            args, _, _, values = inspect.getargvalues(current_frame)
+            args_str = ", ".join(f"{arg}={values[arg]}" for arg in args)
+            kwargs_str = ", ".join(f"{key}={value}" for key, value in values.get("kwargs", {}).items())
+            if kwargs_str:
+                args_str += f", **{kwargs_str}"
+            log_message += f" $ c{depth}f: {func_name}({args_str})"
+        current_frame = current_frame.f_back
+        depth += 1
+    log_message = log_message.removeprefix(" $ ")
+    uni_log_debug(log_message)  # Uncommented to log the debug message
 
 
 # ---------------------------------------------------------------------------- #
 @handle_exception
 def hello(device):
-    print("=" * 79)
-    print(device)
-    print("type : ", type(device))
-    print("-" * 34)
+    context.log.debug("=" * 79)
+    context.log.debug(device)
+    context.log.debug("type : ", type(device))
+    context.log.debug("-" * 34)
     attributes = dir(device)
-    print("-" * 34)
+    context.log.debug("-" * 34)
     filtered_attributes = [attr for attr in attributes if not attr.startswith("__") and not attr.endswith("__")]
     for attr in filtered_attributes:
-        print("-" * 34)
+        context.log.debug("-" * 34)
         value = getattr(device, attr)
         # ---------------------------------------------------------------------------- #
         if callable(value):
-            print(f"this is Method() -- {attr}")
+            context.log.debug(f"this is Method() -- {attr}")
             sig = inspect.signature(value)
-            print(f"signature -- {sig}")
-            print(f"signature parameters -- {sig.parameters}")
+            context.log.debug(f"signature -- {sig}")
+            context.log.debug(f"signature parameters -- {sig.parameters}")
             if all(param.default != inspect.Parameter.empty for param in sig.parameters.values()):
                 if attr == "shutdown":
-                    print(f"Cannot call {attr} as it is literally SHUTDOWN")
+                    context.log.debug(f"Cannot call {attr} as it is literally SHUTDOWN")
                 else:
-                    print(f"calling method () -- {attr}")
-                    print(f"return value == {value()}")
+                    context.log.debug(f"calling method () -- {attr}")
+                    context.log.debug(f"return value == {value()}")
             else:
-                print(f"Cannot call {attr} as it requires arguments: {sig.parameters}")
+                context.log.debug(f"Cannot call {attr} as it requires arguments: {sig.parameters}")
         # ---------------------------------------------------------------------------- #
         elif isinstance(value, property):
-            print(f"this is Property -- {attr} : {value}")
+            context.log.debug(f"this is Property -- {attr} : {value}")
         # ---------------------------------------------------------------------------- #
         else:
-            print(f"this is Attribute -- {attr} : {value}")
+            context.log.debug(f"this is Attribute -- {attr} : {value}")
         # ---------------------------------------------------------------------------- #
-    print("=" * 79)
+    context.log.debug("=" * 79)
 
 
 # ---------------------------------------------------------------------------- #
-if __name__ == "__main__":
-    pass
