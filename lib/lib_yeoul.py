@@ -81,7 +81,7 @@ def debug(max_depth=3):
             kwargs_str = ", ".join(f"{key}={value}" for key, value in values.get("kwargs", {}).items())
             if kwargs_str:
                 args_str += f" **kwargs: {kwargs_str}"
-            log_message += f"  c{depth}f$ {func_name}({args_str})"
+            log_message += f"  $c{depth}f: {func_name}({args_str})"
         current_frame = current_frame.f_back
         depth += 1
     # log_message = log_message.removeprefix(" $ ")
