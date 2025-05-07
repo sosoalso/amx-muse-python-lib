@@ -3,9 +3,9 @@ import inspect
 import threading
 from functools import wraps
 
-# ---------------------------------------------------------------------------- #
 from mojo import context
 
+# ---------------------------------------------------------------------------- #
 get_device = context.devices.get
 get_service = context.services.get
 
@@ -20,15 +20,13 @@ def handle_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            uni_log_debug(f"함수 {func.__name__} 에러 발생: {e}")
+            context.log.debug(f"함수 {func.__name__} 에러 발생: {e}")
             return None
 
     return wrapper
 
 
 # ---------------------------------------------------------------------------- #
-
-
 class pulse:
     def __init__(self, duration, off_method, *off_args, **off_kwargs):
         self.duration = duration
@@ -70,27 +68,8 @@ def debounce(timeout_ms: float):
 
 
 # ---------------------------------------------------------------------------- #
-def uni_log_info(msg):
-    context.log.info(msg.encode("utf-16").decode("utf-16"))
-
-
-def uni_log_warn(msg):
-    context.log.warn(msg.encode("utf-16").decode("utf-16"))
-
-
-def uni_log_error(msg):
-    context.log.error(msg.encode("utf-16").decode("utf-16"))
-
-
-def uni_log_debug(msg):
-    context.log.debug(msg.encode("utf-16").decode("utf-16"))
-
-
-# ---------------------------------------------------------------------------- #
-
-
 @handle_exception
-def debug(max_depth=7):
+def debug(max_depth=5):
     log_message = ""
     current_frame = inspect.currentframe()
     depth = 0
@@ -106,7 +85,7 @@ def debug(max_depth=7):
         current_frame = current_frame.f_back
         depth += 1
     # log_message = log_message.removeprefix(" $ ")
-    uni_log_debug(log_message)  # Uncommented to log the debug message
+    context.log.debug(log_message)  # Uncommented to log the debug message
 
 
 # ---------------------------------------------------------------------------- #

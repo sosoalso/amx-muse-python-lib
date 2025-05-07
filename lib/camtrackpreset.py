@@ -1,7 +1,7 @@
 import json
 import os
 
-from lib.lib_yeoul import uni_log_error
+from mojo import context
 
 
 # ---------------------------------------------------------------------------- #
@@ -10,7 +10,7 @@ def handle_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            uni_log_error(f"CamtrackPreset 에러: {e}")
+            context.log.error(f"CamtrackPreset 에러: {e}")
             return None
 
     return wrapper

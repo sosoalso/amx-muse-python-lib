@@ -2,7 +2,7 @@
 import json
 import os
 
-from lib.lib_yeoul import uni_log_debug, uni_log_error
+from mojo import context
 
 
 # ---------------------------------------------------------------------------- #
@@ -11,7 +11,7 @@ def handle_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            uni_log_error(f"UserData 에러: {e}")
+            context.log.error(f"UserData 에러: {e}")
             return None
 
     return wrapper
@@ -36,11 +36,11 @@ class UserData:
             if not os.path.exists(self.foldername):
                 os.makedirs(self.foldername)
         if not os.path.exists(self.filepath):
-            uni_log_debug(f"init() :: 파일 {self.filepath} 없음, 새 파일 생성")
+            context.log.debug(f"init() :: 파일 {self.filepath} 없음, 새 파일 생성")
             self.data = {}
             self.save_file()
         else:
-            uni_log_debug(f"init() :: 파일 {self.filepath} 불러오기")
+            context.log.debug(f"init() :: 파일 {self.filepath} 불러오기")
             self.load_file()
 
     @handle_exception
@@ -56,7 +56,7 @@ class UserData:
     @handle_exception
     def set_value(self, key, value):
         self.data[key] = value
-        uni_log_debug(f"set_value() {key=} {value=}")
+        context.log.debug(f"set_value() {key=} {value=}")
         self.save_file()
 
     @handle_exception
@@ -67,10 +67,10 @@ class UserData:
     def delete_value(self, key):
         if key in self.data:
             del self.data[key]
-            uni_log_debug(f"delete_value() {key=} 삭제")
+            context.log.debug(f"delete_value() {key=} 삭제")
             self.save_file()
         else:
-            uni_log_debug(f"delete_value() {key=} 없음")
+            context.log.debug(f"delete_value() {key=} 없음")
 
 
 # 간소화 버전
@@ -95,7 +95,7 @@ class Var:
             if hasattr(cls, key):
                 setattr(cls, key, value)
             else:
-                uni_log_debug(f"{cls.__name__} 에서 키 {key} 를 찾을 수 없음.")
+                context.log.debug(f"{cls.__name__} 에서 키 {key} 를 찾을 수 없음.")
 
     @classmethod
     def load_from_json(cls, filepath):

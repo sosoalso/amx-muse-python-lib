@@ -2,8 +2,9 @@ import socket
 import threading
 from types import SimpleNamespace
 
+from mojo import context
+
 from lib.eventmanager import EventManager
-from lib.lib_yeoul import uni_log_debug, uni_log_error
 
 # ---------------------------------------------------------------------------- #
 BUFFER_SIZE = 1024
@@ -36,18 +37,18 @@ BUFFER_SIZE = 1024
 #     data = None
 #     try:
 #         reader, writer = await asyncio.wait_for(asyncio.open_connection(ip, port), timeout)
-#         uni_log_debug(f"send_tcp_message_once send: {ip}:{port} {message=}")
+#         context.log.debug(f"send_tcp_message_once send: {ip}:{port} {message=}")
 #         writer.write(message.encode())
 #         data = await asyncio.wait_for(reader.read(100), timeout)
 #     except asyncio.TimeoutError:
-#         uni_log_error(f"async_send_tcp_message_once {ip}:{port} Error: The connection attempt timed out.")
+#         context.log.error(f"async_send_tcp_message_once {ip}:{port} Error: The connection attempt timed out.")
 #     except ConnectionRefusedError:
-#         uni_log_error(f"async_send_tcp_message_once {ip}:{port} Error: Connection was refused.")
+#         context.log.error(f"async_send_tcp_message_once {ip}:{port} Error: Connection was refused.")
 #     except Exception as e:
-#         uni_log_error(f"async_send_tcp_message_once {ip}:{port} An unexpected error occurred: {e}")
+#         context.log.error(f"async_send_tcp_message_once {ip}:{port} An unexpected error occurred: {e}")
 #     finally:
 #         if "writer" in locals() and not writer.is_closing():
-#             uni_log_debug(f"async_send_tcp_message_once {ip}:{port} Close the connection")
+#             context.log.debug(f"async_send_tcp_message_once {ip}:{port} Close the connection")
 #             writer.close()
 #             await writer.wait_closed()
 #     return data
@@ -111,14 +112,14 @@ class TcpServer(EventManager):
                     if self.echo:
                         self.send_all(data)
                 else:
-                    uni_log_error(f"클라이언트 연결 끊김 {address=}")
+                    context.log.error(f"클라이언트 연결 끊김 {address=}")
                     raise ValueError
             except (socket.error, ValueError) as e:
                 client.close()
                 with self.lock:
                     if client in self.clients:
                         self.clients.remove(client)
-                uni_log_error(f"클라이언트 에러 {address=}: {e}")
+                context.log.error(f"클라이언트 에러 {address=}: {e}")
                 break
         self.trigger_event("disconnected")
 
@@ -170,17 +171,17 @@ class TcpClient(EventManager):
                         self.connected = True
                         self._run_thread_receive()
             except ConnectionRefusedError:
-                uni_log_error("_connect() 연결 거부")
+                context.log.error("_connect() 연결 거부")
                 threading.Event().wait(self.time_reconnect)
                 if not self.reconnect:
                     break
             except TimeoutError:
-                uni_log_error("_connect() 연결 타임아웃")
+                context.log.error("_connect() 연결 타임아웃")
                 threading.Event().wait(self.time_reconnect)
                 if not self.reconnect:
                     break
             except Exception:
-                uni_log_error("_connect() 에러")
+                context.log.error("_connect() 에러")
                 threading.Event().wait(self.time_reconnect)
                 if not self.reconnect:
                     break
@@ -199,7 +200,7 @@ class TcpClient(EventManager):
             try:
                 msg = self.socket.recv(self.BUFFER_SIZE)
                 if msg:
-                    uni_log_debug(f"_receive 수신 {msg=}")
+                    context.log.debug(f"_receive 수신 {msg=}")
                     event = SimpleNamespace()
                     event.source = self
                     event.arguments = {"data": msg}
@@ -207,14 +208,14 @@ class TcpClient(EventManager):
                 else:
                     with self.lock:
                         self.connected = False
-                        uni_log_debug("_receive() 없음")
+                        context.log.debug("_receive() 없음")
                         if self.reconnect:
                             self.connect()
                     break
             except Exception:
                 with self.lock:
                     self.connected = False
-                uni_log_error("_receive() 에러")
+                context.log.error("_receive() 에러")
                 if self.reconnect:
                     self.connect()
                 break
@@ -304,22 +305,22 @@ class UdpClient(EventManager):
                     # 수신을 위해 소켓에 로컬 포트를 바인딩
                     self.socket.bind(("", 0 if self.port_bind is None else self.port_bind))
                     self.bound_port = self.socket.getsockname()[1]
-                    uni_log_debug(f"_connect() 포트에 바운드:{self.bound_port}")
+                    context.log.debug(f"_connect() 포트에 바운드:{self.bound_port}")
                     if self.socket:
                         self.connected = True
                         self._run_thread_receive()
             except ConnectionRefusedError:
-                uni_log_error("_connect() 연결 거부부")
+                context.log.error("_connect() 연결 거부부")
                 threading.Event().wait(self.time_reconnect)
                 if not self.reconnect:
                     break
             except TimeoutError:
-                uni_log_error("_connect() 연결 타임아웃")
+                context.log.error("_connect() 연결 타임아웃")
                 threading.Event().wait(self.time_reconnect)
                 if not self.reconnect:
                     break
             except Exception:
-                uni_log_error("_connect() 에러")
+                context.log.error("_connect() 에러")
                 threading.Event().wait(self.time_reconnect)
                 if not self.reconnect:
                     break
@@ -338,7 +339,7 @@ class UdpClient(EventManager):
             try:
                 msg, addr = self.socket.recvfrom(self.BUFFER_SIZE)
                 if msg:
-                    uni_log_debug(f"_receive 수신 : {addr=} {msg=}")
+                    context.log.debug(f"_receive 수신 : {addr=} {msg=}")
                     event = SimpleNamespace()
                     event.source = self
                     event.arguments = {"data": msg, "address": addr}
@@ -346,7 +347,7 @@ class UdpClient(EventManager):
             except Exception:
                 with self.lock:
                     self.connected = False
-                uni_log_error("_receive() 에러")
+                context.log.error("_receive() 에러")
                 if self.reconnect:
                     self.connect()
                 break
@@ -390,7 +391,7 @@ class UdpServer(EventManager):
         self.BUFFER_SIZE = buffer_size
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(("", self.port))
-        uni_log_debug(f"UDP 서버 바운드:{self.socket.getsockname()[1]}")
+        context.log.debug(f"UDP 서버 바운드:{self.socket.getsockname()[1]}")
         self._server_thread = None
         self.running = False
         self.receive = self.ReceiveHandler(self)
@@ -412,7 +413,7 @@ class UdpServer(EventManager):
             try:
                 data, addr = self.socket.recvfrom(self.BUFFER_SIZE)
                 if data:
-                    uni_log_debug(f"_start 수신 {addr=} {data=}")
+                    context.log.debug(f"_start 수신 {addr=} {data=}")
                     event = SimpleNamespace()
                     event.arguments = {"data": data, "address": addr}
                     self.trigger_event("received", event)

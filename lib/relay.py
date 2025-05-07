@@ -1,8 +1,10 @@
 from functools import partial
 
+from mojo import context
+
 from lib.buttonhandler import ButtonHandler
 from lib.lib_tp import tp_add_watcher, tp_set_button
-from lib.lib_yeoul import pulse, uni_log_debug, uni_log_error
+from lib.lib_yeoul import pulse
 
 
 # ---------------------------------------------------------------------------- #
@@ -11,7 +13,7 @@ def handle_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            uni_log_error(f"Relay 에러: {e}")
+            context.log.error(f"Relay 에러: {e}")
             return None
 
     return wrapper
@@ -123,5 +125,5 @@ class Relay:
 
     def show_all_relay_state(self):
         for idx in range(len(self.devchan_list)):
-            uni_log_debug(f"{idx=} {self.relay_state[idx]['state']=}")
-            uni_log_debug(f"{idx=} {self._get_relay_devchan_state(idx)=}")
+            context.log.debug(f"{idx=} {self.relay_state[idx]['state']=}")
+            context.log.debug(f"{idx=} {self._get_relay_devchan_state(idx)=}")

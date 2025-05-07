@@ -1,6 +1,8 @@
 from typing import Union
 
-from lib.lib_yeoul import debug, uni_log_error
+from mojo import context
+
+from lib.lib_yeoul import debug
 
 # ---------------------------------------------------------------------------- #
 MIN_VAL = -60  # 최소 값
@@ -14,7 +16,7 @@ def handle_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            uni_log_error(f"BluController 에러: {e}")
+            context.log.error(f"BluController 에러: {e}")
             return None
 
     return wrapper
@@ -128,11 +130,11 @@ class BluController:
     def init(self, *path_lists: Union[list[str], tuple[str, ...]]):
         for path_list in path_lists:
             if not isinstance(path_list, (list, tuple)):
-                uni_log_error("각각의 path_list 는 path str 으로 구성된 list 나 tuple 이어야 합니다.")
+                context.log.error("각각의 path_list 는 path str 으로 구성된 list 나 tuple 이어야 합니다.")
                 raise TypeError
             for path in path_list:
                 if not isinstance(path, tuple):
-                    uni_log_error("각각의 path 는 path str 으로 구성된 tuple 이어야 합니다.")
+                    context.log.error("각각의 path 는 path str 으로 구성된 tuple 이어야 합니다.")
                     raise TypeError
                 component = self.get_component(path)
                 if component is not None:
@@ -150,7 +152,7 @@ class BluController:
     @handle_exception
     def get_component(self, path: tuple[str, ...]):
         if not isinstance(path, tuple):
-            uni_log_error("각각의 path_list 는 path str 으로 구성된 list 나 tuple 이어야 합니다.")
+            context.log.error("각각의 path_list 는 path str 으로 구성된 list 나 tuple 이어야 합니다.")
             raise TypeError
         nested_component = self.device.Audio
         for p in path:

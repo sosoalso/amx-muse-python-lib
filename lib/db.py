@@ -1,7 +1,7 @@
 import json
 import sqlite3
 
-from lib.lib_yeoul import uni_log_debug
+from mojo import context
 
 
 # ---------------------------------------------------------------------------- #
@@ -28,7 +28,7 @@ class ObjectStorage:
     def load_json_object(self, name="user_data"):
         self.cursor.execute("""SELECT object FROM json_objects WHERE name = ?""", (name,))
         result = self.cursor.fetchone()
-        uni_log_debug(f"load_json_object {result=}")
+        context.log.debug(f"load_json_object {result=}")
         return json.loads(result[0]) if result else None
 
     def close(self):
