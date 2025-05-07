@@ -69,7 +69,7 @@ def debounce(timeout_ms: float):
 
 # ---------------------------------------------------------------------------- #
 @handle_exception
-def debug(max_depth=5):
+def debug(max_depth=3):
     log_message = ""
     current_frame = inspect.currentframe()
     depth = 0
