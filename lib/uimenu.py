@@ -1,5 +1,3 @@
-from mojo import context
-
 from lib.buttonhandler import ButtonHandler
 from lib.lib_tp import (
     tp_add_watcher,
@@ -45,10 +43,24 @@ class UIMenu:
         self.show_popup(f"{self.selected_menu:0>3d}")
         self.ui_refresh_menu_buttons()
 
-    def close_menu(self, *args):
-        if args[0].value:
+    def close_menu(self, evt, *args):
+        if evt.value:
             self.hide_all_popup()
             self.ui_refresh_menu_buttons()
 
     def show_notification(self, adr, txt, *args):
         self.tp.port[1].send_command(f"'^UNI-', {adr}, ',0,', {txt}")
+
+
+# def create_loading_bar_closure():
+#     s = Scheduler()
+#     count = 0
+#     def loading_bar():
+#         nonlocal count
+#         if count > 100:
+#             s.shutdown()
+#             return
+#         tp_send_level_ss(TP, 1, 1, count)
+#         count += 1
+#     s.set_interval(loading_bar, 0.1)
+#     return loading_bar

@@ -2,8 +2,6 @@ from typing import Union
 
 from mojo import context
 
-from lib.lib_yeoul import debug
-
 # ---------------------------------------------------------------------------- #
 MIN_VAL = -60  # 최소 값
 MAX_VAL = 6  # 최대 값
@@ -85,27 +83,19 @@ class BluState:
 
 # ---------------------------------------------------------------------------- #
 class BluController:
-    # ---------------------------------------------------------------------------- #
-    def __init__(
-        self,
-        device,
-        states=None,
-        min_val=MIN_VAL,
-        max_val=MAX_VAL,
-        unit_val=UNIT_VAL,
-        flag_debug=False,
-    ):
+    def __init__(self, device, states=None, min_val=MIN_VAL, max_val=MAX_VAL, unit_val=UNIT_VAL, debug=False):
         self.device = device  # 장치 설정
         self.states = BluState() if states is None else states  # 컴포넌트 상태 설정
         self.MIN_VAL = min_val  # 최소 값 설정
         self.MAX_VAL = max_val  # 최대 값 설정
         self.UNIT_VAL = unit_val  # 볼륨 조절 단위 값 설정
-        self.flag_debug = flag_debug
+        self.debug = debug
 
-    def enable_debug(self, value: bool):
-        self.flag_debug = value
+    def log_debug(self, message):
+        if self.debug:
+            context.log.debug(message)
 
-    # dB 값을 터치패널 0-255 값으로 변환
+    # NOTE : dB 값을 터치패널 0-255 값으로 변환
     @handle_exception
     def db_to_tp(self, x):
         x_min = self.MIN_VAL
@@ -115,7 +105,7 @@ class BluController:
         y = (x - x_min) * (y_max - y_min) / (x_max - x_min) + y_min
         return y
 
-    # 터치패널 0-255 값을 dB 값으로 변환
+    # NOTE : 터치패널 0-255 값을 dB 값으로 변환
     @handle_exception
     def tp_to_db(self, x):
         x_min = 0
@@ -125,16 +115,19 @@ class BluController:
         y = (x - x_min) * (y_max - y_min) / (x_max - x_min) + y_min
         return y
 
-    # ---------------------------------------------------------------------------- #
     @handle_exception
     def init(self, *path_lists: Union[list[str], tuple[str, ...]]):
         for path_list in path_lists:
             if not isinstance(path_list, (list, tuple)):
-                context.log.error("각각의 path_list 는 path str 으로 구성된 list 나 tuple 이어야 합니다.")
+                context.log.error(
+                    "BluController init 에러 :: 각각의 path_list 는 path str 으로 구성된 list 나 tuple 이어야 합니다."
+                )
                 raise TypeError
             for path in path_list:
                 if not isinstance(path, tuple):
-                    context.log.error("각각의 path 는 path str 으로 구성된 tuple 이어야 합니다.")
+                    context.log.error(
+                        "BluController init 에러 :: 각각의 path 는 path str 으로 구성된 tuple 이어야 합니다."
+                    )
                     raise TypeError
                 component = self.get_component(path)
                 if component is not None:
@@ -142,26 +135,23 @@ class BluController:
                     component.watch(lambda evt, path=path: self.states.update_state(path, evt.value))
                     self.states.override_notify(path)
 
-    # ---------------------------------------------------------------------------- #
     def subscribe(self, observer):
         self.states.subscribe(observer)
 
-    # ---------------------------------------------------------------------------- #
     # NOTE : 컴포넌트 가져오기
-    # ---------------------------------------------------------------------------- #
     @handle_exception
     def get_component(self, path: tuple[str, ...]):
         if not isinstance(path, tuple):
-            context.log.error("각각의 path_list 는 path str 으로 구성된 list 나 tuple 이어야 합니다.")
+            context.log.error(
+                "BluController get_component 에러 ;: 각각의 path_list 는 path str 으로 구성된 list 나 tuple 이어야 합니다."
+            )
             raise TypeError
         nested_component = self.device.Audio
         for p in path:
             nested_component = nested_component[p]
         return nested_component
 
-    # ---------------------------------------------------------------------------- #
     # NOTE : 컴포넌트 값 업데이트
-    # ---------------------------------------------------------------------------- #
     @handle_exception
     def update_state(self, path: tuple[str, ...], new_value: Union[str, float]):
         if self.device.isOnline():
@@ -169,9 +159,7 @@ class BluController:
             if component is not None:
                 component.value = new_value
 
-    # ---------------------------------------------------------------------------- #
     # INFO : 사용자 함수
-    # ---------------------------------------------------------------------------- #
     def check_val_convert_float(self, val):
         try:
             return float(val)
@@ -179,55 +167,46 @@ class BluController:
             return None
 
     def vol_up(self, path):
-        if self.flag_debug:
-            debug()
+        self.log_debug(f"vol_up {path=}")
         val = self.check_val_convert_float(self.states.get_state(path))
         if val is not None and val <= self.MAX_VAL - self.UNIT_VAL:
             self.update_state(path, round(val + self.UNIT_VAL))
 
     def vol_down(self, path):
-        if self.flag_debug:
-            debug()
+        self.log_debug(f"vol_down {path=}")
         val = self.check_val_convert_float(self.states.get_state(path))
         if val is not None and val >= self.MIN_VAL + self.UNIT_VAL:
             self.update_state(path, round(val - self.UNIT_VAL))
 
     def set_vol(self, path, val: float):
-        if self.flag_debug:
-            debug()
+        self.log_debug(f"set_vol {path=} {val=}")
         if val is not None and self.MIN_VAL <= val <= self.MAX_VAL:
             self.update_state(path, round(val))
 
     def toggle_on_off(self, path, *args):
-        if self.flag_debug:
-            debug()
+        self.log_debug(f"toggle_on_off {path=}")
         val = self.states.get_state(path)
         val_str = "Off" if val == "On" else "Off"
         self.update_state(path, val_str)
 
     def set_on(self, path):
-        if self.flag_debug:
-            debug()
+        self.log_debug(f"set_on {path=}")
         self.update_state(path, "On")
 
     def set_off(self, path):
-        if self.flag_debug:
-            debug()
+        self.log_debug(f"set_off {path=}")
         self.update_state(path, "Off")
 
     def toggle_muted_unmuted(self, path):
-        if self.flag_debug:
-            debug()
+        self.log_debug(f"toggle_muted_unmuted {path=}")
         val = self.states.get_state(path)
         val_str = "Unmuted" if val == "Muted" else "Muted"
         self.update_state(path, val_str)
 
     def set_muted(self, path):
-        if self.flag_debug:
-            debug()
+        self.log_debug(f"set_muted {path=}")
         self.update_state(path, "Muted")
 
     def set_unmuted(self, path):
-        if self.flag_debug:
-            debug()
+        self.log_debug(f"set_unmuted {path=}")
         self.update_state(path, "Unmuted")

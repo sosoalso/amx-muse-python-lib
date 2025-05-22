@@ -1,6 +1,7 @@
 import functools
 import inspect
 import threading
+import time
 from functools import wraps
 
 from mojo import context
@@ -33,34 +34,39 @@ class pulse:
         self.off_method = off_method
         self.off_args = off_args
         self.off_kwargs = off_kwargs
+        self.lock = threading.Lock()
 
     @handle_exception
     def __call__(self, func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            result = func(*args, **kwargs)
-            threading.Thread(target=self.pulse_thread).start()
+            with self.lock:
+                result = func(*args, **kwargs)
+                threading.Thread(target=self.pulse_thread, daemon=True).start()
             return result
 
         return wrapper
 
     @handle_exception
     def pulse_thread(self):
-        # time.sleep(self.duration)
-        threading.Event().wait(self.duration)
-        self.off_method(*self.off_args, **self.off_kwargs)
+        with self.lock:
+            time.sleep(self.duration)
+            self.off_method(*self.off_args, **self.off_kwargs)
 
 
 # ---------------------------------------------------------------------------- #
 @handle_exception
 def debounce(timeout_ms: float):
     def decorator(func):
+        lock = threading.Lock()
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            if hasattr(wrapper, "func_timer") and wrapper.func_timer.is_alive():
-                wrapper.func_timer.cancel()
-            wrapper.func_timer = threading.Timer(timeout_ms / 1000, func, args, kwargs)
-            wrapper.func_timer.start()
+            with lock:
+                if hasattr(wrapper, "func_timer") and wrapper.func_timer.is_alive():
+                    wrapper.func_timer.cancel()
+                wrapper.func_timer = threading.Timer(timeout_ms / 1000, func, args, kwargs)
+                wrapper.func_timer.start()
 
         return wrapper
 

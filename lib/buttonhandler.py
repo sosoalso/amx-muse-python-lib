@@ -1,8 +1,7 @@
 import threading
 
-from mojo import context
-
 from lib.eventmanager import EventManager
+from mojo import context
 
 
 class ButtonHandler(EventManager):
@@ -28,7 +27,10 @@ class ButtonHandler(EventManager):
             self.is_hold = True
             self.trigger_event("hold")  # 홀드 이벤트 트리거
 
-    def handle_event(self, evt):
+    def handle_event(
+        self,
+        evt,
+    ):
         if evt.value:
             self.is_pushed = True
             self.trigger_event("push")  # 푸시 이벤트 트리거
@@ -60,7 +62,7 @@ class LevelHandler(EventManager):
         else:
             context.log.debug("Handler already registered for event: level")
 
-    def handle_event(self, evt):
+    def handle_event(self, evt, *args):
         value = int(evt.value)
         self.trigger_event("level", value=value, actuator=True)  # 레벨 이벤트 트리거
 

@@ -1,10 +1,9 @@
 from functools import partial
 
-from mojo import context
-
 from lib.buttonhandler import ButtonHandler
 from lib.lib_tp import tp_add_watcher, tp_set_button
 from lib.lib_yeoul import pulse
+from mojo import context
 
 
 # ---------------------------------------------------------------------------- #

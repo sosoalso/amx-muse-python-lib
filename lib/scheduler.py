@@ -6,7 +6,7 @@ from mojo import context
 
 # ---------------------------------------------------------------------------- #
 class Scheduler:
-    def __init__(self, max_workers=1, name="Scheduler"):
+    def __init__(self, max_workers=2, name="Scheduler"):
         self.name = name
         self.max_workers = max_workers
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers)
@@ -14,13 +14,12 @@ class Scheduler:
         self.task_executor = concurrent.futures.ThreadPoolExecutor()
 
     def set_interval(self, func, interval):
+        def wrapper():
+            while True:
+                time.sleep(interval)
+                self.task_executor.submit(func)
+
         try:
-
-            def wrapper():
-                while True:
-                    time.sleep(interval)
-                    self.task_executor.submit(func)
-
             future = self.executor.submit(wrapper)
             self.scheduled_tasks.append(future)
         except Exception as e:
@@ -29,12 +28,11 @@ class Scheduler:
             self.clean()
 
     def set_timeout(self, func, delay):
+        def wrapper():
+            time.sleep(delay)
+            self.task_executor.submit(func)
+
         try:
-
-            def wrapper():
-                time.sleep(delay)
-                self.task_executor.submit(func)
-
             future = self.executor.submit(wrapper)
             self.scheduled_tasks.append(future)
         except Exception as e:
@@ -69,3 +67,4 @@ class Scheduler:
 # # 10초 후에 스케줄러 종료
 # time.sleep(10)
 # scheduler.shutdown()
+# ---------------------------------------------------------------------------- #
