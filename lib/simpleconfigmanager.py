@@ -1,4 +1,3 @@
-# ---------------------------------------------------------------------------- #
 import configparser
 import os
 
@@ -95,8 +94,3 @@ class SimpleConfigManager:
 
     def remove_default_option(self, option):
         self.remove_option(configparser.DEFAULTSECT, option)
-
-
-# ---------------------------------------------------------------------------- #
-if __name__ == "__main__":
-    pass

@@ -1,9 +1,11 @@
 import threading
 
-from lib.eventmanager import EventManager
 from mojo import context
 
+from lib.eventmanager import EventManager
 
+
+# ---------------------------------------------------------------------------- #
 class ButtonHandler(EventManager):
     def __init__(self, hold_time=2.0, repeat_interval=0.5, trigger_release_on_hold=False):
         super().__init__("push", "release", "hold", "repeat")
@@ -34,11 +36,11 @@ class ButtonHandler(EventManager):
         if evt.value:
             self.is_pushed = True
             self.trigger_event("push")  # 푸시 이벤트 트리거
-            # Start hold thread
+            # ---------------------------------------------------------------------------- #
             if self.hold_thread is None or not self.hold_thread.is_alive():
                 self.hold_thread = threading.Thread(target=self.start_hold, daemon=True)
                 self.hold_thread.start()
-            # Start repeat thread
+            # ---------------------------------------------------------------------------- #
             if self.repeat_thread is None or not self.repeat_thread.is_alive():
                 self.repeat_thread = threading.Thread(target=self.start_repeat, daemon=True)
                 self.repeat_thread.start()
@@ -60,13 +62,8 @@ class LevelHandler(EventManager):
         elif handler not in self.event_handlers["level"]:
             self.event_handlers["level"].append(handler)  # 중복되지 않으면 핸들러 추가
         else:
-            context.log.debug("Handler already registered for event: level")
+            context.log.error("해당 이벤트가 이미 등록되어 있습니다.")
 
     def handle_event(self, evt, *args):
         value = int(evt.value)
         self.trigger_event("level", value=value, actuator=True)  # 레벨 이벤트 트리거
-
-
-# ---------------------------------------------------------------------------- #
-if __name__ == "__main__":
-    pass

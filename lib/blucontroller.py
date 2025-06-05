@@ -120,13 +120,13 @@ class BluController:
         for path_list in path_lists:
             if not isinstance(path_list, (list, tuple)):
                 context.log.error(
-                    "BluController init 에러 :: 각각의 path_list 는 path str 으로 구성된 list 나 tuple 이어야 합니다."
+                    "BluController init 에러 : 각각의 path_list 는 path str 으로 구성된 list 나 tuple 이어야 합니다."
                 )
                 raise TypeError
             for path in path_list:
                 if not isinstance(path, tuple):
                     context.log.error(
-                        "BluController init 에러 :: 각각의 path 는 path str 으로 구성된 tuple 이어야 합니다."
+                        "BluController init 에러 : 각각의 path 는 path str 으로 구성된 tuple 이어야 합니다."
                     )
                     raise TypeError
                 component = self.get_component(path)
@@ -143,10 +143,10 @@ class BluController:
     def get_component(self, path: tuple[str, ...]):
         if not isinstance(path, tuple):
             context.log.error(
-                "BluController get_component 에러 ;: 각각의 path_list 는 path str 으로 구성된 list 나 tuple 이어야 합니다."
+                "BluController get_component 에러 : 각각의 path_list 는 path str 으로 구성된 list 나 tuple 이어야 합니다."
             )
             raise TypeError
-        nested_component = self.device.Audio
+        nested_component = self.device  # Logic 때문에 self.device 에서 시작
         for p in path:
             nested_component = nested_component[p]
         return nested_component

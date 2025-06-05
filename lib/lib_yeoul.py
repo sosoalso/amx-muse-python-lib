@@ -21,37 +21,25 @@ def handle_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            context.log.debug(f"함수 {func.__name__} 에러 발생: {e}")
+            context.log.error(f"함수 {func.__name__} 에러 발생: {e}")
             return None
 
     return wrapper
 
 
 # ---------------------------------------------------------------------------- #
-class pulse:
-    def __init__(self, duration, off_method, *off_args, **off_kwargs):
-        self.duration = duration
-        self.off_method = off_method
-        self.off_args = off_args
-        self.off_kwargs = off_kwargs
-        self.lock = threading.Lock()
-
-    @handle_exception
-    def __call__(self, func):
-        @wraps(func)
+@handle_exception
+def pulse(duration, off_method, *off_args, **off_kwargs):
+    def decorator(func):
+        @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            with self.lock:
-                result = func(*args, **kwargs)
-                threading.Thread(target=self.pulse_thread, daemon=True).start()
+            result = func(*args, **kwargs)
+            threading.Timer(duration, off_method, args=off_args, kwargs=off_kwargs).start()
             return result
 
         return wrapper
 
-    @handle_exception
-    def pulse_thread(self):
-        with self.lock:
-            time.sleep(self.duration)
-            self.off_method(*self.off_args, **self.off_kwargs)
+    return decorator
 
 
 # ---------------------------------------------------------------------------- #
@@ -75,7 +63,7 @@ def debounce(timeout_ms: float):
 
 # ---------------------------------------------------------------------------- #
 @handle_exception
-def debug(max_depth=3):
+def _debug(max_depth=3):
     log_message = ""
     current_frame = inspect.currentframe()
     depth = 0
@@ -96,7 +84,7 @@ def debug(max_depth=3):
 
 # ---------------------------------------------------------------------------- #
 @handle_exception
-def hello(device):
+def _hello(device):
     context.log.debug("=" * 79)
     context.log.debug(device)
     context.log.debug("type : ", type(device))

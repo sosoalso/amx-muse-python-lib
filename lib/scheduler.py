@@ -23,7 +23,7 @@ class Scheduler:
             future = self.executor.submit(wrapper)
             self.scheduled_tasks.append(future)
         except Exception as e:
-            context.log.debug(f"{self.name} set_interval 에러: {e}")
+            context.log.error(f"{self.name} set_interval 에러: {e}")
         finally:
             self.clean()
 
@@ -36,7 +36,7 @@ class Scheduler:
             future = self.executor.submit(wrapper)
             self.scheduled_tasks.append(future)
         except Exception as e:
-            context.log.debug(f"{self.name} set_timeout 에러: {e}")
+            context.log.error(f"{self.name} set_timeout 에러: {e}")
         finally:
             self.clean()
 
@@ -52,7 +52,7 @@ class Scheduler:
             self.executor.shutdown()
             self.task_executor.shutdown()
         except Exception as e:
-            context.log.debug(f"{self.name} shutdown 에러: {e}")
+            context.log.error(f"{self.name} shutdown 에러: {e}")
 
 
 # ---------------------------------------------------------------------------- #

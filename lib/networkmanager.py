@@ -1,9 +1,11 @@
 import socket
 import threading
+import time
 from types import SimpleNamespace
 
-from lib.eventmanager import EventManager
 from mojo import context
+
+from lib.eventmanager import EventManager
 
 # ---------------------------------------------------------------------------- #
 DEFAULT_BUFFER_SIZE = 1024
@@ -24,7 +26,6 @@ class TcpServer(EventManager):
         self.clients = []
         self.buffer_size = buffer_size
         self.sock = None
-        self.lock = threading.Lock()
         self.echo = False
         self.receive = self.ReceiveHandler(self)
 
@@ -46,7 +47,7 @@ class TcpServer(EventManager):
             client, address = self.sock.accept()
             self.clients.append(client)
             self.trigger_event("connected", client, address)
-            threading.Thread(target=self.handle_client, args=(client, address)).start()
+            threading.Thread(target=self.handle_client, args=(client, address), daemon=True).start()
 
     def handle_client(self, client, address):
         while True:
@@ -64,9 +65,8 @@ class TcpServer(EventManager):
                     raise ValueError
             except (socket.error, ValueError) as e:
                 client.close()
-                with self.lock:
-                    if client in self.clients:
-                        self.clients.remove(client)
+                if client in self.clients:
+                    self.clients.remove(client)
                 context.log.error(f"클라이언트 에러 {address=}: {e}")
                 break
         self.trigger_event("disconnected")
@@ -95,7 +95,6 @@ class TcpClient(EventManager):
         self.DEFAULT_BUFFER_SIZE = buffer_size
         self.connected = False
         self.socket = None
-        self.lock = threading.Lock()
         self._thread_connect = None
         self._thread_receive = None
         self.receive = self.ReceiveHandler(self)
@@ -109,24 +108,23 @@ class TcpClient(EventManager):
     def _connect(self):
         while not self.connected:
             try:
-                with self.lock:
-                    self.socket = socket.create_connection((self.ip, self.port))
-                    if self.socket:
-                        self.connected = True
-                        self._run_thread_receive()
+                self.socket = socket.create_connection((self.ip, self.port))
+                if self.socket:
+                    self._run_thread_receive()
+                    self.connected = True
             except ConnectionRefusedError:
-                context.log.error("_connect() 연결 거부")
-                threading.Event().wait(self.time_reconnect)
+                context.log.error(f"_connect() {self.ip}:{self.port} 연결 거부")
+                time.sleep(self.time_reconnect)
                 if not self.reconnect:
                     break
             except TimeoutError:
-                context.log.error("_connect() 연결 타임아웃")
-                threading.Event().wait(self.time_reconnect)
+                context.log.error(f"_connect() {self.ip}:{self.port} 연결 타임아웃")
+                time.sleep(self.time_reconnect)
                 if not self.reconnect:
                     break
             except Exception:
-                context.log.error("_connect() 에러")
-                threading.Event().wait(self.time_reconnect)
+                context.log.error(f"_connect() {self.ip}:{self.port} 에러")
+                time.sleep(self.time_reconnect)
                 if not self.reconnect:
                     break
 
@@ -140,28 +138,25 @@ class TcpClient(EventManager):
 
     def _receive(self):
         self.trigger_event("connected")
-        context.log.debug(f"TcpClient._receive() {self.name=} 연결됨")
+        context.log.debug(f"TcpClient._receive() {self.ip}:{self.port} 연결됨")
         while self.connected:
             try:
                 msg = self.socket.recv(self.DEFAULT_BUFFER_SIZE)
                 if msg:
-                    context.log.debug(f"TcpClient._receive() {self.name=} 수신 :: {msg=}")
+                    context.log.debug(f"TcpClient._receive() {self.ip}:{self.port} 수신: {msg=}")
                     event = SimpleNamespace()
                     event.source = self
                     event.arguments = {"data": msg}
                     self.trigger_event("received", event)
-                    context.log.info(f"trigger_event received {event=}")
                 else:
-                    with self.lock:
-                        self.connected = False
-                        context.log.debug(f"TcpClient.connect() {self.name=} 수신 없음 연결 끊김")
-                        if self.reconnect:
-                            self.connect()
+                    self.connected = False
+                    context.log.debug(f"TcpClient.connect() {self.ip}:{self.port}  수신: 없음 연결 끊김")
+                    if self.reconnect:
+                        self.connect()
                     break
             except Exception:
-                with self.lock:
-                    self.connected = False
-                context.log.error(f"TcpClient._receive()  {self.name=} :: 에러")
+                self.connected = False
+                context.log.error(f"TcpClient._receive() {self.ip}:{self.port} 에러")
                 if self.reconnect:
                     self.connect()
                 break
@@ -170,31 +165,26 @@ class TcpClient(EventManager):
         if self.socket and self.connected:
             try:
                 self.socket.sendall(message)
-                context.log.debug(f"TcpClient.send_byte() {self.name=} 전송 :: {message=}")
+                context.log.debug(f"TcpClient.send_byte() {self.ip}:{self.port} 전송: {message=}")
             except Exception:
-                with self.lock:
-                    self.connected = False
+                self.connected = False
                 self._handle_reconnect()
 
     def send(self, message):
         if self.socket and self.connected:
             try:
                 self.socket.sendall(bytes(message, "UTF-8"))
-                context.log.debug(f"TcpClient.send() {self.name=} 전송 :: {message=}")
+                context.log.debug(f"TcpClient.send() {self.ip}:{self.port} 전송: {message=}")
             except Exception:
-                with self.lock:
-                    self.connected = False
+                self.connected = False
                 self._handle_reconnect()
 
     def disconnect(self):
-        if self.socket and self.connected:
-            try:
-                self.socket.close()
-            finally:
-                with self.lock:
-                    self.socket = None
-                    self.connected = False
-        context.log.debug(f"TcpClient.disconnect() {self.name=} 연결 끊김")
+        if self.socket:
+            self.socket.close()
+        self.connected = False
+        self.socket = None
+        context.log.debug(f"TcpClient.disconnect() {self.ip}:{self.port} 연결 끊김")
 
     def is_connected(self):
         return self.connected
@@ -223,7 +213,6 @@ class UdpClient(EventManager):
         # self.receive_callback = None
         self._thread_connect = None
         self._thread_receive = None
-        self.lock = threading.Lock()
         self.receive = self.ReceiveHandler(self)
         self.port_bind = port_bind if port_bind is not None else 0
         self.bound_port = None
@@ -236,27 +225,26 @@ class UdpClient(EventManager):
     def _connect(self):
         while not self.connected:
             try:
-                with self.lock:
-                    self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    # 수신을 위해 소켓에 로컬 포트를 바인딩
-                    self.socket.bind(("", 0 if self.port_bind is None else self.port_bind))
-                    self.bound_port = self.socket.getsockname()[1]
-                    context.log.debug(f"_connect() 포트에 바운드:{self.bound_port}")
-                    if self.socket:
-                        self.connected = True
-                        self._run_thread_receive()
+                self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                # 수신을 위해 소켓에 로컬 포트를 바인딩
+                self.socket.bind(("", 0 if self.port_bind is None else self.port_bind))
+                self.bound_port = self.socket.getsockname()[1]
+                context.log.debug(f"_connect() 포트에 바운드:{self.bound_port}")
+                if self.socket:
+                    self.connected = True
+                    self._run_thread_receive()
             except ConnectionRefusedError:
-                context.log.error(f"UdpClient._connect() 연결 거부 {self.name=}")
+                context.log.error(f"UdpClient._connect() {self.ip}:{self.port} 연결 거부 ")
                 threading.Event().wait(self.time_reconnect)
                 if not self.reconnect:
                     break
             except TimeoutError:
-                context.log.error(f"UdpClient._connect() 연결 타임아웃 {self.name=}")
+                context.log.error(f"UdpClient._connect() {self.ip}:{self.port} 연결 타임아웃 ")
                 threading.Event().wait(self.time_reconnect)
                 if not self.reconnect:
                     break
             except Exception:
-                context.log.error(f"UdpClient._connect() 에러 {self.name=}")
+                context.log.error(f"UdpClient._connect() {self.ip}:{self.port} 에러 ")
                 threading.Event().wait(self.time_reconnect)
                 if not self.reconnect:
                     break
@@ -275,15 +263,14 @@ class UdpClient(EventManager):
             try:
                 msg, addr = self.socket.recvfrom(self.DEFAULT_BUFFER_SIZE)
                 if msg:
-                    context.log.debug(f"UdpClient._receive() {self.name=} 수신 :: {msg=} {addr=}")
+                    context.log.debug(f"UdpClient._receive() {self.ip}:{self.port} 수신 : {msg=} {addr=}")
                     event = SimpleNamespace()
                     event.source = self
                     event.arguments = {"data": msg, "address": addr}
                     self.trigger_event("received", event)
             except Exception:
-                with self.lock:
-                    self.connected = False
-                    context.log.debug(f"UdpClient._receive() {self.name=} 수신 없음 에러")
+                self.connected = False
+                context.log.debug(f"UdpClient._receive() {self.ip}:{self.port} 수신 없음 에러")
                 if self.reconnect:
                     self.connect()
                 break
@@ -293,18 +280,16 @@ class UdpClient(EventManager):
             try:
                 self.socket.sendto(message, (self.ip, self.port))
             except Exception:
-                with self.lock:
-                    self.connected = False
+                self.connected = False
                 self._handle_reconnect()
 
     def send(self, message):
         if self.socket and self.connected:
             try:
                 self.socket.sendto(bytes(message, "UTF-8"), (self.ip, self.port))
-                context.log.debug(f"UdpClient.send() {self.name=} 전송 :: {message=} {self.ip=} {self.port=}")
+                context.log.debug(f"UdpClient.send() {self.ip}:{self.port} 전송: {message=} ")
             except Exception:
-                with self.lock:
-                    self.connected = False
+                self.connected = False
                 self._handle_reconnect()
 
     def disconnect(self):
@@ -312,9 +297,8 @@ class UdpClient(EventManager):
             try:
                 self.socket.close()
             finally:
-                with self.lock:
-                    self.socket = None
-                    self.connected = False
+                self.socket = None
+                self.connected = False
 
     def is_connected(self):
         return self.connected

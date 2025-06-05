@@ -10,7 +10,7 @@ def tp_get_device_state(tp):
 
 # ---------------------------------------------------------------------------- #
 def tp_add_watcher(tp, index_port, index_button, handler):
-    context.log.debug(f"tp_add_watcher :: {tp=} {index_port=} {index_button=} {handler=}")
+    context.log.debug(f"tp_add_watcher : {tp=} {index_port=} {index_button=} {handler=}")
     tp.port[index_port].button[index_button].watch(handler)
 
 
@@ -25,7 +25,7 @@ def tp_clear_watcher(tp, index_port, index_button):
 
 
 def tp_add_watcher_level(tp, index_port, index_level, handler):
-    context.log.debug(f"tp_add_watcher_level :: {tp=} {index_port=} {index_level=} {handler=}")
+    context.log.debug(f"tp_add_watcher_level : {tp=} {index_port=} {index_level=} {handler=}")
     tp.port[index_port].level[index_level].watch(handler)
 
 
@@ -61,7 +61,6 @@ def tp_get_button_state(tp, index_port, index_button):
 
 def tp_set_button(tp, index_port, index_button, value):
     if tp_get_device_state(tp):
-        context.log.debug(f"tp_set_button :: {tp=} {index_port=} {index_button=} {value=}")
         tp.port[index_port].channel[index_button].value = value
 
 
@@ -95,7 +94,6 @@ def tp_get_level(tp, index_port, index_level):
 
 
 def tp_send_level(tp, index_port, index_level, value):
-    context.log.debug(f"tp_send_level :: {tp=} {index_port=} {index_level=} {value=}")
     if tp_get_device_state(tp):
         tp.port[index_port].level[index_level].value = value
 
@@ -118,9 +116,9 @@ def convert_text_to_unicode(text):
 
 
 def tp_send_command(tp, index_port, command_string):
-    context.log.debug(f"tp_send_command :: {tp=} {index_port=} {command_string=}")
     if tp_get_device_state(tp):
         tp.port[index_port].send_command(command_string)
+        context.log.debug(f"tp_send_command : {tp=} {index_port=} {command_string=}")
 
 
 def tp_send_command_ss(tp: Union[list, tuple], index_port, command_string):

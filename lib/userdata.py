@@ -36,11 +36,11 @@ class UserData:
             if not os.path.exists(self.foldername):
                 os.makedirs(self.foldername)
         if not os.path.exists(self.filepath):
-            context.log.debug(f"init() :: 파일 {self.filepath} 없음, 새 파일 생성")
+            context.log.debug(f"init() : 파일 {self.filepath} 없음, 새 파일 생성")
             self.data = {}
             self.save_file()
         else:
-            context.log.debug(f"init() :: 파일 {self.filepath} 불러오기")
+            context.log.debug(f"init() : 파일 {self.filepath} 불러오기")
             self.load_file()
 
     @handle_exception
@@ -74,7 +74,7 @@ class UserData:
 
 
 # 간소화 버전
-class Var:
+class Vars:
     @classmethod
     def as_dict(cls):
         return {

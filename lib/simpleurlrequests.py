@@ -1,6 +1,5 @@
 import json
 import threading
-import time
 import urllib.error
 import urllib.request
 
@@ -21,7 +20,7 @@ def url_get(url: str, header: dict = None, callback=None, timeout: float = 0.5):
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
             context.log.error(f"url_get Error: {e}")
 
-    threading.Thread(target=task).start()
+    threading.Thread(target=task, daemon=True).start()
 
 
 def url_post(url: str, header: dict = None, body=None, callback=None, timeout: float = 0.5):
@@ -38,7 +37,7 @@ def url_post(url: str, header: dict = None, body=None, callback=None, timeout: f
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
             context.log.error(f"url_post Error: {e}")
 
-    threading.Thread(target=task).start()
+    threading.Thread(target=task, daemon=True).start()
 
 
 # ---------------------------------------------------------------------------- #

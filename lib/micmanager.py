@@ -1,5 +1,6 @@
-from lib.eventmanager import EventManager
 from mojo import context
+
+from lib.eventmanager import EventManager
 
 
 # ---------------------------------------------------------------------------- #
