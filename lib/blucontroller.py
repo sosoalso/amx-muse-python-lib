@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Sequence, Union
 
 from mojo import context
 
@@ -116,11 +116,11 @@ class BluController:
         return y
 
     @handle_exception
-    def init(self, *path_lists: Union[list[str], tuple[str, ...]]):
+    def init(self, *path_lists: Sequence[tuple[str, ...]]):
         for path_list in path_lists:
-            if not isinstance(path_list, (list, tuple)):
+            if not isinstance(path_list, tuple):
                 context.log.error(
-                    "BluController init 에러 : 각각의 path_list 는 path str 으로 구성된 list 나 tuple 이어야 합니다."
+                    "BluController init 에러 : path_lists 의 개별 요소는 path str 으로 구성된 tuple 이어야 합니다."
                 )
                 raise TypeError
             for path in path_list:
@@ -143,7 +143,7 @@ class BluController:
     def get_component(self, path: tuple[str, ...]):
         if not isinstance(path, tuple):
             context.log.error(
-                "BluController get_component 에러 : 각각의 path_list 는 path str 으로 구성된 list 나 tuple 이어야 합니다."
+                "BluController get_component 에러 : path 의 개별 요소는 는 tuple 로 둘러쌓여진 str 으로 구성돼야합니다."
             )
             raise TypeError
         nested_component = self.device  # Logic 때문에 self.device 에서 시작

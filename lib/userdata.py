@@ -55,22 +55,30 @@ class UserData:
 
     @handle_exception
     def set_value(self, key, value):
+        if self.data is None:
+            self.data = {}
         self.data[key] = value
         context.log.debug(f"set_value() {key=} {value=}")
         self.save_file()
 
     @handle_exception
     def get_value(self, key):
-        return self.data.get(key)
+        if self.data is not None:
+            if key in self.data:
+                return self.data[key]
+            else:
+                context.log.error(f"get_value() {key=} 없음")
+                return None
 
     @handle_exception
     def delete_value(self, key):
-        if key in self.data:
-            del self.data[key]
-            context.log.debug(f"delete_value() {key=} 삭제")
-            self.save_file()
-        else:
-            context.log.debug(f"delete_value() {key=} 없음")
+        if self.data is not None:
+            if key in self.data:
+                del self.data[key]
+                context.log.debug(f"delete_value() {key=} 삭제")
+                self.save_file()
+            else:
+                context.log.debug(f"delete_value() {key=} 없음")
 
 
 # 간소화 버전
@@ -102,6 +110,28 @@ class Vars:
         with open(filepath, "r", encoding="UTF-8") as f:
             data = json.load(f)
         cls.from_dict(data)
+
+
+# ---------------------------------------------------------------------------- #
+def save_json(filename, data=None):
+    try:
+        with open("vidmtx_routes.json", "w", encoding="UTF-8") as f:
+            json.dump({} if data is None else data, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        context.log.error(f"{filename} 저장 에러 : {e}")
+
+
+# ---------------------------------------------------------------------------- #
+def load_json(filename, data):
+    try:
+        with open(filename, "r", encoding="UTF-8") as f:
+            j = json.load(f)
+            for key, value in j.items():
+                if hasattr(data, key):
+                    setattr(data, key, value)
+    except FileNotFoundError:
+        context.log.debug(f"{filename} 로드 에러 : 파일이 없습니다. 새로 생성합니다.")
+        save_json(filename)
 
 
 # ---------------------------------------------------------------------------- #

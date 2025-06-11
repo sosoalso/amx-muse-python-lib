@@ -6,7 +6,7 @@ from lib.eventmanager import EventManager
 # ---------------------------------------------------------------------------- #
 class MicManager(EventManager):
     def __init__(self, max_mic_index=40, last_mic_enabled=True):
-        super().__init__("mic_on", "mic_off", "mic_all_off")  # EventManager의 생성자 호출
+        super().__init__("mic_on", "mic_off", "mic_all_off")
         self.max_mic_index = max_mic_index
         self.mics_on = [False] * max_mic_index
         self.last_on_mics = []  # 마지막으로 켜진 마이크의 순서를 저장하는 리스트
@@ -26,35 +26,35 @@ class MicManager(EventManager):
 
     # ---------------------------------------------------------------------------- #
     def turn_mic_on(self, mic_index):
-        context.log.debug(f"MicManager: turn_mic_on {mic_index=}")
+        context.log.debug(f"MicManager : turn_mic_on {mic_index=}")
         self.handle_mic_on(mic_index)
 
     def turn_mic_off(self, mic_index):
-        context.log.debug(f"MicManager: turn_mic_off {mic_index=}")
+        context.log.debug(f"MicManager : turn_mic_off {mic_index=}")
         self.handle_mic_off(mic_index)
 
     def turn_all_mic_off(self):
-        context.log.debug("MicManager: turn_all_mic_off")
+        context.log.debug("MicManager : turn_all_mic_off")
         self.handle_all_mic_off()
 
     def turn_last_mic_on(self):
-        context.log.debug("MicManager: turn_last_mic_on")
-        self.handle_list_mic_on()
+        context.log.debug("MicManager : turn_last_mic_on")
+        self.handle_last_mic_on()
 
     # ---------------------------------------------------------------------------- #
     def handle_all_mic_off(self):
-        context.log.debug("MicManager: handle_all_mic_off")
+        context.log.debug("MicManager : handle_all_mic_off")
         for idx in range(self.max_mic_index):
             self.handle_mic_off(idx)
 
     def handle_last_mic_on(self):
-        context.log.debug("MicManager: handle_last_mic_on")
+        context.log.debug("MicManager : handle_last_mic_on")
         if self.last_on_mics:
             last_mic = self.last_on_mics[-1]
             self.handle_mic_on(last_mic)
 
     def handle_mic_on(self, mic_index):
-        context.log.debug(f"MicManager: handle_mic_on {mic_index=}")
+        context.log.debug(f"MicManager : handle_mic_on {mic_index=}")
         mic_idx = self.index_to_idx(mic_index)
         if mic_idx is not None:
             self.mics_on[mic_idx] = True
@@ -65,7 +65,7 @@ class MicManager(EventManager):
             self.trigger_event("mic_on", mic_index)
 
     def handle_mic_off(self, mic_index):
-        context.log.debug(f"MicManager: handle_mic_off {mic_index=}")
+        context.log.debug(f"MicManager : handle_mic_off {mic_index=}")
         mic_idx = self.index_to_idx(mic_index)
         if mic_idx is not None:
             self.mics_on[mic_idx] = False
