@@ -5,6 +5,13 @@ import urllib.request
 
 from mojo import context
 
+# ---------------------------------------------------------------------------- #
+VERSION = "2025.06.20"
+
+
+def get_version():
+    return VERSION
+
 
 # ---------------------------------------------------------------------------- #
 def url_get(url: str, header: dict = None, callback=None, timeout: float = 0.5):

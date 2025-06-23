@@ -1,13 +1,21 @@
 import threading
+import time
 
 from mojo import context
 
 from lib.eventmanager import EventManager
 
+# ---------------------------------------------------------------------------- #
+VERSION = "2025.06.23"
+
+
+def get_version():
+    return VERSION
+
 
 # ---------------------------------------------------------------------------- #
 class ButtonHandler(EventManager):
-    def __init__(self, hold_time=2.0, repeat_interval=0.5, trigger_release_on_hold=False):
+    def __init__(self, hold_time=30.0, repeat_interval=0.3, trigger_release_on_hold=False):
         super().__init__("push", "release", "hold", "repeat")
         self.hold_time = hold_time  # 버튼을 누르고 있는 시간
         self.repeat_interval = repeat_interval  # 반복 이벤트 간격
@@ -19,20 +27,17 @@ class ButtonHandler(EventManager):
 
     def start_repeat(self):
         while self.is_pushed:
-            threading.Event().wait(self.repeat_interval)  # 반복 간격 대기
+            time.sleep(self.repeat_interval)  # 반복 간격 대기
             if self.is_pushed:
                 self.trigger_event("repeat")  # 반복 이벤트 트리거
 
     def start_hold(self):
-        threading.Event().wait(self.hold_time)  # 홀드 시간 대기
+        time.sleep(self.hold_time)  # 홀드 시간 대기
         if self.is_pushed and not self.is_hold:
             self.is_hold = True
             self.trigger_event("hold")  # 홀드 이벤트 트리거
 
-    def handle_event(
-        self,
-        evt,
-    ):
+    def handle_event(self, evt):
         if evt.value:
             self.is_pushed = True
             self.trigger_event("push")  # 푸시 이벤트 트리거
@@ -56,14 +61,6 @@ class LevelHandler(EventManager):
     def __init__(self):
         super().__init__("level")
 
-    def add_event_handler(self, handler, *args):
-        if "level" not in self.event_handlers:
-            self.event_handlers["level"] = [handler]  # 레벨 이벤트 핸들러 추가
-        elif handler not in self.event_handlers["level"]:
-            self.event_handlers["level"].append(handler)  # 중복되지 않으면 핸들러 추가
-        else:
-            context.log.error("해당 이벤트가 이미 등록되어 있습니다.")
-
-    def handle_event(self, evt, *args):
+    def handle_event(self, evt):
         value = int(evt.value)
-        self.trigger_event("level", value=value, actuator=True)  # 레벨 이벤트 트리거
+        self.trigger_event("level", value)  # 레벨 이벤트 트리거

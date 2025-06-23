@@ -1,10 +1,16 @@
 import functools
 import inspect
 import threading
-import time
-from functools import wraps
 
 from mojo import context
+
+# ---------------------------------------------------------------------------- #
+VERSION = "2025.06.23"
+
+
+def get_version():
+    return VERSION
+
 
 # ---------------------------------------------------------------------------- #
 get_device = context.devices.get
@@ -12,7 +18,21 @@ get_service = context.services.get
 
 
 def get_timeline():
-    return get_service("timeline")
+    return context.services.get("timeline")
+
+
+# ---------------------------------------------------------------------------- #
+log_info = context.log.info
+log_error = context.log.error
+log_warn = context.log.warn
+log_debug = context.log.debug
+
+
+def set_log_level(level):
+    valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR"]
+    if level not in valid_levels:
+        raise ValueError(f"Invalid log level: {level}. Choose from {valid_levels}.")
+    context.log.level = level
 
 
 # ---------------------------------------------------------------------------- #
@@ -50,11 +70,12 @@ def debounce(timeout_ms: float):
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            func_timer = None
             with lock:
-                if hasattr(wrapper, "func_timer") and wrapper.func_timer.is_alive():
-                    wrapper.func_timer.cancel()
-                wrapper.func_timer = threading.Timer(timeout_ms / 1000, func, args, kwargs)
-                wrapper.func_timer.start()
+                if func_timer and func_timer.is_alive():
+                    func_timer.cancel()
+                func_timer = threading.Timer(timeout_ms / 1000, func, args=args, kwargs=kwargs)
+                func_timer.start()
 
         return wrapper
 
@@ -75,11 +96,11 @@ def _debug(max_depth=3):
             kwargs_str = ", ".join(f"{key}={value}" for key, value in values.get("kwargs", {}).items())
             if kwargs_str:
                 args_str += f" **kwargs: {kwargs_str}"
-            log_message += f"  $c{depth}f: {func_name}({args_str})"
+            log_message += f"  $c{depth}f: {func_name}({args_str})\n"
         current_frame = current_frame.f_back
         depth += 1
-    # log_message = log_message.removeprefix(" $ ")
-    context.log.debug(log_message)  # Uncommented to log the debug message
+    log_message = log_message.removesuffix("\n")
+    context.log.debug("_debug\n" + log_message)
 
 
 # ---------------------------------------------------------------------------- #

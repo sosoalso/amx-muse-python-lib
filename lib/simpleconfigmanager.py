@@ -3,6 +3,13 @@ import os
 
 from mojo import context
 
+# ---------------------------------------------------------------------------- #
+VERSION = "2025.06.20"
+
+
+def get_version():
+    return VERSION
+
 
 # ---------------------------------------------------------------------------- #
 class SimpleConfigManager:

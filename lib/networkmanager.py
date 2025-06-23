@@ -8,7 +8,15 @@ from mojo import context
 from lib.eventmanager import EventManager
 
 # ---------------------------------------------------------------------------- #
-DEFAULT_BUFFER_SIZE = 1024
+VERSION = "2025.06.20"
+
+
+def get_version():
+    return VERSION
+
+
+# ---------------------------------------------------------------------------- #
+DEFAULT_BUFFER_SIZE = 2048
 
 
 # ---------------------------------------------------------------------------- #
@@ -85,7 +93,15 @@ class TcpClient(EventManager):
         def listen(self, listener):
             self.this.add_event_handler("received", listener)
 
-    def __init__(self, name, ip, port, reconnect=True, time_reconnect=5, buffer_size=DEFAULT_BUFFER_SIZE):
+    def __init__(
+        self,
+        name,
+        ip,
+        port,
+        reconnect=True,
+        time_reconnect=5,
+        buffer_size=DEFAULT_BUFFER_SIZE,
+    ):
         super().__init__("connected", "received")
         self.name = name
         self.ip = ip
@@ -199,7 +215,14 @@ class UdpClient(EventManager):
             self.this.add_event_handler("received", listener)
 
     def __init__(
-        self, name, ip, port, reconnect=True, time_reconnect=5, buffer_size=DEFAULT_BUFFER_SIZE, port_bind=None
+        self,
+        name,
+        ip,
+        port,
+        reconnect=True,
+        time_reconnect=5,
+        buffer_size=DEFAULT_BUFFER_SIZE,
+        port_bind=None,
     ):
         super().__init__("connected", "received")
         self.name = name
@@ -310,12 +333,18 @@ class UdpServer(EventManager):
         super().__init__("received")
         self.port = port
         self.DEFAULT_BUFFER_SIZE = buffer_size
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.bind(("", self.port))
-        context.log.debug(f"UDP 서버 바운드:{self.socket.getsockname()[1]}")
         self._server_thread = None
         self.running = False
         self.receive = self.ReceiveHandler(self)
+        self.socket = None
+        self.clients = []
+
+    def add_client(self, addr):
+        if addr not in self.clients:
+            self.clients.append(addr)
+
+    def remove_client(self):
+        self.clients = []
 
     class ReceiveHandler:
         def __init__(self, this):
@@ -325,8 +354,12 @@ class UdpServer(EventManager):
             self.this.add_event_handler("received", listener)
 
     def start(self):
-        self._server_thread = threading.Thread(target=self._start, daemon=True)
-        self._server_thread.start()
+        if not self.socket:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.socket.bind(("", self.port))
+            self._server_thread = threading.Thread(target=self._start, daemon=True)
+            self._server_thread.start()
 
     def _start(self):
         self.running = True
@@ -334,7 +367,8 @@ class UdpServer(EventManager):
             try:
                 data, addr = self.socket.recvfrom(self.DEFAULT_BUFFER_SIZE)
                 if data:
-                    context.log.debug(f"_start 수신 {addr=} {data=}")
+                    context.log.debug(f"_start received: {addr=} {data=}")
+                    self.add_client(addr)
                     event = SimpleNamespace()
                     event.arguments = {"data": data, "address": addr}
                     self.trigger_event("received", event)
@@ -342,6 +376,12 @@ class UdpServer(EventManager):
                 if not self.running:
                     break
 
-    def stop_server(self):
-        self.running = False
-        self.socket.close()
+    def send_byte(self, message):
+        if self.socket and self.running:
+            for addr in self.clients:
+                self.socket.sendto(message, addr)
+
+    def send(self, message):
+        if self.socket and self.running:
+            for addr in self.clients:
+                self.socket.sendto(bytes(message, "UTF-8"), addr)

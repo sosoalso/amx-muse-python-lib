@@ -1,5 +1,12 @@
 from mojo import context
 
+# ---------------------------------------------------------------------------- #
+VERSION = "2025.06.20"
+
+
+def get_version():
+    return VERSION
+
 
 # ---------------------------------------------------------------------------- #
 class EventManager:
@@ -46,7 +53,7 @@ class EventManager:
         try:
             if name in self.event_handlers:
                 for handler in self.event_handlers[name]:
-                    context.log.debug(f"trigger_event {name=} 발생 : {handler=} {args=} {kwargs=}")
+                    context.log.debug(f"trigger_event {name=} 발생")
                     handler(*args, **kwargs)
             else:
                 context.log.error(f"trigger_event 에러 : 해당 이벤트가 없습니다 {name=}")

@@ -2,15 +2,28 @@ from mojo import context
 
 from lib.eventmanager import EventManager
 
+# ---------------------------------------------------------------------------- #
+VERSION = "2025.06.20"
+
+
+def get_version():
+    return VERSION
+
 
 # ---------------------------------------------------------------------------- #
 class MicManager(EventManager):
     def __init__(self, max_mic_index=40, last_mic_enabled=True):
         super().__init__("mic_on", "mic_off", "mic_all_off")
         self.max_mic_index = max_mic_index
-        self.mics_on = [False] * max_mic_index
-        self.last_on_mics = []  # 마지막으로 켜진 마이크의 순서를 저장하는 리스트
         self.last_mic_enabled = last_mic_enabled
+        self.mics_on = [False] * self.max_mic_index
+        self.last_on_mics = []
+        self.reset_mic_state()
+
+    def reset_mic_state(self):
+        context.log.debug("MicManager : reset_mic_state")
+        self.mics_on = [False] * self.max_mic_index
+        self.last_on_mics = []
 
     def index_to_idx(self, mic_index):
         if 0 < mic_index <= self.max_mic_index:
@@ -44,8 +57,8 @@ class MicManager(EventManager):
     # ---------------------------------------------------------------------------- #
     def handle_all_mic_off(self):
         context.log.debug("MicManager : handle_all_mic_off")
-        for idx in range(self.max_mic_index):
-            self.handle_mic_off(idx)
+        self.reset_mic_state()
+        self.trigger_event("mic_all_off")
 
     def handle_last_mic_on(self):
         context.log.debug("MicManager : handle_last_mic_on")
@@ -58,7 +71,6 @@ class MicManager(EventManager):
         mic_idx = self.index_to_idx(mic_index)
         if mic_idx is not None:
             self.mics_on[mic_idx] = True
-            # 마지막으로 켜진 마이크 순서 업데이트
             if mic_idx in self.last_on_mics:
                 self.last_on_mics.remove(mic_idx)
             self.last_on_mics.append(mic_idx)
@@ -69,7 +81,6 @@ class MicManager(EventManager):
         mic_idx = self.index_to_idx(mic_index)
         if mic_idx is not None:
             self.mics_on[mic_idx] = False
-            # 마이크가 꺼지면 리스트에서 제거
             if mic_idx in self.last_on_mics:
                 self.last_on_mics.remove(mic_idx)
             if self.last_on_mics:

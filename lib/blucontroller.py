@@ -3,21 +3,17 @@ from typing import Sequence, Union
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-MIN_VAL = -60  # 최소 값
-MAX_VAL = 6  # 최대 값
-UNIT_VAL = 1  # 단위 값
+VERSION = "2025.06.20"
+
+
+def get_version():
+    return VERSION
 
 
 # ---------------------------------------------------------------------------- #
-def handle_exception(func):
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            context.log.error(f"BluController 에러: {e}")
-            return None
-
-    return wrapper
+MIN_VAL = -60  # 최소 값
+MAX_VAL = 6  # 최대 값
+UNIT_VAL = 1  # 단위 값
 
 
 # ---------------------------------------------------------------------------- #
@@ -26,17 +22,14 @@ class BluObserver:
     def __init__(self):
         self._observers = []
 
-    @handle_exception
     # 옵저버 추가
     def subscribe(self, observer):
         self._observers.append(observer)
 
-    @handle_exception
     # 옵저버 제거
     def unsubscribe(self, observer):
         self._observers.remove(observer)
 
-    @handle_exception
     # 모든 옵저버에게 알림
     def notify(self, *args, **kwargs):
         for observer in self._observers:
@@ -51,32 +44,26 @@ class BluState:
         self._event = BluObserver()  # 이벤트 옵저버 초기화
 
     # 상태 가져오기
-    @handle_exception
     def get_state(self, key):
         return self._states.get(key, None)
         # 상태 설정
 
-    @handle_exception
     def set_state(self, key, val):
         self._states[key] = val
 
-    @handle_exception
     def update_state(self, key, val):
         self.set_state(key, val)  # 상태 업데이트
         self._event.notify(key)  # 상태 변경 알림
 
     # 상태 변경 강제 알림
-    @handle_exception
     def override_notify(self, key):
         self._event.notify(key)
 
     # 옵저버 추가
-    @handle_exception
     def subscribe(self, observer):
         self._event.subscribe(observer)
 
     # 옵저버 제거
-    @handle_exception
     def unsubscribe(self, observer):
         self._event.unsubscribe(observer)
 
@@ -96,7 +83,6 @@ class BluController:
             context.log.debug(message)
 
     # NOTE : dB 값을 터치패널 0-255 값으로 변환
-    @handle_exception
     def db_to_tp(self, x):
         x_min = self.MIN_VAL
         x_max = self.MAX_VAL
@@ -106,7 +92,6 @@ class BluController:
         return y
 
     # NOTE : 터치패널 0-255 값을 dB 값으로 변환
-    @handle_exception
     def tp_to_db(self, x):
         x_min = 0
         x_max = 255
@@ -115,7 +100,6 @@ class BluController:
         y = (x - x_min) * (y_max - y_min) / (x_max - x_min) + y_min
         return y
 
-    @handle_exception
     def init(self, *path_lists: Sequence[tuple[str, ...]]):
         for path_list in path_lists:
             if not isinstance(path_list, tuple):
@@ -139,7 +123,6 @@ class BluController:
         self.states.subscribe(observer)
 
     # NOTE : 컴포넌트 가져오기
-    @handle_exception
     def get_component(self, path: tuple[str, ...]):
         if not isinstance(path, tuple):
             context.log.error(
@@ -151,8 +134,15 @@ class BluController:
             nested_component = nested_component[p]
         return nested_component
 
+    def get_state(self, path: tuple[str, ...]):
+        if not isinstance(path, tuple):
+            context.log.error(
+                "BluController get_state 에러 : path 의 개별 요소는 는 tuple 로 둘러쌓여진 str 으로 구성돼야합니다."
+            )
+            raise TypeError
+        return self.states.get_state(path)
+
     # NOTE : 컴포넌트 값 업데이트
-    @handle_exception
     def update_state(self, path: tuple[str, ...], new_value: Union[str, float]):
         if self.device.isOnline():
             component = self.get_component(path)
