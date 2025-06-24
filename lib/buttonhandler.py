@@ -6,7 +6,7 @@ from mojo import context
 from lib.eventmanager import EventManager
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.23"
+VERSION = "2025.06.24"
 
 
 def get_version():
@@ -15,7 +15,14 @@ def get_version():
 
 # ---------------------------------------------------------------------------- #
 class ButtonHandler(EventManager):
-    def __init__(self, hold_time=30.0, repeat_interval=0.3, trigger_release_on_hold=False):
+    def __init__(
+        self,
+        hold_time=30.0,
+        repeat_interval=0.3,
+        trigger_release_on_hold=False,
+        init_action=None,
+        init_handler=None,
+    ):
         super().__init__("push", "release", "hold", "repeat")
         self.hold_time = hold_time  # 버튼을 누르고 있는 시간
         self.repeat_interval = repeat_interval  # 반복 이벤트 간격
@@ -24,6 +31,12 @@ class ButtonHandler(EventManager):
         self.trigger_release_on_hold = trigger_release_on_hold  # 홀드 상태에서 릴리즈 트리거 여부
         self.hold_thread = None
         self.repeat_thread = None
+        # ---------------------------------------------------------------------------- #
+        self.init(init_action, init_handler)
+
+    def init(self, init_action=None, init_handler=None):
+        if init_action and init_handler:
+            self.add_event_handler(init_action, init_handler)
 
     def start_repeat(self):
         while self.is_pushed:
@@ -37,10 +50,37 @@ class ButtonHandler(EventManager):
             self.is_hold = True
             self.trigger_event("hold")  # 홀드 이벤트 트리거
 
+    def add_event_handler(self, action, handler):
+        try:
+            if action in ("push", "release", "hold", "repeat"):
+                a = action
+            elif action.startswith("hold_"):
+                a = "hold"
+                hold_time = float(action.split("_")[1])
+                if not (0 < hold_time <= 30):
+                    raise ValueError("0 < hold_time <= 30 범위어야 함")
+                self.hold_time = hold_time
+            elif action.startswith("repeat_"):
+                a = "repeat"
+                repeat_interval = float(action.split("_")[1])
+                if not (0 < repeat_interval <= 5):
+                    raise ValueError("0 < repeat_interval <= 5 범위어야 함")
+                self.repeat_interval = repeat_interval
+            else:
+                context.log.error(f"add_event_handler 알 수 없는 액션 {action=}")
+                raise ValueError
+            super().add_event_handler(a, handler)
+        except ValueError as exc:
+            context.log.error(f"add_event_handler {action=} : {exc}")
+            raise
+        except Exception as exc:
+            context.log.error(f"add_event_handler {action=} : 처리 중 오류 발생")
+            raise ValueError from exc
+
     def handle_event(self, evt):
         if evt.value:
             self.is_pushed = True
-            self.trigger_event("push")  # 푸시 이벤트 트리거
+            self.trigger_event("push")
             # ---------------------------------------------------------------------------- #
             if self.hold_thread is None or not self.hold_thread.is_alive():
                 self.hold_thread = threading.Thread(target=self.start_hold, daemon=True)
@@ -58,8 +98,13 @@ class ButtonHandler(EventManager):
 
 # ---------------------------------------------------------------------------- #
 class LevelHandler(EventManager):
-    def __init__(self):
+    def __init__(self, init_handler=None):
         super().__init__("level")
+        self.init(init_handler)
+
+    def init(self, init_handler=None):
+        if init_handler:
+            self.add_event_handler("level", init_handler)
 
     def handle_event(self, evt):
         value = int(evt.value)

@@ -3,7 +3,7 @@ from typing import Union
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.20"
+VERSION = "2025.06.24"
 
 
 def get_version():
@@ -70,6 +70,7 @@ def tp_clear_watcher(tp, index_port, index_button):
 def tp_add_watcher_level(tp, index_port, index_level, handler):
     context.log.debug(f"tp_add_watcher_level : {tp=} {index_port=} {index_level=} {handler=}")
     tp.port[index_port].level[index_level].watch(handler)
+    tp_add_notification_level(tp, index_port, index_level)
 
 
 def tp_add_watcher_level_ss(tp_list: Union[list, tuple], index_port, index_level, handler):
@@ -100,14 +101,26 @@ def tp_get_button_pushed(tp, index_port, index_button) -> bool:
     return False
 
 
+def tp_get_btn_pushed(tp, index_port, index_button) -> bool:
+    tp_get_button_pushed(tp, index_port, index_button)
+
+
 def tp_get_button_state(tp, index_port, index_button):
     if tp_get_device_state(tp):
         return tp.port[index_port].channel[index_button].value
 
 
+def tp_get_btn_state(tp, index_port, index_button):
+    tp_get_button_state(tp, index_port, index_button)
+
+
 def tp_set_button(tp, index_port, index_button, value):
     if tp_get_device_state(tp):
         tp.port[index_port].channel[index_button].value = value
+
+
+def tp_set_btn(tp, index_port, index_button, value):
+    tp_set_button(tp, index_port, index_button, value)
 
 
 def tp_set_button_ss(tp_list: Union[list, tuple], index_port, index_button, value):
@@ -117,18 +130,34 @@ def tp_set_button_ss(tp_list: Union[list, tuple], index_port, index_button, valu
         tp_set_button(tp, index_port, index_button, value)
 
 
-def tp_set_button_state(tp, index_port, index_button, value, *args):
+def tp_set_btn_ss(tp_list: Union[list, tuple], index_port, index_button, value):
+    tp_set_button_ss(tp_list, index_port, index_button, value)
+
+
+def tp_set_button_state(tp, index_port, index_button, value):
     if tp_get_device_state(tp):
-        tp_set_button(tp, index_port, index_button, value, *args)
+        tp_set_button(tp, index_port, index_button, value)
 
 
-def tp_set_button_state_ss(tp: Union[list, tuple], index_port, index_button, value, *args):
-    tp_set_button_ss(tp, index_port, index_button, value, *args)
+def tp_set_btn_state(tp, index_port, index_button, value):
+    tp_set_button_state(tp, index_port, index_button, value)
+
+
+def tp_set_button_state_ss(tp: Union[list, tuple], index_port, index_button, value):
+    tp_set_button_ss(tp, index_port, index_button, value)
+
+
+def tp_set_btn_state_ss(tp: Union[list, tuple], index_port, index_button, value):
+    tp_set_button_state_ss(tp, index_port, index_button, value)
 
 
 def tp_set_button_in_range(tp, port, index_btn_start, index_btn_range, index_condition):
     for index in range(index_btn_start, index_btn_start + index_btn_range):
         tp_set_button(tp, port, index, index_condition == (index - index_btn_start + 1))
+
+
+def tp_set_btn_in_range(tp, port, index_btn_start, index_btn_range, index_condition):
+    tp_set_button_in_range(tp, port, index_btn_start, index_btn_range, index_condition)
 
 
 def tp_set_button_in_range_ss(tp_list: Union[list, tuple], port, index_btn_start, index_btn_range, index_condition):
@@ -138,9 +167,17 @@ def tp_set_button_in_range_ss(tp_list: Union[list, tuple], port, index_btn_start
         tp_set_button_in_range(tp, port, index_btn_start, index_btn_range, index_condition)
 
 
+def tp_set_btn_in_range_ss(tp_list: Union[list, tuple], port, index_btn_start, index_btn_range, index_condition):
+    tp_set_button_in_range_ss(tp_list, port, index_btn_start, index_btn_range, index_condition)
+
+
 def tp_get_level(tp, index_port, index_level):
     if tp_get_device_state(tp):
         return int(tp.port[index_port].level[index_level].value)
+
+
+def tp_get_lvl(tp, index_port, index_level):
+    return tp_get_level(tp, index_port, index_level)
 
 
 def tp_send_level(tp, index_port, index_level, value):
@@ -148,7 +185,15 @@ def tp_send_level(tp, index_port, index_level, value):
         tp.port[index_port].level[index_level].value = value
 
 
+def tp_send_lvl(tp, index_port, index_level, value):
+    tp_send_level(tp, index_port, index_level, value)
+
+
 def tp_set_level(tp, index_port, index_level, value, *args):
+    tp_send_level(tp, index_port, index_level, value, *args)
+
+
+def tp_set_lvl(tp, index_port, index_level, value, *args):
     tp_send_level(tp, index_port, index_level, value, *args)
 
 
@@ -159,7 +204,15 @@ def tp_send_level_ss(tp_list: Union[list, tuple], index_port, index_level, value
         tp_send_level(tp, index_port, index_level, value)
 
 
+def tp_send_lvl_ss(tp_list: Union[list, tuple], index_port, index_level, value):
+    tp_send_level_ss(tp_list, index_port, index_level, value)
+
+
 def tp_set_level_ss(tp: Union[list, tuple], index_port, index_level, value, *args):
+    tp_send_level_ss(tp, index_port, index_level, value, *args)
+
+
+def tp_set_lvl_ss(tp: Union[list, tuple], index_port, index_level, value, *args):
     tp_send_level_ss(tp, index_port, index_level, value, *args)
 
 
@@ -173,6 +226,10 @@ def tp_send_command(tp, index_port, command_string):
         context.log.debug(f"tp_send_command : {tp=} {index_port=} {command_string=}")
 
 
+def tp_send_cmd(tp, index_port, command_string):
+    tp_send_command(tp, index_port, command_string)
+
+
 def tp_send_command_ss(tp_list: Union[list, tuple], index_port, command_string):
     if not isinstance(tp_list, (list, tuple)):
         raise TypeError("tp_send_command_ss error : tp_list must be a list or tuple")
@@ -180,26 +237,50 @@ def tp_send_command_ss(tp_list: Union[list, tuple], index_port, command_string):
         tp_send_command(tp, index_port, command_string)
 
 
+def tp_send_cmd_ss(tp_list: Union[list, tuple], index_port, command_string):
+    tp_send_command_ss(tp_list, index_port, command_string)
+
+
 def tp_set_button_text_unicode(tp, index_port, index_addr, text):
     tp_send_command(tp, index_port, f"^UNI-{index_addr},0,{convert_text_to_unicode(text)}")
+
+
+def tp_set_btn_text_unicode(tp, index_port, index_addr, text):
+    tp_set_button_text_unicode(tp, index_port, index_addr, text)
 
 
 def tp_set_button_text_unicode_ss(tp_list: Union[list, tuple], index_port, index_addr, text):
     tp_send_command_ss(tp_list, index_port, f"^UNI-{index_addr},0,{convert_text_to_unicode(text)}")
 
 
+def tp_set_btn_text_unicode_ss(tp_list: Union[list, tuple], index_port, index_addr, text):
+    tp_set_button_text_unicode_ss(tp_list, index_port, index_addr, text)
+
+
 def tp_set_button_text(tp, index_port, index_addr, text):
     tp_send_command(tp, index_port, f"^TXT-{index_addr},0,{text}")
+
+
+def tp_set_btn_text(tp, index_port, index_addr, text):
+    tp_set_button_text(tp, index_port, index_addr, text)
 
 
 def tp_set_button_text_ss(tp_list: Union[list, tuple], index_port, index_addr, text):
     tp_send_command_ss(tp_list, index_port, f"^TXT-{index_addr},0,{text}")
 
 
+def tp_set_btn_text_ss(tp_list: Union[list, tuple], index_port, index_addr, text):
+    tp_set_button_text_ss(tp_list, index_port, index_addr, text)
+
+
 def tp_set_button_show_hide(tp, index_port, index_addr, value):
     state_str = 1 if value else 0
     tp.port[index_port].send_command(f"^SHO-{index_addr},{state_str}")
     tp.port[index_port].send_command(f"^ENA-{index_addr},{state_str}")
+
+
+def tp_set_btn_show_hide(tp, index_port, index_addr, value):
+    tp_set_button_show_hide(tp, index_port, index_addr, value)
 
 
 def tp_set_page(tp, page_name):
