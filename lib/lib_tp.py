@@ -50,7 +50,7 @@ def tp_get_device_state(tp):
 
 # ---------------------------------------------------------------------------- #
 def tp_add_watcher(tp, index_port, index_button, handler):
-    context.log.debug(f"tp_add_watcher : {tp=} {index_port=} {index_button=} {handler=}")
+    context.log.debug(f"tp_add_watcher : {tp.id} 포트:{index_port} 버튼:{index_button}")
     tp.port[index_port].button[index_button].watch(handler)
     tp_add_notification(tp, index_port, index_button)
 
@@ -68,7 +68,7 @@ def tp_clear_watcher(tp, index_port, index_button):
 
 
 def tp_add_watcher_level(tp, index_port, index_level, handler):
-    context.log.debug(f"tp_add_watcher_level : {tp=} {index_port=} {index_level=} {handler=}")
+    context.log.debug(f"tp_add_watcher_level : {tp.id} 포트:{index_port} 레벨:{index_level}")
     tp.port[index_port].level[index_level].watch(handler)
     tp_add_notification_level(tp, index_port, index_level)
 

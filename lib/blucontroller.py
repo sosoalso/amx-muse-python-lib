@@ -3,7 +3,7 @@ from typing import Sequence, Union
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.20"
+VERSION = "2025.06.25"
 
 
 def get_version():
@@ -100,11 +100,11 @@ class BluController:
         y = (x - x_min) * (y_max - y_min) / (x_max - x_min) + y_min
         return y
 
-    def init(self, *path_lists: Sequence[tuple[str, ...]]):
+    def init(self, *path_lists: Sequence[Union[list[str], tuple[str, ...]]]):
         for path_list in path_lists:
-            if not isinstance(path_list, tuple):
+            if not isinstance(path_list, (list, tuple)):
                 context.log.error(
-                    "BluController init 에러 : path_lists 의 개별 요소는 path str 으로 구성된 tuple 이어야 합니다."
+                    "BluController init 에러 : path_lists 의 개별 요소는 path str 으로 구성된 list 나 tuple 이어야 합니다."
                 )
                 raise TypeError
             for path in path_list:

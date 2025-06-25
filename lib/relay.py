@@ -5,7 +5,7 @@ from lib.lib_tp import tp_set_button
 from lib.lib_yeoul import pulse
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.20"
+VERSION = "2025.06.24"
 
 
 def get_version():
@@ -80,30 +80,13 @@ class Relay:
     # ---------------------------------------------------------------------------- #
     def add_relay_button(self):
         for idx in range(len(self.devchan_list)):
-            add_button_ss(self.tp_list, self.tp_port, idx + 1, "push", self.set_relay_on, idx)
-            add_button_ss(self.tp_list, self.tp_port, idx + 101, "push", self.set_relay_off, idx)
-            add_button_ss(self.tp_list, self.tp_port, idx + 201, "push", self.set_relay_pulse, idx)
-            add_button_ss(self.tp_list, self.tp_port, idx + 301, "push", self.set_relay_toggle, idx)
-            add_button_ss(self.tp_list, self.tp_port, idx + 301, "push", self.set_relay_toggle, idx)
-            add_button_ss(self.tp_list, self.tp_port, idx + 401, "push", self.set_relay_on, idx)
-            add_button_ss(self.tp_list, self.tp_port, idx + 401, "release", self.set_relay_off, idx)
-            # button_relay_on = ButtonHandler()
-            # button_relay_on.add_event_handler("push", partial(self.set_relay_on, idx))
-            # button_relay_off = ButtonHandler()
-            # button_relay_off.add_event_handler("push", partial(self.set_relay_off, idx))
-            # button_relay_pulse = ButtonHandler()
-            # button_relay_pulse.add_event_handler("push", partial(self.set_relay_pulse, idx))
-            # button_relay_toggle = ButtonHandler()
-            # button_relay_toggle.add_event_handler("push", partial(self.set_relay_toggle, idx))
-            # button_relay_momentary = ButtonHandler()
-            # button_relay_momentary.add_event_handler("push", partial(self.set_relay_on, idx))
-            # button_relay_momentary.add_event_handler("release", partial(self.set_relay_off, idx))
-            # for tp in self.tp_list:
-            #     tp_add_watcher(tp, self.tp_port, idx + 1, button_relay_on.handle_event)
-            #     tp_add_watcher(tp, self.tp_port, idx + 101, button_relay_off.handle_event)
-            #     tp_add_watcher(tp, self.tp_port, idx + 201, button_relay_pulse.handle_event)
-            #     tp_add_watcher(tp, self.tp_port, idx + 301, button_relay_toggle.handle_event)
-            #     tp_add_watcher(tp, self.tp_port, idx + 401, button_relay_momentary.handle_event)
+            add_button_ss(self.tp_list, self.tp_port, idx + 1, "push", lambda idx=idx: self.set_relay_on(idx))
+            add_button_ss(self.tp_list, self.tp_port, idx + 101, "push", lambda idx=idx: self.set_relay_off(idx))
+            add_button_ss(self.tp_list, self.tp_port, idx + 201, "push", lambda idx=idx: self.set_relay_pulse(idx))
+            add_button_ss(self.tp_list, self.tp_port, idx + 301, "push", lambda idx=idx: self.set_relay_toggle(idx))
+            add_button_ss(self.tp_list, self.tp_port, idx + 301, "push", lambda idx=idx: self.set_relay_toggle(idx))
+            add_button_ss(self.tp_list, self.tp_port, idx + 401, "push", lambda idx=idx: self.set_relay_on(idx))
+            add_button_ss(self.tp_list, self.tp_port, idx + 401, "release", lambda idx=idx: self.set_relay_off(idx))
 
     def refresh_relay_button(self, idx):
         for tp in self.tp_list:

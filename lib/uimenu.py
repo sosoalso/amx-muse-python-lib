@@ -7,7 +7,7 @@ from lib.lib_tp import (
 )
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.23"
+VERSION = "2025.06.25"
 
 
 def get_version():
@@ -24,9 +24,9 @@ class UIMenu:
     def init(self):
         add_button(self.tp, 1, 100, "push", self.hide_all_menu_popup)
         for idx in range(1, 10):
-            add_button(self.tp, 1, idx, "push", self.show_page, idx)
+            add_button(self.tp, 1, idx, "push", lambda idx=idx: self.show_page(idx))
         for idx in range(1, 20):
-            add_button(self.tp, 1, idx + 10, "push", self.show_menu_popup, idx)
+            add_button(self.tp, 1, idx + 10, "push", lambda idx=idx: self.show_menu_popup(idx))
         self.selected_menu = 0
         self.refresh_menu_popup_button()
 
