@@ -14,7 +14,7 @@ class HyperDeck(EventManager):
         self.dv.receive.listen(self.parse_response)
 
     def send(self, cmd):
-        self.dv.send(f"{cmd}\r\n")
+        self.dv.send(f"{cmd}\r\n".encode())
 
     def record(self):
         self.send("record")

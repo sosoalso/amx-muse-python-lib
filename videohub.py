@@ -21,6 +21,9 @@ class Videohub(EventManager):
         self.dv.receive.listen(self.parse_response)
         self.load_json()
 
+    def send(self, msg):
+        self.dv.send(msg.encode())
+
     def load_json(self):
         try:
             with open(f"{self.name}_routes.json", "r", encoding="UTF-8") as f:
@@ -60,13 +63,13 @@ class Videohub(EventManager):
             return
 
     def set_route(self, idx_in, idx_out):
-        self.dv.send(f"VIDEO OUTPUT ROUTING:\n{idx_out} {idx_in}\n\n")
+        self.send(f"VIDEO OUTPUT ROUTING:\n{idx_out} {idx_in}\n\n")
         self.routes[idx_out + 1] = idx_in + 1
         self.trigger_event("route", idx_in=idx_in, idx_out=idx_out, routes=self.routes, this=self)
 
     def set_routes(self, route_dict):
         route_str = "\n".join(f"{idx_in} {idx_out}" for idx_in, idx_out in route_dict.items())
-        self.dv.send(f"VIDEO OUTPUT ROUTING:\n{route_str}\n")
+        self.send(f"VIDEO OUTPUT ROUTING:\n{route_str}\n")
         for idx_in, idx_out in route_dict.items():
             self.trigger_event("route", idx_in=idx_in, idx_out=idx_out, routes=self.routes, this=self)
 

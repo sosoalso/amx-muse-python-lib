@@ -24,12 +24,15 @@ class Pjlink(EventManager):
         self.dv.connect()
         self.start_poll()
 
+    def send(self, msg):
+        self.dv.send(msg.encode("utf-8"))
+
     def start_poll(self, *args):
         def query_power():
-            self.dv.send("%1POWR ?\r")
+            self.send("%1POWR ?\r")
 
         def query_mute():
-            self.dv.send("%1AVMT ?\r")
+            self.send("%1AVMT ?\r")
 
         self.poll.set_timeout(lambda: self.poll.set_interval(query_power, 10.0), 1.0)
         self.poll.set_timeout(lambda: self.poll.set_interval(query_mute, 10.0), 2.0)
@@ -59,7 +62,7 @@ class Pjlink(EventManager):
                 context.log.error(f"Pjlink {self.name=} Error decoding data: {e}")
 
     def set_power(self, value):
-        self.dv.send("%1POWR 1\r" if value else "%1POWR 0\r")
+        self.send("%1POWR 1\r" if value else "%1POWR 0\r")
         self.power = value
         self.trigger_event("power", value=value, this=self)
 
@@ -70,7 +73,7 @@ class Pjlink(EventManager):
         self.set_power(False)
 
     def set_mute(self, value):
-        self.dv.send("%1AVMT 31\r" if value else "%1AVMT 30\r")
+        self.send("%1AVMT 31\r" if value else "%1AVMT 30\r")
         self.mute = value
         self.trigger_event("mute", value=value, this=self)
 
