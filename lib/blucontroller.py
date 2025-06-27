@@ -2,8 +2,10 @@ from typing import Sequence, Union
 
 from mojo import context
 
+from lib.lib_yeoul import handle_exception
+
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.25"
+VERSION = "2025.06.27"
 
 
 def get_version():
@@ -23,14 +25,17 @@ class BluObserver:
         self._observers = []
 
     # 옵저버 추가
+    @handle_exception
     def subscribe(self, observer):
         self._observers.append(observer)
 
     # 옵저버 제거
+    @handle_exception
     def unsubscribe(self, observer):
         self._observers.remove(observer)
 
     # 모든 옵저버에게 알림
+    @handle_exception
     def notify(self, *args, **kwargs):
         for observer in self._observers:
             observer(*args, **kwargs)
@@ -44,26 +49,32 @@ class BluState:
         self._event = BluObserver()  # 이벤트 옵저버 초기화
 
     # 상태 가져오기
+    @handle_exception
     def get_state(self, key):
         return self._states.get(key, None)
         # 상태 설정
 
+    @handle_exception
     def set_state(self, key, val):
         self._states[key] = val
 
+    @handle_exception
     def update_state(self, key, val):
         self.set_state(key, val)  # 상태 업데이트
         self._event.notify(key)  # 상태 변경 알림
 
     # 상태 변경 강제 알림
+    @handle_exception
     def override_notify(self, key):
         self._event.notify(key)
 
     # 옵저버 추가
+    @handle_exception
     def subscribe(self, observer):
         self._event.subscribe(observer)
 
     # 옵저버 제거
+    @handle_exception
     def unsubscribe(self, observer):
         self._event.unsubscribe(observer)
 
@@ -83,6 +94,7 @@ class BluController:
             context.log.debug(message)
 
     # NOTE : dB 값을 터치패널 0-255 값으로 변환
+    @handle_exception
     def db_to_tp(self, x):
         x_min = self.MIN_VAL
         x_max = self.MAX_VAL
@@ -92,6 +104,7 @@ class BluController:
         return y
 
     # NOTE : 터치패널 0-255 값을 dB 값으로 변환
+    @handle_exception
     def tp_to_db(self, x):
         x_min = 0
         x_max = 255
@@ -100,6 +113,7 @@ class BluController:
         y = (x - x_min) * (y_max - y_min) / (x_max - x_min) + y_min
         return y
 
+    @handle_exception
     def init(self, *path_lists: Sequence[Union[list[str], tuple[str, ...]]]):
         for path_list in path_lists:
             if not isinstance(path_list, (list, tuple)):
@@ -119,10 +133,12 @@ class BluController:
                     component.watch(lambda evt, path=path: self.states.update_state(path, evt.value))
                     self.states.override_notify(path)
 
+    @handle_exception
     def subscribe(self, observer):
         self.states.subscribe(observer)
 
     # NOTE : 컴포넌트 가져오기
+    @handle_exception
     def get_component(self, path: tuple[str, ...]):
         if not isinstance(path, tuple):
             context.log.error(
@@ -134,6 +150,7 @@ class BluController:
             nested_component = nested_component[p]
         return nested_component
 
+    @handle_exception
     def get_state(self, path: tuple[str, ...]):
         if not isinstance(path, tuple):
             context.log.error(
@@ -143,6 +160,7 @@ class BluController:
         return self.states.get_state(path)
 
     # NOTE : 컴포넌트 값 업데이트
+    @handle_exception
     def update_state(self, path: tuple[str, ...], new_value: Union[str, float]):
         if self.device.isOnline():
             component = self.get_component(path)
@@ -156,47 +174,56 @@ class BluController:
         except (ValueError, TypeError):
             return None
 
+    @handle_exception
     def vol_up(self, path):
         self.log_debug(f"vol_up {path=}")
         val = self.check_val_convert_float(self.states.get_state(path))
         if val is not None and val <= self.MAX_VAL - self.UNIT_VAL:
             self.update_state(path, round(val + self.UNIT_VAL))
 
+    @handle_exception
     def vol_down(self, path):
         self.log_debug(f"vol_down {path=}")
         val = self.check_val_convert_float(self.states.get_state(path))
         if val is not None and val >= self.MIN_VAL + self.UNIT_VAL:
             self.update_state(path, round(val - self.UNIT_VAL))
 
+    @handle_exception
     def set_vol(self, path, val: float):
         self.log_debug(f"set_vol {path=} {val=}")
         if val is not None and self.MIN_VAL <= val <= self.MAX_VAL:
             self.update_state(path, round(val))
 
+    @handle_exception
     def toggle_on_off(self, path, *args):
         self.log_debug(f"toggle_on_off {path=}")
         val = self.states.get_state(path)
         val_str = "Off" if val == "On" else "Off"
         self.update_state(path, val_str)
 
+    @handle_exception
     def set_on(self, path):
         self.log_debug(f"set_on {path=}")
         self.update_state(path, "On")
 
+    @handle_exception
     def set_off(self, path):
         self.log_debug(f"set_off {path=}")
         self.update_state(path, "Off")
 
+    @handle_exception
     def toggle_muted_unmuted(self, path):
         self.log_debug(f"toggle_muted_unmuted {path=}")
         val = self.states.get_state(path)
         val_str = "Unmuted" if val == "Muted" else "Muted"
         self.update_state(path, val_str)
 
+    @handle_exception
     def set_muted(self, path):
         self.log_debug(f"set_muted {path=}")
         self.update_state(path, "Muted")
 
+    @handle_exception
     def set_unmuted(self, path):
         self.log_debug(f"set_unmuted {path=}")
         self.update_state(path, "Unmuted")

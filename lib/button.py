@@ -7,9 +7,10 @@ from lib.lib_tp import (
     tp_add_watcher_level_ss,
     tp_add_watcher_ss,
 )
+from lib.lib_yeoul import handle_exception
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.25"
+VERSION = "2025.06.27"
 
 
 def get_version():
@@ -17,6 +18,7 @@ def get_version():
 
 
 # ---------------------------------------------------------------------------- #
+@handle_exception
 def add_button(tp, port, channel, action, callback):
     new_button = ButtonHandler(init_action=action, init_handler=callback)
     tp_add_watcher(tp, port, channel, new_button.handle_event)
@@ -24,6 +26,7 @@ def add_button(tp, port, channel, action, callback):
     return new_button
 
 
+@handle_exception
 def add_button_ss(tp_list, port, channel, action, callback):
     new_button = ButtonHandler(init_action=action, init_handler=callback)
     tp_add_watcher_ss(tp_list, port, channel, new_button.handle_event)
@@ -32,6 +35,7 @@ def add_button_ss(tp_list, port, channel, action, callback):
     return new_button
 
 
+@handle_exception
 def add_level(tp, port, channel, callback):
     level_handler = LevelHandler(init_handler=callback)
     tp_add_watcher_level(tp, port, channel, level_handler.handle_event)
@@ -39,6 +43,7 @@ def add_level(tp, port, channel, callback):
     return level_handler
 
 
+@handle_exception
 def add_level_ss(tp_list, port, channel, callback):
     level_handler = LevelHandler(init_handler=callback)
     tp_add_watcher_level_ss(tp_list, port, channel, level_handler.handle_event)

@@ -1,7 +1,7 @@
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.24"
+VERSION = "2025.06.25"
 
 
 def get_version():
@@ -42,6 +42,10 @@ class EventManager:
             context.log.error(f"trigger_event {action=} 에러 : {e}")
             context.log.debug(f"trigger_event {action=} 에러 : {e.__traceback__}")
 
+    def on(self, action, handler):
+        """add_event_handler 의 alias"""
+        self.add_event_handler(action, handler)
+
     def remove_event_handler(self, action, handler):
         try:
             self.actions[action].remove(handler)
@@ -60,3 +64,7 @@ class EventManager:
         except Exception as e:
             context.log.error(f"trigger_event {action=} 에러 : {e}")
             context.log.debug(f"trigger_event {action=} 에러 : {e.__traceback__}")
+
+    def emit(self, action, *args, **kwargs):
+        """trigger_event 의 alias"""
+        self.trigger_event(action, *args, **kwargs)

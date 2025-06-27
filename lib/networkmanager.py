@@ -6,9 +6,10 @@ from types import SimpleNamespace
 from mojo import context
 
 from lib.eventmanager import EventManager
+from lib.lib_yeoul import handle_exception
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.20"
+VERSION = "2025.06.27"
 
 
 def get_version():
@@ -37,15 +38,19 @@ class TcpServer(EventManager):
         self.echo = False
         self.receive = self.ReceiveHandler(self)
 
+    @handle_exception
     def connect(self, handler):
         self.add_event_handler("connected", handler)
 
+    @handle_exception
     def disconnect(self, handler):
         self.add_event_handler("disconnected", handler)
 
+    @handle_exception
     def start(self):
         self.listen()
 
+    @handle_exception
     def listen(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -57,6 +62,7 @@ class TcpServer(EventManager):
             self.trigger_event("connected", client, address)
             threading.Thread(target=self.handle_client, args=(client, address), daemon=True).start()
 
+    @handle_exception
     def handle_client(self, client, address):
         while True:
             try:
@@ -79,6 +85,7 @@ class TcpServer(EventManager):
                 break
         self.trigger_event("disconnected")
 
+    @handle_exception
     def send_all(self, data):
         for client in self.clients:
             client.send(data)
@@ -115,6 +122,7 @@ class TcpClient(EventManager):
         self._thread_receive = None
         self.receive = self.ReceiveHandler(self)
 
+    @handle_exception
     def connect(self):
         context.log.debug(f"TcpClient.connect() {self.name=}")
         if not self.connected:
@@ -144,10 +152,12 @@ class TcpClient(EventManager):
                 if not self.reconnect:
                     break
 
+    @handle_exception
     def _handle_reconnect(self):
         if self.reconnect:
             self.connect()
 
+    @handle_exception
     def _run_thread_receive(self):
         self._thread_receive = threading.Thread(target=self._receive, daemon=True)
         self._thread_receive.start()
@@ -177,24 +187,25 @@ class TcpClient(EventManager):
                     self.connect()
                 break
 
-    def send_byte(self, message):
-        if self.socket and self.connected:
-            try:
-                self.socket.sendall(message)
-                context.log.debug(f"TcpClient.send_byte() {self.ip}:{self.port} 전송: {message=}")
-            except Exception:
-                self.connected = False
-                self._handle_reconnect()
-
+    # def send_byte(self, message):
+    #     if self.socket and self.connected:
+    #         try:
+    #             self.socket.sendall(message)
+    #             context.log.debug(f"TcpClient.send_byte() {self.ip}:{self.port} 전송: {message=}")
+    #         except Exception:
+    #             self.connected = False
+    #             self._handle_reconnect()
     def send(self, message):
         if self.socket and self.connected:
             try:
-                self.socket.sendall(bytes(message, "UTF-8"))
+                self.socket.sendall(message)
+                # self.socket.sendall(bytes(message, "UTF-8"))
                 context.log.debug(f"TcpClient.send() {self.ip}:{self.port} 전송: {message=}")
             except Exception:
                 self.connected = False
                 self._handle_reconnect()
 
+    @handle_exception
     def disconnect(self):
         if self.socket:
             self.socket.close()
@@ -202,6 +213,7 @@ class TcpClient(EventManager):
         self.socket = None
         context.log.debug(f"TcpClient.disconnect() {self.ip}:{self.port} 연결 끊김")
 
+    @handle_exception
     def is_connected(self):
         return self.connected
 
@@ -240,6 +252,7 @@ class UdpClient(EventManager):
         self.port_bind = port_bind if port_bind is not None else 0
         self.bound_port = None
 
+    @handle_exception
     def connect(self):
         if not self.connected:
             self._thread_connect = threading.Thread(target=self._connect, daemon=True)
@@ -272,10 +285,12 @@ class UdpClient(EventManager):
                 if not self.reconnect:
                     break
 
+    @handle_exception
     def _handle_reconnect(self):
         if self.reconnect:
             self.connect()
 
+    @handle_exception
     def _run_thread_receive(self):
         self._thread_receive = threading.Thread(target=self._receive, daemon=True)
         self._thread_receive.start()
@@ -298,18 +313,18 @@ class UdpClient(EventManager):
                     self.connect()
                 break
 
-    def send_byte(self, message):
-        if self.socket and self.connected:
-            try:
-                self.socket.sendto(message, (self.ip, self.port))
-            except Exception:
-                self.connected = False
-                self._handle_reconnect()
-
+    # def send_byte(self, message):
+    #     if self.socket and self.connected:
+    #         try:
+    #             self.socket.sendto(message, (self.ip, self.port))
+    #         except Exception:
+    #             self.connected = False
+    #             self._handle_reconnect()
     def send(self, message):
         if self.socket and self.connected:
             try:
-                self.socket.sendto(bytes(message, "UTF-8"), (self.ip, self.port))
+                self.socket.sendto(message, (self.ip, self.port))
+                # self.socket.sendto(bytes(message, "UTF-8"), (self.ip, self.port))
                 context.log.debug(f"UdpClient.send() {self.ip}:{self.port} 전송: {message=} ")
             except Exception:
                 self.connected = False
@@ -323,6 +338,7 @@ class UdpClient(EventManager):
                 self.socket = None
                 self.connected = False
 
+    @handle_exception
     def is_connected(self):
         return self.connected
 
@@ -339,10 +355,12 @@ class UdpServer(EventManager):
         self.socket = None
         self.clients = []
 
+    @handle_exception
     def add_client(self, addr):
         if addr not in self.clients:
             self.clients.append(addr)
 
+    @handle_exception
     def remove_client(self):
         self.clients = []
 
@@ -350,9 +368,11 @@ class UdpServer(EventManager):
         def __init__(self, this):
             self.this = this
 
+        @handle_exception
         def listen(self, listener):
             self.this.add_event_handler("received", listener)
 
+    @handle_exception
     def start(self):
         if not self.socket:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -376,12 +396,13 @@ class UdpServer(EventManager):
                 if not self.running:
                     break
 
-    def send_byte(self, message):
-        if self.socket and self.running:
-            for addr in self.clients:
-                self.socket.sendto(message, addr)
-
+    # def send_byte(self, message):
+    #     if self.socket and self.running:
+    #         for addr in self.clients:
+    #             self.socket.sendto(message, addr)
+    @handle_exception
     def send(self, message):
         if self.socket and self.running:
             for addr in self.clients:
-                self.socket.sendto(bytes(message, "UTF-8"), addr)
+                self.socket.sendto(message, addr)
+                # self.socket.sendto(bytes(message, "UTF-8"), addr)

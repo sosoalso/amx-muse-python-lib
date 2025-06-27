@@ -1,7 +1,8 @@
+from lib.lib_yeoul import handle_exception
 from lib.userdata import Userdata
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.21"
+VERSION = "2025.06.27"
 
 
 def get_version():
@@ -57,20 +58,26 @@ class CamtrackPreset:
         self.presets = []
         self.init()
 
+    @handle_exception
     def init(self):
         self.presets = self.data.get_value("presets", self.make_dummy_presets())
 
+    @handle_exception
     def make_dummy_presets(self):
         return [
-            {"index": preset_index + 1, "camera": 0, "preset": 0} for preset_index in range(self.max_preset_index + 1)
+            {"index": preset_index + 1, "camera": 0, "preset": preset_index + 1}
+            for preset_index in range(self.max_preset_index)
         ]
 
+    @handle_exception
     def sort_preset(self):
         self.presets = sorted(self.presets or [], key=lambda x: x["index"])
 
+    @handle_exception
     def get_preset(self, index):
         return next((preset for preset in self.presets or {} if preset["index"] == index), {})
 
+    @handle_exception
     def set_preset(self, preset_index, cam_no, preset_no):
         target_preset = self.get_preset(preset_index)
         if target_preset:
@@ -79,5 +86,6 @@ class CamtrackPreset:
             self.sort_preset()
             self.save_preset()
 
+    @handle_exception
     def save_preset(self):
         self.data.set_value("presets", self.presets)

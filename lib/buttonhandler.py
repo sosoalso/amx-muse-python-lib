@@ -4,9 +4,10 @@ import time
 from mojo import context
 
 from lib.eventmanager import EventManager
+from lib.lib_yeoul import handle_exception
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.24"
+VERSION = "2025.06.27"
 
 
 def get_version():
@@ -34,16 +35,19 @@ class ButtonHandler(EventManager):
         # ---------------------------------------------------------------------------- #
         self.init(init_action, init_handler)
 
+    @handle_exception
     def init(self, init_action=None, init_handler=None):
         if init_action and init_handler:
             self.add_event_handler(init_action, init_handler)
 
+    @handle_exception
     def start_repeat(self):
         while self.is_pushed:
             time.sleep(self.repeat_interval)  # 반복 간격 대기
             if self.is_pushed:
                 self.trigger_event("repeat")  # 반복 이벤트 트리거
 
+    @handle_exception
     def start_hold(self):
         time.sleep(self.hold_time)  # 홀드 시간 대기
         if self.is_pushed and not self.is_hold:
@@ -77,6 +81,7 @@ class ButtonHandler(EventManager):
             context.log.error(f"add_event_handler {action=} : 처리 중 오류 발생")
             raise ValueError from exc
 
+    @handle_exception
     def handle_event(self, evt):
         if evt.value:
             self.is_pushed = True
@@ -102,10 +107,12 @@ class LevelHandler(EventManager):
         super().__init__("level")
         self.init(init_handler)
 
+    @handle_exception
     def init(self, init_handler=None):
         if init_handler:
             self.add_event_handler("level", init_handler)
 
+    @handle_exception
     def handle_event(self, evt):
         value = int(evt.value)
         self.trigger_event("level", value)  # 레벨 이벤트 트리거

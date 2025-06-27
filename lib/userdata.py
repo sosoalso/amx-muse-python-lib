@@ -4,8 +4,10 @@ import os
 
 from mojo import context
 
+from lib.lib_yeoul import handle_exception
+
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.23"
+VERSION = "2025.06.27"
 
 
 def get_version():
@@ -27,9 +29,11 @@ class Userdata:
         self.data = {} if default_value is None else default_value
         self.init()
 
+    @handle_exception
     def get_file_path(self):
         return f"{self.foldername}/{self.filename}" if self.foldername is not None else self.filename
 
+    @handle_exception
     def init(self):
         if self.foldername:
             if not os.path.exists(self.foldername):
@@ -42,16 +46,19 @@ class Userdata:
             context.log.debug(f"init() : 파일 {self.filepath} 불러오기")
             self.load_file()
 
+    @handle_exception
     def load_file(self):
         with open(self.filepath, "r", encoding="utf-8") as file:
             self.data = json.load(file)
         context.log.debug(f"load_file() {self.filepath} 로드 완료")
 
+    @handle_exception
     def save_file(self):
         with open(self.filepath, "w", encoding="UTF-8") as f:
             json.dump(self.data, f, ensure_ascii=False, indent=2)
         context.log.debug(f"save_file() {self.filepath} 저장 완료")
 
+    @handle_exception
     def set_value(self, key, value):
         if self.data is None:
             self.data = {}
@@ -59,6 +66,7 @@ class Userdata:
         context.log.debug(f"set_value() {key=} {value=}")
         self.save_file()
 
+    @handle_exception
     def get_value(self, key, default=None):
         if self.data:
             if key in self.data:
@@ -68,6 +76,7 @@ class Userdata:
             self.set_value(key, default)
         return default
 
+    @handle_exception
     def delete_value(self, key):
         if self.data is not None:
             if key in self.data:
