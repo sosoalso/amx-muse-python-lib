@@ -7,4 +7,6 @@
 *.json
 .vscode
 .venv
-.site_packages
+/.venv
+/.site_packages
+**/.site_packages/
