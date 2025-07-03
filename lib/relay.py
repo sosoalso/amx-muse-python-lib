@@ -1,11 +1,9 @@
-from mojo import context
-
 from lib.button import add_button_ss
 from lib.lib_tp import tp_set_button
-from lib.lib_yeoul import pulse
+from lib.lib_yeoul import log_debug, pulse
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.24"
+VERSION = "2025.07.02"
 
 
 def get_version():
@@ -14,7 +12,7 @@ def get_version():
 
 # ---------------------------------------------------------------------------- #
 class Relay:
-    def __init__(self, devchan_list: list[tuple], tp_list: list, port: int, pulse_time: float = 0.5):
+    def __init__(self, devchan_list: list[tuple] | tuple[tuple], tp_list: list, port: int, pulse_time: float = 0.5):
         self.devchan_list = devchan_list if devchan_list else []
         self.relay_state = [{} for _ in range(len(devchan_list))]
         self.tp_list = tp_list
@@ -94,6 +92,6 @@ class Relay:
             tp_set_button(tp, self.tp_port, idx + 101, not self.get_relay_state(idx))
 
     def show_all_relay_state(self):
+        log_debug(f"show_all_relay_state: {self.devchan_list=}")
         for idx in range(len(self.devchan_list)):
-            context.log.debug(f"{idx=} {self.relay_state[idx]['state']=}")
-            context.log.debug(f"{idx=} {self._get_relay_devchan_state(idx)=}")
+            log_debug(f"{idx=} {self.relay_state[idx]['state']=} {self._get_relay_devchan_state(idx)=}")

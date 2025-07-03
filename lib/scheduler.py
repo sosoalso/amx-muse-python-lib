@@ -4,7 +4,7 @@ import time
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.20"
+VERSION = "2025.06.30"
 
 
 def get_version():
@@ -13,7 +13,7 @@ def get_version():
 
 # ---------------------------------------------------------------------------- #
 class Scheduler:
-    def __init__(self, max_workers=2, name="Scheduler"):
+    def __init__(self, max_workers=4, name="Scheduler"):
         self.name = name
         self.max_workers = max_workers
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers)

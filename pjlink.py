@@ -8,8 +8,8 @@ from lib.scheduler import Scheduler
 # ---------------------------------------------------------------------------- #
 # SECTION : 제어 장비
 # ---------------------------------------------------------------------------- #
-class Pjlink(EventManager):
-    def __init__(self, ip_address, name="Pjlink"):
+class PJLink(EventManager):
+    def __init__(self, ip_address, name="PJLink"):
         super().__init__("power", "poweron", "poweroff", "mute", "muted", "unmuted", "poll")
         self.dv = TcpClient(ip=ip_address, port=4352, name=name)
         self.name = name
@@ -17,7 +17,9 @@ class Pjlink(EventManager):
         self.mute = False
         self.source = "0"
         self.poll = Scheduler(max_workers=3, name=self.name + " poll")
-        self.init()
+        self.dv.receive.listen(self.parse_response)
+        self.dv.connect()
+        self.start_poll()
 
     def init(self):
         self.dv.receive.listen(self.parse_response)

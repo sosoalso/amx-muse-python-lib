@@ -5,7 +5,7 @@ from mojo import context
 from lib.lib_yeoul import handle_exception
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.27"
+VERSION = "2025.06.30"
 
 
 def get_version():
@@ -81,8 +81,8 @@ class BluState:
 
 # ---------------------------------------------------------------------------- #
 class BluController:
-    def __init__(self, device, states=None, min_val=MIN_VAL, max_val=MAX_VAL, unit_val=UNIT_VAL, debug=False):
-        self.device = device  # 장치 설정
+    def __init__(self, dv, states=None, min_val=MIN_VAL, max_val=MAX_VAL, unit_val=UNIT_VAL, debug=False):
+        self.dv = dv  # 장치 설정
         self.states = BluState() if states is None else states  # 컴포넌트 상태 설정
         self.MIN_VAL = min_val  # 최소 값 설정
         self.MAX_VAL = max_val  # 최대 값 설정
@@ -145,7 +145,7 @@ class BluController:
                 "BluController get_component 에러 : path 의 개별 요소는 는 tuple 로 둘러쌓여진 str 으로 구성돼야합니다."
             )
             raise TypeError
-        nested_component = self.device  # Logic 때문에 self.device 에서 시작
+        nested_component = self.dv  # Logic 때문에 self.dv 에서 시작
         for p in path:
             nested_component = nested_component[p]
         return nested_component
@@ -162,7 +162,7 @@ class BluController:
     # NOTE : 컴포넌트 값 업데이트
     @handle_exception
     def update_state(self, path: tuple[str, ...], new_value: Union[str, float]):
-        if self.device.isOnline():
+        if self.dv.isOnline():
             component = self.get_component(path)
             if component is not None:
                 component.value = new_value

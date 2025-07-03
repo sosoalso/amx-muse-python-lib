@@ -10,7 +10,7 @@ from lib.lib_tp import (
 from lib.lib_yeoul import handle_exception
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.27"
+VERSION = "2025.07.03"
 
 
 def get_version():
@@ -19,33 +19,32 @@ def get_version():
 
 # ---------------------------------------------------------------------------- #
 @handle_exception
-def add_button(tp, port, channel, action, callback):
+def add_button(tp, port, button, action, callback):
     new_button = ButtonHandler(init_action=action, init_handler=callback)
-    tp_add_watcher(tp, port, channel, new_button.handle_event)
-    context.log.debug(f"add_button() {tp.id} 포트:{port} 채널:{channel} 액션:{action}")
+    tp_add_watcher(tp, port, button, new_button.handle_event)
+    context.log.debug(f"add_button() {tp.id} {port=} {button=} {action=}")
     return new_button
 
 
 @handle_exception
-def add_button_ss(tp_list, port, channel, action, callback):
+def add_button_ss(tp_list, port, button, action, callback):
     new_button = ButtonHandler(init_action=action, init_handler=callback)
-    tp_add_watcher_ss(tp_list, port, channel, new_button.handle_event)
-
-    context.log.debug(f"add_button_ss() {[tp.id for tp in tp_list]} 포트:{port} 채널:{channel} 액션:{action}")
+    tp_add_watcher_ss(tp_list, port, button, new_button.handle_event)
+    context.log.debug(f"add_button_ss() {[tp.id for tp in tp_list]} {port=} {button=} {action=}")
     return new_button
 
 
 @handle_exception
-def add_level(tp, port, channel, callback):
+def add_level(tp, port, level, callback):
     level_handler = LevelHandler(init_handler=callback)
-    tp_add_watcher_level(tp, port, channel, level_handler.handle_event)
-    context.log.debug(f"add_level() {tp=} 포트:{port} 채널:{channel} 콜백:{callback}")
+    tp_add_watcher_level(tp, port, level, level_handler.handle_event)
+    context.log.debug(f"add_level() {tp.id} {port=} {level=} ")
     return level_handler
 
 
 @handle_exception
-def add_level_ss(tp_list, port, channel, callback):
+def add_level_ss(tp_list, port, level, callback):
     level_handler = LevelHandler(init_handler=callback)
-    tp_add_watcher_level_ss(tp_list, port, channel, level_handler.handle_event)
-    context.log.debug(f"add_level_ss() {[tp.id for tp in tp_list]} 포트:{port} 레벨:{channel}")
+    tp_add_watcher_level_ss(tp_list, port, level, level_handler.handle_event)
+    context.log.debug(f"add_level_ss() {[tp.id for tp in tp_list]} {port=} {level=}")
     return level_handler

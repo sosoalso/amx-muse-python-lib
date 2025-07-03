@@ -25,9 +25,9 @@ class UIMenu:
     @handle_exception
     def init(self):
         add_button(self.tp, 1, 100, "push", self.hide_all_menu_popup)
-        for idx in range(1, 10):
+        for idx in range(1, 10):  # 1 ~ 9
             add_button(self.tp, 1, idx, "push", lambda idx=idx: self.show_page(idx))
-        for idx in range(1, 20):
+        for idx in range(1, 20):  # 11 ~ 39
             add_button(self.tp, 1, idx + 10, "push", lambda idx=idx: self.show_menu_popup(idx))
         self.selected_menu = 0
         self.refresh_menu_popup_button()

@@ -5,7 +5,7 @@ import threading
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.23"
+VERSION = "2025.07.02"
 
 
 def get_version():
@@ -29,10 +29,10 @@ log_debug = context.log.debug
 
 
 def set_log_level(level):
-    valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR"]
+    valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "debug", "info", "warning", "error"]
     if level not in valid_levels:
         raise ValueError(f"Invalid log level: {level}. Choose from {valid_levels}.")
-    context.log.level = level
+    context.log.level = level.upper()
 
 
 # ---------------------------------------------------------------------------- #

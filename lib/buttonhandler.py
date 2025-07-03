@@ -43,9 +43,9 @@ class ButtonHandler(EventManager):
     @handle_exception
     def start_repeat(self):
         while self.is_pushed:
-            time.sleep(self.repeat_interval)  # 반복 간격 대기
             if self.is_pushed:
                 self.trigger_event("repeat")  # 반복 이벤트 트리거
+            time.sleep(self.repeat_interval)  # 반복 간격 대기
 
     @handle_exception
     def start_hold(self):
@@ -61,14 +61,14 @@ class ButtonHandler(EventManager):
             elif action.startswith("hold_"):
                 a = "hold"
                 hold_time = float(action.split("_")[1])
-                if not (0 < hold_time <= 30):
-                    raise ValueError("0 < hold_time <= 30 범위어야 함")
+                if not (0.5 <= hold_time <= 30):
+                    raise ValueError("0.5 < hold_time <= 30 범위어야 함")
                 self.hold_time = hold_time
             elif action.startswith("repeat_"):
                 a = "repeat"
                 repeat_interval = float(action.split("_")[1])
-                if not (0 < repeat_interval <= 5):
-                    raise ValueError("0 < repeat_interval <= 5 범위어야 함")
+                if not (0.1 <= repeat_interval <= 3.0):
+                    raise ValueError("0.1 <= repeat_interval <= 3.0 범위어야 함")
                 self.repeat_interval = repeat_interval
             else:
                 context.log.error(f"add_event_handler 알 수 없는 액션 {action=}")
