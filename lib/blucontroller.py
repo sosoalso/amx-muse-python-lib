@@ -1,11 +1,9 @@
 from typing import Sequence, Union
 
-from mojo import context
-
-from lib.lib_yeoul import handle_exception
+from lib.lib_yeoul import handle_exception, log_debug, log_error
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.30"
+VERSION = "2025.07.04"
 
 
 def get_version():
@@ -89,9 +87,9 @@ class BluController:
         self.UNIT_VAL = unit_val  # 볼륨 조절 단위 값 설정
         self.debug = debug
 
-    def log_debug(self, message):
+    def blu_log_debug(self, message):
         if self.debug:
-            context.log.debug(message)
+            log_debug(message)
 
     # NOTE : dB 값을 터치패널 0-255 값으로 변환
     @handle_exception
@@ -117,15 +115,13 @@ class BluController:
     def init(self, *path_lists: Sequence[Union[list[str], tuple[str, ...]]]):
         for path_list in path_lists:
             if not isinstance(path_list, (list, tuple)):
-                context.log.error(
-                    "BluController init 에러 : path_lists 의 개별 요소는 path str 으로 구성된 list 나 tuple 이어야 합니다."
+                log_error(
+                    "BluController init() 에러 : path_lists 의 개별 요소는 path str 으로 구성된 list 나 tuple 이어야 합니다."
                 )
                 raise TypeError
             for path in path_list:
                 if not isinstance(path, tuple):
-                    context.log.error(
-                        "BluController init 에러 : 각각의 path 는 path str 으로 구성된 tuple 이어야 합니다."
-                    )
+                    log_error("BluController init() 에러 : 각각의 path 는 path str 으로 구성된 tuple 이어야 합니다.")
                     raise TypeError
                 component = self.get_component(path)
                 if component is not None:
@@ -141,8 +137,8 @@ class BluController:
     @handle_exception
     def get_component(self, path: tuple[str, ...]):
         if not isinstance(path, tuple):
-            context.log.error(
-                "BluController get_component 에러 : path 의 개별 요소는 는 tuple 로 둘러쌓여진 str 으로 구성돼야합니다."
+            log_error(
+                "BluController get_component() 에러 : path 의 개별 요소는 는 tuple 로 둘러쌓여진 str 으로 구성돼야합니다."
             )
             raise TypeError
         nested_component = self.dv  # Logic 때문에 self.dv 에서 시작
@@ -153,8 +149,8 @@ class BluController:
     @handle_exception
     def get_state(self, path: tuple[str, ...]):
         if not isinstance(path, tuple):
-            context.log.error(
-                "BluController get_state 에러 : path 의 개별 요소는 는 tuple 로 둘러쌓여진 str 으로 구성돼야합니다."
+            log_error(
+                "BluController get_state() 에러 : path 의 개별 요소는 는 tuple 로 둘러쌓여진 str 으로 구성돼야합니다."
             )
             raise TypeError
         return self.states.get_state(path)
@@ -176,54 +172,54 @@ class BluController:
 
     @handle_exception
     def vol_up(self, path):
-        self.log_debug(f"vol_up {path=}")
+        self.blu_log_debug(f"BluController vol_up() {path=}")
         val = self.check_val_convert_float(self.states.get_state(path))
         if val is not None and val <= self.MAX_VAL - self.UNIT_VAL:
             self.update_state(path, round(val + self.UNIT_VAL))
 
     @handle_exception
     def vol_down(self, path):
-        self.log_debug(f"vol_down {path=}")
+        self.blu_log_debug(f"BluController vol_down() {path=}")
         val = self.check_val_convert_float(self.states.get_state(path))
         if val is not None and val >= self.MIN_VAL + self.UNIT_VAL:
             self.update_state(path, round(val - self.UNIT_VAL))
 
     @handle_exception
     def set_vol(self, path, val: float):
-        self.log_debug(f"set_vol {path=} {val=}")
+        self.blu_log_debug(f"BluController set_vol() {path=} {val=}")
         if val is not None and self.MIN_VAL <= val <= self.MAX_VAL:
             self.update_state(path, round(val))
 
     @handle_exception
     def toggle_on_off(self, path, *args):
-        self.log_debug(f"toggle_on_off {path=}")
+        self.blu_log_debug(f"BluController toggle_on_off() {path=}")
         val = self.states.get_state(path)
         val_str = "Off" if val == "On" else "Off"
         self.update_state(path, val_str)
 
     @handle_exception
     def set_on(self, path):
-        self.log_debug(f"set_on {path=}")
+        self.blu_log_debug(f"BluController set_on() {path=}")
         self.update_state(path, "On")
 
     @handle_exception
     def set_off(self, path):
-        self.log_debug(f"set_off {path=}")
+        self.blu_log_debug(f"BluController set_off() {path=}")
         self.update_state(path, "Off")
 
     @handle_exception
     def toggle_muted_unmuted(self, path):
-        self.log_debug(f"toggle_muted_unmuted {path=}")
+        self.blu_log_debug(f"BluController toggle_muted_unmuted() {path=}")
         val = self.states.get_state(path)
         val_str = "Unmuted" if val == "Muted" else "Muted"
         self.update_state(path, val_str)
 
     @handle_exception
     def set_muted(self, path):
-        self.log_debug(f"set_muted {path=}")
+        self.blu_log_debug(f"BluController set_muted() {path=}")
         self.update_state(path, "Muted")
 
     @handle_exception
     def set_unmuted(self, path):
-        self.log_debug(f"set_unmuted {path=}")
+        self.blu_log_debug(f"BluController set_unmuted() {path=}")
         self.update_state(path, "Unmuted")

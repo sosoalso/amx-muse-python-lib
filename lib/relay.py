@@ -78,13 +78,47 @@ class Relay:
     # ---------------------------------------------------------------------------- #
     def add_relay_button(self):
         for idx in range(len(self.devchan_list)):
-            add_button_ss(self.tp_list, self.tp_port, idx + 1, "push", lambda idx=idx: self.set_relay_on(idx))
-            add_button_ss(self.tp_list, self.tp_port, idx + 101, "push", lambda idx=idx: self.set_relay_off(idx))
-            add_button_ss(self.tp_list, self.tp_port, idx + 201, "push", lambda idx=idx: self.set_relay_pulse(idx))
-            add_button_ss(self.tp_list, self.tp_port, idx + 301, "push", lambda idx=idx: self.set_relay_toggle(idx))
-            add_button_ss(self.tp_list, self.tp_port, idx + 301, "push", lambda idx=idx: self.set_relay_toggle(idx))
-            add_button_ss(self.tp_list, self.tp_port, idx + 401, "push", lambda idx=idx: self.set_relay_on(idx))
-            add_button_ss(self.tp_list, self.tp_port, idx + 401, "release", lambda idx=idx: self.set_relay_off(idx))
+            add_button_ss(
+                self.tp_list,
+                self.tp_port,
+                idx + 1,
+                "push",
+                lambda idx=idx: self.set_relay_on(idx),
+                comment=f"릴레이 {idx + 1}번 켜기",
+            )
+            add_button_ss(
+                self.tp_list,
+                self.tp_port,
+                idx + 101,
+                "push",
+                lambda idx=idx: self.set_relay_off(idx),
+                comment=f"릴레이 {idx + 1}번 끄기",
+            )
+            add_button_ss(
+                self.tp_list,
+                self.tp_port,
+                idx + 201,
+                "push",
+                lambda idx=idx: self.set_relay_pulse(idx),
+                comment=f"릴레이 {idx + 1}번 펄스",
+            )
+            add_button_ss(
+                self.tp_list,
+                self.tp_port,
+                idx + 301,
+                "push",
+                lambda idx=idx: self.set_relay_toggle(idx),
+                comment=f"릴레이 {idx + 1}번 토글",
+            )
+            relay_momentary_button = add_button_ss(
+                self.tp_list,
+                self.tp_port,
+                idx + 401,
+                "push",
+                lambda idx=idx: self.set_relay_on(idx),
+                comment=f"릴레이 {idx + 1}번 모멘터리",
+            )
+            relay_momentary_button.on("release", lambda idx=idx: self.set_relay_off(idx))
 
     def refresh_relay_button(self, idx):
         for tp in self.tp_list:
@@ -92,6 +126,6 @@ class Relay:
             tp_set_button(tp, self.tp_port, idx + 101, not self.get_relay_state(idx))
 
     def show_all_relay_state(self):
-        log_debug(f"show_all_relay_state: {self.devchan_list=}")
+        log_debug(f"show_all_relay_state() : {self.devchan_list=}")
         for idx in range(len(self.devchan_list)):
             log_debug(f"{idx=} {self.relay_state[idx]['state']=} {self._get_relay_devchan_state(idx)=}")

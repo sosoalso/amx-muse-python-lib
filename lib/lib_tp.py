@@ -1,9 +1,7 @@
-from typing import Union
-
 from lib.lib_yeoul import handle_exception, log_debug, log_error, log_info
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.07.03"
+VERSION = "2025.07.05"
 
 
 def get_version():
@@ -11,16 +9,50 @@ def get_version():
 
 
 # ---------------------------------------------------------------------------- #
-@handle_exception
-def tp_add_notification(tp, port, button):
-    def _notify(evt):
+class DebugFlags:
+    enable_debug_tp_add_watcher = True
+    enable_debug_tp_add_watcher_level = True
+    enable_debug_tp_add_notification = True
+    enable_debug_tp_add_notification_level = True
+    enable_debug_tp_set_button = False
+    enable_debug_tp_send_level = False
+    enable_debug_tp_send_command = False
+
+
+def tp_set_debug_flag(
+    tp_add_watcher=True,
+    tp_add_watcher_level=True,
+    tp_add_notification=True,
+    tp_add_notification_level=True,
+    tp_set_button=False,
+    tp_send_level=False,
+    enable_debug_tp_send_command=False,
+):
+    DebugFlags.enable_debug_tp_add_watcher = tp_add_watcher
+    DebugFlags.enable_debug_tp_add_watcher_level = tp_add_watcher_level
+    DebugFlags.enable_debug_tp_add_notification = tp_add_notification
+    DebugFlags.enable_debug_tp_add_notification_level = tp_add_notification_level
+    DebugFlags.enable_debug_tp_set_button = tp_set_button
+    DebugFlags.enable_debug_tp_send_level = tp_send_level
+    DebugFlags.enable_debug_tp_send_command = enable_debug_tp_send_command
+
+
+# ---------------------------------------------------------------------------- #
+def _notify(evt):
+    if DebugFlags.enable_debug_tp_add_notification:
         _, port, _, button = (int(x) if x.isdigit() else x for x in evt.path.split("/"))
         log_debug(f"버튼 {'누름' if evt.value else '떼짐'} : {evt.device} {port=} {button=}")
+
+
+@handle_exception
+def tp_add_notification(tp, port, button):
 
     if not _notify in tp.port[port].button[button].pythonWatchers or not any(
         watcher.__name__ == _notify.__name__ for watcher in tp.port[port].button[button].pythonWatchers
     ):
         tp.port[port].button[button].watch(_notify)
+    # else:
+    #     log_debug(f"tp_add_notification() 중복 알림 등록됨. 기존 알림을 유지합니다. {tp.id=} {port=} {button=}")
 
 
 @handle_exception
@@ -35,8 +67,9 @@ def tp_add_notification_ss(tp_list, port, button):
 @handle_exception
 def tp_add_notification_level(tp, port, level):
     def _notify(evt):
-        _, port, _, button = (int(x) if x.isdigit() else x for x in evt.path.split("/"))
-        log_info(f"레벨 값={evt.value} : {evt.device} {port=} {button=}")
+        if DebugFlags.enable_debug_tp_add_notification_level:
+            _, port, _, button = (int(x) if x.isdigit() else x for x in evt.path.split("/"))
+            log_info(f"레벨 값={evt.value} : {evt.device} {port=} {button=}")
 
     if not _notify in tp.port[port].level[level].pythonWatchers or not any(
         watcher.__name__ == _notify.__name__ for watcher in tp.port[port].level[level].pythonWatchers
@@ -62,14 +95,15 @@ def tp_get_device_state(tp):
 # ---------------------------------------------------------------------------- #
 @handle_exception
 def tp_add_watcher(tp, port, button, handler):
-    log_debug(f"tp_add_watcher() : {tp.id} {port=} {button=}")
+    if DebugFlags.enable_debug_tp_add_watcher:
+        log_debug(f"tp_add_watcher() : {tp.id} {port=} {button=}")
     if not tp.port[port].button[button].pythonWatchers or not handler in tp.port[port].button[button].pythonWatchers:
         tp.port[port].button[button].watch(handler)
     tp_add_notification(tp, port, button)
 
 
 @handle_exception
-def tp_add_watcher_ss(tp_list: Union[list, tuple], port, button, handler):
+def tp_add_watcher_ss(tp_list: list | tuple, port, button, handler):
     if not isinstance(tp_list, (list, tuple)):
         log_error("tp_add_watcher_ss() 에러 : tp_list 는 장비로 튜플이나 리스트여야합니다.")
         raise TypeError
@@ -85,14 +119,15 @@ def tp_clear_watcher(tp, port, button):
 
 @handle_exception
 def tp_add_watcher_level(tp, port, level, handler):
-    log_debug(f"tp_add_watcher_level() : {tp.id} {port=} {level=}")
+    if DebugFlags.enable_debug_tp_add_watcher_level:
+        log_debug(f"tp_add_watcher_level() : {tp.id} {port=} {level=}")
     if not tp.port[port].level[level].pythonWatchers or not handler in tp.port[port].level[level].pythonWatchers:
         tp.port[port].level[level].watch(handler)
     tp_add_notification_level(tp, port, level)
 
 
 @handle_exception
-def tp_add_watcher_level_ss(tp_list: Union[list, tuple], port, level, handler):
+def tp_add_watcher_level_ss(tp_list: list | tuple, port, level, handler):
     if not isinstance(tp_list, (list, tuple)):
         log_error("tp_add_watcher_level_ss() 에러 : tp_list 는 장비로 튜플이나 리스트여야합니다.")
         raise TypeError
@@ -144,7 +179,8 @@ def tp_get_btn_state(tp, port, button):
 def tp_set_button(tp, port, button, value):
     if tp_get_device_state(tp):
         tp.port[port].channel[button].value = value
-        # log_debug(f"버튼 피드백 : {tp.id} {port=} {button=} {value=}")
+        if DebugFlags.enable_debug_tp_set_button:
+            log_debug(f"버튼 피드백 : {tp.id} {port=} {button=} {value=}")
 
 
 @handle_exception
@@ -153,7 +189,7 @@ def tp_set_btn(tp, port, button, value):
 
 
 @handle_exception
-def tp_set_button_ss(tp_list: Union[list, tuple], port, button, value):
+def tp_set_button_ss(tp_list: list | tuple, port, button, value):
     if not isinstance(tp_list, (list, tuple)):
         log_error("tp_set_button_ss() 에러 : tp_list 는 장비로 튜플이나 리스트여야합니다.")
         raise TypeError
@@ -162,7 +198,7 @@ def tp_set_button_ss(tp_list: Union[list, tuple], port, button, value):
 
 
 @handle_exception
-def tp_set_btn_ss(tp_list: Union[list, tuple], port, button, value):
+def tp_set_btn_ss(tp_list: list | tuple, port, button, value):
     tp_set_button_ss(tp_list, port, button, value)
 
 
@@ -178,12 +214,12 @@ def tp_set_btn_state(tp, port, button, value):
 
 
 @handle_exception
-def tp_set_button_state_ss(tp: Union[list, tuple], port, button, value):
+def tp_set_button_state_ss(tp: list | tuple, port, button, value):
     tp_set_button_ss(tp, port, button, value)
 
 
 @handle_exception
-def tp_set_btn_state_ss(tp: Union[list, tuple], port, button, value):
+def tp_set_btn_state_ss(tp: list | tuple, port, button, value):
     tp_set_button_state_ss(tp, port, button, value)
 
 
@@ -194,12 +230,30 @@ def tp_set_button_in_range(tp, port, index_btn_start, index_btn_range, index_con
 
 
 @handle_exception
+def tp_set_button_in_array(tp, port, btn_list: list | tuple, index_condition):
+    if not isinstance(btn_list, (list, tuple)):
+        log_error("tp_set_button_in_array() 에러 : btn_list 는 버튼 인덱스 리스트여야합니다.")
+        raise TypeError
+    for index in btn_list:
+        tp_set_button(tp, port, index, index_condition == (index + 1))
+
+
+@handle_exception
+def tp_set_button_in_array_ss(tp_list: list | tuple, port, btn_list: list | tuple, index_condition):
+    if not isinstance(tp_list, (list, tuple)):
+        log_error("tp_set_button_in_array_ss() 에러 : tp_list 는 장비로 튜플이나 리스트여야합니다.")
+        raise TypeError
+    for tp in tp_list:
+        tp_set_button_in_array(tp, port, btn_list, index_condition)
+
+
+@handle_exception
 def tp_set_btn_in_range(tp, port, index_btn_start, index_btn_range, index_condition):
     tp_set_button_in_range(tp, port, index_btn_start, index_btn_range, index_condition)
 
 
 @handle_exception
-def tp_set_button_in_range_ss(tp_list: Union[list, tuple], port, index_btn_start, index_btn_range, index_condition):
+def tp_set_button_in_range_ss(tp_list: list | tuple, port, index_btn_start, index_btn_range, index_condition):
     if not isinstance(tp_list, (list, tuple)):
         log_error("tp_send_level_ss() 에러 : tp_list 는 장비로 튜플이나 리스트여야합니다.")
         raise TypeError
@@ -208,7 +262,7 @@ def tp_set_button_in_range_ss(tp_list: Union[list, tuple], port, index_btn_start
 
 
 @handle_exception
-def tp_set_btn_in_range_ss(tp_list: Union[list, tuple], port, index_btn_start, index_btn_range, index_condition):
+def tp_set_btn_in_range_ss(tp_list: list | tuple, port, index_btn_start, index_btn_range, index_condition):
     tp_set_button_in_range_ss(tp_list, port, index_btn_start, index_btn_range, index_condition)
 
 
@@ -229,7 +283,8 @@ def tp_get_lvl(tp, port, level):
 def tp_send_level(tp, port, level, value):
     if tp_get_device_state(tp):
         tp.port[port].level[level].value = value
-        # log_debug(f"레벨 값 변경 : {tp.id} {port=} {level=} {value=}")
+        if DebugFlags.enable_debug_tp_send_level:
+            log_debug(f"레벨 값 변경 : {tp.id} {port=} {level=} {value=}")
 
 
 @handle_exception
@@ -248,26 +303,26 @@ def tp_set_lvl(tp, port, level, value, *args):
 
 
 @handle_exception
-def tp_send_level_ss(tp_list: Union[list, tuple], port, level, value):
+def tp_send_level_ss(tp_list: list | tuple, port, level, value):
     if not isinstance(tp_list, (list, tuple)):
-        log_error("tp_send_level_ss() 에러 : tp_list 는 장비로 튜플이나 리스트여야합니다.")
+        log_error("tp_send_level_ss() 에러 : tp_list는 튜플이나 리스트여야합니다.")
         raise TypeError
     for tp in tp_list:
         tp_send_level(tp, port, level, value)
 
 
 @handle_exception
-def tp_send_lvl_ss(tp_list: Union[list, tuple], port, level, value):
+def tp_send_lvl_ss(tp_list: list | tuple, port, level, value):
     tp_send_level_ss(tp_list, port, level, value)
 
 
 @handle_exception
-def tp_set_level_ss(tp: Union[list, tuple], port, level, value, *args):
+def tp_set_level_ss(tp: list | tuple, port, level, value, *args):
     tp_send_level_ss(tp, port, level, value, *args)
 
 
 @handle_exception
-def tp_set_lvl_ss(tp: Union[list, tuple], port, level, value, *args):
+def tp_set_lvl_ss(tp: list | tuple, port, level, value, *args):
     tp_send_level_ss(tp, port, level, value, *args)
 
 
@@ -280,7 +335,8 @@ def convert_text_to_unicode(text):
 def tp_send_command(tp, port, command):
     if tp_get_device_state(tp):
         tp.port[port].send_command(command)
-        log_debug(f"tp_send_command() : {tp.id} {port=} {command=}")
+        if DebugFlags.enable_debug_tp_send_command:
+            log_debug(f"tp_send_command() : {tp.id} {port=} {command=}")
 
 
 @handle_exception
@@ -289,16 +345,16 @@ def tp_send_cmd(tp, port, command):
 
 
 @handle_exception
-def tp_send_command_ss(tp_list: Union[list, tuple], port, command):
+def tp_send_command_ss(tp_list: list | tuple, port, command):
     if not isinstance(tp_list, (list, tuple)):
-        log_error("tp_send_command_ss() 에러 : tp_list 는 장비로 튜플이나 리스트여야합니다.")
+        log_error(f"tp_send_command_ss() {command=} 에러 : tp_list는 튜플이나 리스트여야합니다.")
         raise TypeError
     for tp in tp_list:
         tp_send_command(tp, port, command)
 
 
 @handle_exception
-def tp_send_cmd_ss(tp_list: Union[list, tuple], port, command):
+def tp_send_cmd_ss(tp_list: list | tuple, port, command):
     tp_send_command_ss(tp_list, port, command)
 
 
@@ -313,12 +369,12 @@ def tp_set_btn_text_unicode(tp, port, index_addr, text):
 
 
 @handle_exception
-def tp_set_button_text_unicode_ss(tp_list: Union[list, tuple], port, index_addr, text):
+def tp_set_button_text_unicode_ss(tp_list: list | tuple, port, index_addr, text):
     tp_send_command_ss(tp_list, port, f"^UNI-{index_addr},0,{convert_text_to_unicode(text)}")
 
 
 @handle_exception
-def tp_set_btn_text_unicode_ss(tp_list: Union[list, tuple], port, index_addr, text):
+def tp_set_btn_text_unicode_ss(tp_list: list | tuple, port, index_addr, text):
     tp_set_button_text_unicode_ss(tp_list, port, index_addr, text)
 
 
@@ -333,12 +389,12 @@ def tp_set_btn_text(tp, port, index_addr, text):
 
 
 @handle_exception
-def tp_set_button_text_ss(tp_list: Union[list, tuple], port, index_addr, text):
+def tp_set_button_text_ss(tp_list: list | tuple, port, index_addr, text):
     tp_send_command_ss(tp_list, port, f"^TXT-{index_addr},0,{text}")
 
 
 @handle_exception
-def tp_set_btn_text_ss(tp_list: Union[list, tuple], port, index_addr, text):
+def tp_set_btn_text_ss(tp_list: list | tuple, port, index_addr, text):
     tp_set_button_text_ss(tp_list, port, index_addr, text)
 
 
@@ -375,20 +431,20 @@ def tp_hide_all_popup(tp):
 
 
 @handle_exception
-def tp_set_page_ss(tp: Union[list, tuple], page_name):
+def tp_set_page_ss(tp: list | tuple, page_name):
     tp_send_command_ss(tp, 1, f"^PGE-{page_name}")
 
 
 @handle_exception
-def tp_show_popup_ss(tp: Union[list, tuple], popup_name):
+def tp_show_popup_ss(tp: list | tuple, popup_name):
     tp_send_command_ss(tp, 1, f"^PPN-{popup_name}")
 
 
 @handle_exception
-def tp_hide_popup_ss(tp: Union[list, tuple], popup_name):
+def tp_hide_popup_ss(tp: list | tuple, popup_name):
     tp_send_command_ss(tp, 1, f"^PPF-{popup_name}")
 
 
 @handle_exception
-def tp_hide_all_popup_ss(tp: Union[list, tuple]):
+def tp_hide_all_popup_ss(tp: list | tuple):
     tp_send_command_ss(tp, 1, "^PPX")

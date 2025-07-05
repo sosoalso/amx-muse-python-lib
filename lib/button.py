@@ -10,7 +10,7 @@ from lib.lib_tp import (
 from lib.lib_yeoul import handle_exception
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.07.03"
+VERSION = "2025.07.04"
 
 
 def get_version():
@@ -18,33 +18,55 @@ def get_version():
 
 
 # ---------------------------------------------------------------------------- #
+class DebugFlags:
+    enable_debug_add_button = False
+    enable_debug_add_level = False
+
+
+def add_button_set_debug_flag(
+    enable_debug_add_button=False,
+    enable_debug_add_level=False,
+):
+    DebugFlags.enable_debug_add_button = enable_debug_add_button
+    DebugFlags.enable_debug_add_level = enable_debug_add_level
+
+
+# ---------------------------------------------------------------------------- #
 @handle_exception
-def add_button(tp, port, button, action, callback):
+def add_button(tp, port, button, action, callback, comment=None):
     new_button = ButtonHandler(init_action=action, init_handler=callback)
     tp_add_watcher(tp, port, button, new_button.handle_event)
-    context.log.debug(f"add_button() {tp.id} {port=} {button=} {action=}")
+    if DebugFlags.enable_debug_add_button:
+        context.log.debug(f"add_button() {tp.id} {port=} {button=} {action=} {': ' + comment if comment else ''}")
     return new_button
 
 
 @handle_exception
-def add_button_ss(tp_list, port, button, action, callback):
+def add_button_ss(tp_list, port, button, action, callback, comment=None):
     new_button = ButtonHandler(init_action=action, init_handler=callback)
     tp_add_watcher_ss(tp_list, port, button, new_button.handle_event)
-    context.log.debug(f"add_button_ss() {[tp.id for tp in tp_list]} {port=} {button=} {action=}")
+    if DebugFlags.enable_debug_add_button:
+        context.log.debug(
+            f"add_button_ss() {[tp.id for tp in tp_list]} {port=} {button=} {action=} {': ' + comment if comment else ''}"
+        )
     return new_button
 
 
 @handle_exception
-def add_level(tp, port, level, callback):
+def add_level(tp, port, level, callback, comment=None):
     level_handler = LevelHandler(init_handler=callback)
     tp_add_watcher_level(tp, port, level, level_handler.handle_event)
-    context.log.debug(f"add_level() {tp.id} {port=} {level=} ")
+    if DebugFlags.enable_debug_add_level:
+        context.log.debug(f"add_level() {tp.id} {port=} {level=} {': ' + comment if comment else ''}")
     return level_handler
 
 
 @handle_exception
-def add_level_ss(tp_list, port, level, callback):
+def add_level_ss(tp_list, port, level, callback, comment=None):
     level_handler = LevelHandler(init_handler=callback)
     tp_add_watcher_level_ss(tp_list, port, level, level_handler.handle_event)
-    context.log.debug(f"add_level_ss() {[tp.id for tp in tp_list]} {port=} {level=}")
+    if DebugFlags.enable_debug_add_level:
+        context.log.debug(
+            f"add_level_ss() {[tp.id for tp in tp_list]} {port=} {level=} {': ' + comment if comment else ''}"
+        )
     return level_handler

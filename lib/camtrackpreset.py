@@ -1,8 +1,8 @@
-from lib.lib_yeoul import handle_exception
+# from lib.lib_yeoul import handle_exception
 from lib.userdata import Userdata
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.27"
+VERSION = "2025.07.05"
 
 
 def get_version():
@@ -12,80 +12,43 @@ def get_version():
 # ---------------------------------------------------------------------------- #
 class CamtrackPreset:
     """
-    CamtrackPreset 클래스는 카메라 트랙 프리셋을 저장하고 로드하는 기능을 제공합니다.
-    Attributes:
-        filename (str): 프리셋 데이터를 저장할 파일 이름. 기본값은 "camtrack_preset.json"입니다.
-        max_preset_index (int): 최대 프리셋 인덱스. 기본값은 40입니다.
-        data (Userdata): 파일 저장 및 로드에 사용되는 Userdata 객체.
-        presets (list): 현재 로드된 프리셋 목록.
-    Methods:
-        __init__(filename="camtrack_preset.json", max_preset_index=40):
-            CamtrackPreset 객체를 초기화합니다.
-            파일 이름과 최대 프리셋 인덱스를 설정합니다.
-        init():
-            프리셋 데이터를 초기화합니다.
-            저장된 데이터가 없으면 더미 프리셋을 생성합니다.
-        make_dummy_presets():
-            더미 프리셋 목록을 생성합니다.
-            Returns:
-                list: 기본값으로 설정된 프리셋 목록.
-        sort_preset():
-            프리셋 목록을 인덱스 기준으로 정렬합니다.
-        get_preset(index):
-            특정 인덱스에 해당하는 프리셋을 반환합니다.
-            Args:
-                index (int): 검색할 프리셋의 인덱스.
-            Returns:
-                dict or None: 해당 인덱스의 프리셋. 없으면 None.
-                dict 구조:
-                    - index (int): 프리셋의 인덱스.
-                    - camera (int): 카메라 번호.
-                    - preset (int): 프리셋 번호.
-        set_preset(preset_index, cam_no, preset_no):
-            특정 프리셋의 카메라 번호와 프리셋 번호를 설정합니다.
-            Args:
-                preset_index (int): 설정할 프리셋의 인덱스.
-                cam_no (int): 설정할 카메라 번호.
-                preset_no (int): 설정할 프리셋 번호.
-        save_preset():
-            현재 프리셋 데이터를 파일에 저장합니다.
+    self.camtrack_preset 구조:
+    {
+        "preset_001": {"camera": 0, "preset": 1},
+        ...
+        "preset_MAX": {"camera": 0, "preset": MAX}
+    }
+    - preset_index는 1부터 시작하며, 최대값은 max_preset_index입니다.
+    - 각 preset은 "camera"와 "preset" 키를 가지며, 값은 해당 카메라와 프리셋 번호입니다.
+    - 예시: "preset_001": {"camera": 0, "preset": 1}은 첫 번째 프리셋이 카메라 0의 프리셋 1을 의미합니다.
+    - camtrack_preset.db에 저장되어 있으며, 프로그램 시작 시 불러옵니다.
+    - 프리셋을 설정할 때는 set_preset(preset_index, cam_no, preset_no)를 사용합니다.
+    - 프리셋을 가져올 때는 get_preset(preset_index) 또는 get_preset_cam(preset_index), get_preset_cam_preset(preset_index)를 사용합니다.
     """
 
-    def __init__(self, filename="camtrack_preset.json", max_preset_index=40):
-        self.filename = filename
+    def __init__(self, max_preset_index=40, db_path="camtrack_preset.db"):
         self.max_preset_index = max_preset_index
-        self.data = Userdata(filename=self.filename)
-        self.presets = []
-        self.init()
+        self.userdata = Userdata(db_path=db_path)
+        self.camtrack_preset = self.userdata.get_value("camtrack_preset", self.make_dummy_presets())
 
-    @handle_exception
-    def init(self):
-        self.presets = self.data.get_value("presets", self.make_dummy_presets())
-
-    @handle_exception
     def make_dummy_presets(self):
-        return [
-            {"index": preset_index + 1, "camera": 0, "preset": preset_index + 1}
-            for preset_index in range(self.max_preset_index)
-        ]
+        return {
+            f"preset_{preset_index:03d}": {"camera": 0, "preset": 0}
+            for preset_index in range(1, self.max_preset_index + 1)
+        }
 
-    @handle_exception
-    def sort_preset(self):
-        self.presets = sorted(self.presets or [], key=lambda x: x["index"])
+    def get_preset(self, preset_index):
+        return self.camtrack_preset.get(f"preset_{preset_index:03d}", {})
+        # return next((preset for preset in self.camtrack_preset or {} if preset["index"] == index), {})
 
-    @handle_exception
-    def get_preset(self, index):
-        return next((preset for preset in self.presets or {} if preset["index"] == index), {})
+    def get_preset_cam(self, preset_index):
+        preset = self.get_preset(preset_index)
+        return preset.get("camera", 0)
 
-    @handle_exception
+    def get_preset_cam_preset(self, preset_index):
+        preset = self.get_preset(preset_index)
+        return preset.get("preset", 0)
+
     def set_preset(self, preset_index, cam_no, preset_no):
-        target_preset = self.get_preset(preset_index)
-        if target_preset:
-            target_preset["camera"] = cam_no
-            target_preset["preset"] = preset_no
-            self.sort_preset()
-            self.save_preset()
-
-    @handle_exception
-    def save_preset(self):
-        self.data.set_value("presets", self.presets)
+        self.camtrack_preset[f"preset_{preset_index:03d}"] = {"camera": cam_no, "preset": preset_no}
+        self.userdata.set_value("camtrack_preset", self.camtrack_preset)  # camtrack_preset.db에 저장

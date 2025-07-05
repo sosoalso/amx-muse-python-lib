@@ -6,7 +6,7 @@ import urllib.request
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.20"
+VERSION = "2025.07.04"
 
 
 def get_version():
@@ -14,35 +14,35 @@ def get_version():
 
 
 # ---------------------------------------------------------------------------- #
-def url_get(url: str, header: dict = None, callback=None, timeout: float = 0.5):
-    context.log.debug(f"url_get {url=} {header=} {callback=} {timeout=}")
+def url_get(url: str, header: dict = {}, callback=None, timeout: float = 0.5):
+    context.log.debug(f"url_get() {url=} {header=} {callback=} {timeout=}")
 
     def task():
-        req = urllib.request.Request(url=url, headers=header or {}, method="GET")
+        req = urllib.request.Request(url=url, headers=header, method="GET")
         try:
             with urllib.request.urlopen(req, timeout=timeout) as response:
                 result = response.read()
                 if callback:
                     callback(result)
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
-            context.log.error(f"url_get Error: {e}")
+            context.log.error(f"url_get() 에러 : {e}")
 
     threading.Thread(target=task, daemon=True).start()
 
 
-def url_post(url: str, header: dict = None, body=None, callback=None, timeout: float = 0.5):
-    context.log.debug(f"url_post {url=} {header=} {body=} {callback=} {timeout=}")
+def url_post(url: str, header: dict = {}, body=None, callback=None, timeout: float = 0.5):
+    context.log.debug(f"url_post() {url=} {header=} {body=} {callback=} {timeout=}")
 
     def task():
-        data = json.dumps(body).encode("utf-8")
-        req = urllib.request.Request(url=url, data=data, headers=header or {}, method="POST")
+        data = json.dumps(body).encode() if body else None
+        req = urllib.request.Request(url=url, data=data, headers=header, method="POST")
         try:
             with urllib.request.urlopen(req, timeout=timeout) as response:
                 result = response.read()
                 if callback:
                     callback(result)
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
-            context.log.error(f"url_post Error: {e}")
+            context.log.error(f"url_post() 에러 : {e}")
 
     threading.Thread(target=task, daemon=True).start()
 

@@ -5,10 +5,10 @@ from lib.lib_tp import (
     tp_set_page,
     tp_show_popup,
 )
-from lib.lib_yeoul import handle_exception
+from lib.lib_yeoul import handle_exception, log_error
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.27"
+VERSION = "2025.07.04"
 
 
 def get_version():
@@ -24,32 +24,45 @@ class UIMenu:
 
     @handle_exception
     def init(self):
-        add_button(self.tp, 1, 100, "push", self.hide_all_menu_popup)
+        add_button(self.tp, 1, 100, "push", self.hide_all_menu_popup, comment="모든 팝업 닫기 버튼")
         for idx in range(1, 10):  # 1 ~ 9
-            add_button(self.tp, 1, idx, "push", lambda idx=idx: self.show_page(idx))
+            add_button(
+                self.tp, 1, idx, "push", lambda idx=idx: self.show_page(idx), comment=f"페이지 {idx+1} 번 전환 버튼"
+            )
         for idx in range(1, 20):  # 11 ~ 39
-            add_button(self.tp, 1, idx + 10, "push", lambda idx=idx: self.show_menu_popup(idx))
+            add_button(
+                self.tp,
+                1,
+                idx + 10,
+                "push",
+                lambda idx=idx: self.show_menu_popup(idx),
+                comment=f"팝업 {idx+1:02d} 번 전환 버튼",
+            )
         self.selected_menu = 0
         self.refresh_menu_popup_button()
 
     @handle_exception
-    def show_page(self, idx_page):
-        if not isinstance(idx_page, int):
-            raise ValueError("show_page idx_page must be an integer")
-        if not (1 <= idx_page <= 9):
-            raise ValueError("show_page idx_page must be between 1 and 9")
+    def show_page(self, index_page):
+        if not isinstance(index_page, int):
+            log_error("UIMenu show_page() index_page 는 정수여야합니다.")
+            raise ValueError
+        if not (1 <= index_page <= 9):
+            log_error("UIMenu show_page() index_page 는 1 - 9 사이의 정수여야합니다.")
+            raise ValueError
         self.hide_all_menu_popup()
-        tp_set_page(self.tp, f"{idx_page:02d}")
+        tp_set_page(self.tp, f"{index_page:02d}")
 
     @handle_exception
-    def show_menu_popup(self, idx_popup):
-        if not isinstance(idx_popup, int):
-            raise ValueError("show_menu_popup idx_popup must be an integer")
-        if not (1 <= idx_popup <= 20):
-            raise ValueError("show_menu_popup idx_popup must be between 1 and 20")
-        self.selected_menu = idx_popup
+    def show_menu_popup(self, index_popup):
+        if not isinstance(index_popup, int):
+            log_error("UIMenu show_page() index_popup 은 정수여야합니다.")
+            raise ValueError
+        if not (1 <= index_popup <= 20):
+            log_error("UIMenu show_page() index_popup 은 1 - 20 사이의 정수여야합니다.")
+            raise ValueError
+        self.selected_menu = index_popup
         self.refresh_menu_popup_button()
-        tp_show_popup(self.tp, f"{idx_popup:03d}")
+        tp_show_popup(self.tp, f"{index_popup:03d}")
 
     @handle_exception
     def hide_all_menu_popup(self):
