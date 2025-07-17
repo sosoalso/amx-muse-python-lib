@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 from lib.lib_yeoul import log_error
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.07.05"
+VERSION = "2025.07.17"
 
 
 def get_version():
@@ -36,20 +36,19 @@ class Database:
     def __init__(self, db_path="database.db", timeout: float = 3.0):
         self.db_path = db_path
         self.timeout = timeout
-        self._lock = threading.Lock()
+        # self._lock = threading.RLock()  # RLock 사용으로 변경
         self._init_db()
 
     def _init_db(self):
         try:
-            with self._lock:
-                with sqlite3.connect(self.db_path, timeout=self.timeout) as conn:
-                    conn.execute("PRAGMA journal_mode=WAL")  # WAL 모드로 설정 (더 나은 동시성 지원)
-                    conn.execute("PRAGMA foreign_keys=ON")  # 외래키 제약 조건 활성화
-                    conn.execute("PRAGMA synchronous=NORMAL")  # 동기화 모드 설정 (성능과 안전성 균형)
-                    conn.execute("PRAGMA cache_size=10000")  # 캐시 크기 설정
-                    cursor = conn.cursor()
-                    cursor.execute(
-                        """
+            with sqlite3.connect(self.db_path, timeout=self.timeout) as conn:
+                conn.execute("PRAGMA journal_mode=WAL")  # WAL 모드로 설정 (더 나은 동시성 지원)
+                conn.execute("PRAGMA foreign_keys=ON")  # 외래키 제약 조건 활성화
+                conn.execute("PRAGMA synchronous=NORMAL")  # 동기화 모드 설정 (성능과 안전성 균형)
+                conn.execute("PRAGMA cache_size=10000")  # 캐시 크기 설정
+                cursor = conn.cursor()
+                cursor.execute(
+                    """
                         CREATE TABLE IF NOT EXISTS database (
                             key TEXT PRIMARY KEY,
                             value TEXT NOT NULL,
@@ -57,10 +56,18 @@ class Database:
                             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                         )
                     """
-                    )
-                    conn.commit()
+                )
+                conn.commit()
         except Exception as e:
             log_error(f"{self.db_path} _init_db() 에러 : {e}")
+
+    def __del__(self):
+        """소멸자: 리소스 정리"""
+        try:
+            # 필요한 경우 추가적인 정리 작업 수행
+            pass
+        except Exception:
+            pass  # 소멸자에서는 예외를 무시
 
     def save(self, key: str, data: Any) -> bool:
         try:
@@ -111,7 +118,7 @@ class Database:
 
     def exists(self, key: str) -> bool:
         try:
-            with sqlite3.connect(self.db_path) as conn:
+            with sqlite3.connect(self.db_path, timeout=self.timeout) as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT COUNT(*) FROM database WHERE key = ?", (key,))
                 count = cursor.fetchone()[0]
@@ -121,7 +128,7 @@ class Database:
 
     def clear_all(self) -> bool:
         try:
-            with sqlite3.connect(self.db_path) as conn:
+            with sqlite3.connect(self.db_path, timeout=self.timeout) as conn:
                 cursor = conn.cursor()
                 cursor.execute("DELETE FROM database")
                 conn.commit()

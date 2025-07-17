@@ -10,7 +10,7 @@ from lib.lib_tp import (
 from lib.lib_yeoul import handle_exception
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.07.04"
+VERSION = "2025.07.15"
 
 
 def get_version():
@@ -41,6 +41,10 @@ def add_button(tp, port, button, action, callback, comment=None):
     return new_button
 
 
+def add_btn(tp, port, button, action, callback, comment=None):
+    return add_button(tp, port, button, action, callback, comment)
+
+
 @handle_exception
 def add_button_ss(tp_list, port, button, action, callback, comment=None):
     new_button = ButtonHandler(init_action=action, init_handler=callback)
@@ -52,6 +56,10 @@ def add_button_ss(tp_list, port, button, action, callback, comment=None):
     return new_button
 
 
+def add_btn_ss(tp_list, port, button, action, callback, comment=None):
+    return add_button_ss(tp_list, port, button, action, callback, comment)
+
+
 @handle_exception
 def add_level(tp, port, level, callback, comment=None):
     level_handler = LevelHandler(init_handler=callback)
@@ -59,6 +67,10 @@ def add_level(tp, port, level, callback, comment=None):
     if DebugFlags.enable_debug_add_level:
         context.log.debug(f"add_level() {tp.id} {port=} {level=} {': ' + comment if comment else ''}")
     return level_handler
+
+
+def add_lvl(tp, port, level, callback, comment=None):
+    return add_level(tp, port, level, callback, comment)
 
 
 @handle_exception
@@ -70,3 +82,7 @@ def add_level_ss(tp_list, port, level, callback, comment=None):
             f"add_level_ss() {[tp.id for tp in tp_list]} {port=} {level=} {': ' + comment if comment else ''}"
         )
     return level_handler
+
+
+def add_lvl_ss(tp_list, port, level, callback, comment=None):
+    return add_level_ss(tp_list, port, level, callback, comment)

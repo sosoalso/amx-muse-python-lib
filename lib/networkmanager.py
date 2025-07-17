@@ -9,7 +9,7 @@ from lib.eventmanager import EventManager
 from lib.lib_yeoul import handle_exception
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.27"
+VERSION = "2025.07.15"
 
 
 def get_version():
@@ -30,22 +30,25 @@ class TcpServer(EventManager):
             self.this.add_event_handler("received", listener)
 
     def __init__(self, port, buffer_size=DEFAULT_BUFFER_SIZE):
-        super().__init__("received")
+        super().__init__("received", "online", "offline")
         self.port = port
         self.clients = []
         self.buffer_size = buffer_size
         self.sock = None
         self.echo = False
         self.receive = self.ReceiveHandler(self)
+        # self.start()
+
+    # ---------------------------------------------------------------------------- #
+    @handle_exception
+    def online(self, handler):
+        self.add_event_handler("online", handler)
 
     @handle_exception
-    def connect(self, handler):
-        self.add_event_handler("connected", handler)
+    def offline(self, handler):
+        self.add_event_handler("offline", handler)
 
-    @handle_exception
-    def disconnect(self, handler):
-        self.add_event_handler("disconnected", handler)
-
+    # ---------------------------------------------------------------------------- #
     @handle_exception
     def start(self):
         self.listen()
@@ -59,7 +62,8 @@ class TcpServer(EventManager):
         while True:
             client, address = self.sock.accept()
             self.clients.append(client)
-            self.trigger_event("connected", client, address)
+            self.trigger_event("online", client=client, address=address)
+            self.trigger_event("connected", client=client, address=address)
             threading.Thread(target=self.handle_client, args=(client, address), daemon=True).start()
 
     @handle_exception
@@ -83,7 +87,8 @@ class TcpServer(EventManager):
                     self.clients.remove(client)
                 context.log.error(f"클라이언트 에러 {address=}: {e}")
                 break
-        self.trigger_event("disconnected")
+        self.trigger_event("offline", client=client, address=address)
+        self.trigger_event("disconnected", client=client, address=address)
 
     @handle_exception
     def send_all(self, data):
@@ -109,7 +114,7 @@ class TcpClient(EventManager):
         time_reconnect=5,
         buffer_size=DEFAULT_BUFFER_SIZE,
     ):
-        super().__init__("connected", "received")
+        super().__init__("connected", "received", "online", "offline")
         self.name = name
         self.ip = ip
         self.port = port
@@ -121,6 +126,15 @@ class TcpClient(EventManager):
         self._thread_connect = None
         self._thread_receive = None
         self.receive = self.ReceiveHandler(self)
+        # self.connect()
+
+    @handle_exception
+    def online(self, handler):
+        self.add_event_handler("online", handler)
+
+    @handle_exception
+    def offline(self, handler):
+        self.add_event_handler("offline", handler)
 
     @handle_exception
     def connect(self):
@@ -163,11 +177,15 @@ class TcpClient(EventManager):
         self._thread_receive.start()
 
     def _receive(self):
-        self.trigger_event("connected")
+        self.trigger_event("online")
         context.log.debug(f"TcpClient._receive() {self.ip}:{self.port} 연결됨")
         while self.connected:
             try:
-                msg = self.socket.recv(self.DEFAULT_BUFFER_SIZE)
+                if self.socket:
+                    msg = self.socket.recv(self.DEFAULT_BUFFER_SIZE)
+                else:
+                    context.log.error("Socket is not initialized.")
+                    break
                 if msg:
                     context.log.debug(f"TcpClient._receive() {self.ip}:{self.port} 수신: {msg=}")
                     event = SimpleNamespace()
@@ -187,14 +205,6 @@ class TcpClient(EventManager):
                     self.connect()
                 break
 
-    # def send_byte(self, message):
-    #     if self.socket and self.connected:
-    #         try:
-    #             self.socket.sendall(message)
-    #             context.log.debug(f"TcpClient.send_byte() {self.ip}:{self.port} 전송: {message=}")
-    #         except Exception:
-    #             self.connected = False
-    #             self._handle_reconnect()
     def send(self, message):
         if self.socket and self.connected:
             try:
@@ -251,6 +261,7 @@ class UdpClient(EventManager):
         self.receive = self.ReceiveHandler(self)
         self.port_bind = port_bind if port_bind is not None else 0
         self.bound_port = None
+        # self.connect()
 
     @handle_exception
     def connect(self):
@@ -299,7 +310,11 @@ class UdpClient(EventManager):
         self.trigger_event("connected")
         while self.connected:
             try:
-                msg, addr = self.socket.recvfrom(self.DEFAULT_BUFFER_SIZE)
+                if self.socket:
+                    msg, addr = self.socket.recvfrom(self.DEFAULT_BUFFER_SIZE)
+                else:
+                    context.log.error("Socket is not initialized.")
+                    break
                 if msg:
                     context.log.debug(f"UdpClient._receive() {self.ip}:{self.port} 수신 : {msg=} {addr=}")
                     event = SimpleNamespace()
@@ -313,13 +328,6 @@ class UdpClient(EventManager):
                     self.connect()
                 break
 
-    # def send_byte(self, message):
-    #     if self.socket and self.connected:
-    #         try:
-    #             self.socket.sendto(message, (self.ip, self.port))
-    #         except Exception:
-    #             self.connected = False
-    #             self._handle_reconnect()
     def send(self, message):
         if self.socket and self.connected:
             try:
@@ -354,6 +362,7 @@ class UdpServer(EventManager):
         self.receive = self.ReceiveHandler(self)
         self.socket = None
         self.clients = []
+        # self.start()
 
     @handle_exception
     def add_client(self, addr):
@@ -385,13 +394,14 @@ class UdpServer(EventManager):
         self.running = True
         while self.running:
             try:
-                data, addr = self.socket.recvfrom(self.DEFAULT_BUFFER_SIZE)
-                if data:
-                    context.log.debug(f"_start received: {addr=} {data=}")
-                    self.add_client(addr)
-                    event = SimpleNamespace()
-                    event.arguments = {"data": data, "address": addr}
-                    self.trigger_event("received", event)
+                if self.socket:
+                    data, addr = self.socket.recvfrom(self.DEFAULT_BUFFER_SIZE)
+                    if data:
+                        context.log.debug(f"_start received: {addr=} {data=}")
+                        self.add_client(addr)
+                        event = SimpleNamespace()
+                        event.arguments = {"data": data, "address": addr}
+                        self.trigger_event("received", event)
             except (socket.error, socket.timeout):
                 if not self.running:
                     break

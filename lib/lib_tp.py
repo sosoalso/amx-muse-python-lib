@@ -1,7 +1,7 @@
 from lib.lib_yeoul import handle_exception, log_debug, log_error, log_info
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.07.05"
+VERSION = "2025.07.17"
 
 
 def get_version():
@@ -99,6 +99,11 @@ def tp_add_watcher(tp, port, button, handler):
         log_debug(f"tp_add_watcher() : {tp.id} {port=} {button=}")
     if not tp.port[port].button[button].pythonWatchers or not handler in tp.port[port].button[button].pythonWatchers:
         tp.port[port].button[button].watch(handler)
+    else:
+        log_debug(f"tp_add_watcher() 중복 등록됨. {tp.id=} {port=} {button=}")
+        log_debug("그래도 추가는 할겁니다.")
+        tp.port[port].button[button].watch(handler)
+
     tp_add_notification(tp, port, button)
 
 
@@ -123,6 +128,11 @@ def tp_add_watcher_level(tp, port, level, handler):
         log_debug(f"tp_add_watcher_level() : {tp.id} {port=} {level=}")
     if not tp.port[port].level[level].pythonWatchers or not handler in tp.port[port].level[level].pythonWatchers:
         tp.port[port].level[level].watch(handler)
+    else:
+        log_debug(f"tp_add_watcher() 중복 등록됨. {tp.id=} {port=} {level=}")
+        log_debug("그래도 추가는 할겁니다.")
+        tp.port[port].level[level].watch(handler)
+
     tp_add_notification_level(tp, port, level)
 
 
@@ -157,7 +167,7 @@ def tp_get_button_pushed(tp, port, button):
     return False
 
 
-@handle_exception
+# info - alias
 def tp_get_btn_pushed(tp, port, button):
     tp_get_button_pushed(tp, port, button)
 
@@ -170,7 +180,7 @@ def tp_get_button_state(tp, port, button):
     return False
 
 
-@handle_exception
+# info - alias
 def tp_get_btn_state(tp, port, button):
     tp_get_button_state(tp, port, button)
 
@@ -183,7 +193,7 @@ def tp_set_button(tp, port, button, value):
             log_debug(f"버튼 피드백 : {tp.id} {port=} {button=} {value=}")
 
 
-@handle_exception
+# info - alias
 def tp_set_btn(tp, port, button, value):
     tp_set_button(tp, port, button, value)
 
@@ -197,7 +207,7 @@ def tp_set_button_ss(tp_list: list | tuple, port, button, value):
         tp_set_button(tp, port, button, value)
 
 
-@handle_exception
+# info - alias
 def tp_set_btn_ss(tp_list: list | tuple, port, button, value):
     tp_set_button_ss(tp_list, port, button, value)
 
@@ -208,7 +218,7 @@ def tp_set_button_state(tp, port, button, value):
         tp_set_button(tp, port, button, value)
 
 
-@handle_exception
+# info - alias
 def tp_set_btn_state(tp, port, button, value):
     tp_set_button_state(tp, port, button, value)
 
@@ -218,7 +228,7 @@ def tp_set_button_state_ss(tp: list | tuple, port, button, value):
     tp_set_button_ss(tp, port, button, value)
 
 
-@handle_exception
+# info - alias
 def tp_set_btn_state_ss(tp: list | tuple, port, button, value):
     tp_set_button_state_ss(tp, port, button, value)
 
@@ -229,13 +239,23 @@ def tp_set_button_in_range(tp, port, index_btn_start, index_btn_range, index_con
         tp_set_button(tp, port, index, index_condition == (index - index_btn_start + 1))
 
 
+# info - alias
+def tp_set_btn_in_range(tp, port, index_btn_start, index_btn_range, index_condition):
+    tp_set_button_in_range(tp, port, index_btn_start, index_btn_range, index_condition)
+
+
 @handle_exception
 def tp_set_button_in_array(tp, port, btn_list: list | tuple, index_condition):
     if not isinstance(btn_list, (list, tuple)):
         log_error("tp_set_button_in_array() 에러 : btn_list 는 버튼 인덱스 리스트여야합니다.")
         raise TypeError
-    for index in btn_list:
-        tp_set_button(tp, port, index, index_condition == (index + 1))
+    for idx, btn in enumerate(btn_list):
+        tp_set_button(tp, port, btn, index_condition == (idx + 1))
+
+
+# info - alias
+def tp_set_btn_in_array(tp, port, btn_list: list | tuple, index_condition):
+    tp_set_button_in_array(tp, port, btn_list, index_condition)
 
 
 @handle_exception
@@ -247,9 +267,29 @@ def tp_set_button_in_array_ss(tp_list: list | tuple, port, btn_list: list | tupl
         tp_set_button_in_array(tp, port, btn_list, index_condition)
 
 
+# info - alias
+def tp_set_btn_in_array_ss(tp_list: list | tuple, port, btn_list: list | tuple, index_condition):
+    tp_set_button_in_array_ss(tp_list, port, btn_list, index_condition)
+
+
 @handle_exception
-def tp_set_btn_in_range(tp, port, index_btn_start, index_btn_range, index_condition):
-    tp_set_button_in_range(tp, port, index_btn_start, index_btn_range, index_condition)
+def tp_set_button_in_list(tp, port, btn_list: list | tuple, index_condition):
+    tp_set_button_in_array(tp, port, btn_list, index_condition)
+
+
+# info - alias
+def tp_set_btn_in_list(tp, port, btn_list: list | tuple, index_condition):
+    tp_set_button_in_array(tp, port, btn_list, index_condition)
+
+
+@handle_exception
+def tp_set_button_in_list_ss(tp_list: list | tuple, port, btn_list: list | tuple, index_condition):
+    tp_set_button_in_array_ss(tp_list, port, btn_list, index_condition)
+
+
+# info - alias
+def tp_set_btn_in_list_ss(tp_list: list | tuple, port, btn_list: list | tuple, index_condition):
+    tp_set_button_in_array_ss(tp_list, port, btn_list, index_condition)
 
 
 @handle_exception
@@ -261,7 +301,7 @@ def tp_set_button_in_range_ss(tp_list: list | tuple, port, index_btn_start, inde
         tp_set_button_in_range(tp, port, index_btn_start, index_btn_range, index_condition)
 
 
-@handle_exception
+# info - alias
 def tp_set_btn_in_range_ss(tp_list: list | tuple, port, index_btn_start, index_btn_range, index_condition):
     tp_set_button_in_range_ss(tp_list, port, index_btn_start, index_btn_range, index_condition)
 
@@ -274,7 +314,7 @@ def tp_get_level(tp, port, level):
     return 0
 
 
-@handle_exception
+# info - alias
 def tp_get_lvl(tp, port, level):
     return tp_get_level(tp, port, level)
 
@@ -287,7 +327,7 @@ def tp_send_level(tp, port, level, value):
             log_debug(f"레벨 값 변경 : {tp.id} {port=} {level=} {value=}")
 
 
-@handle_exception
+# info - alias
 def tp_send_lvl(tp, port, level, value):
     tp_send_level(tp, port, level, value)
 
@@ -297,7 +337,7 @@ def tp_set_level(tp, port, level, value, *args):
     tp_send_level(tp, port, level, value, *args)
 
 
-@handle_exception
+# info - alias
 def tp_set_lvl(tp, port, level, value, *args):
     tp_send_level(tp, port, level, value, *args)
 
@@ -311,7 +351,7 @@ def tp_send_level_ss(tp_list: list | tuple, port, level, value):
         tp_send_level(tp, port, level, value)
 
 
-@handle_exception
+# info - alias
 def tp_send_lvl_ss(tp_list: list | tuple, port, level, value):
     tp_send_level_ss(tp_list, port, level, value)
 
@@ -321,7 +361,7 @@ def tp_set_level_ss(tp: list | tuple, port, level, value, *args):
     tp_send_level_ss(tp, port, level, value, *args)
 
 
-@handle_exception
+# info - alias
 def tp_set_lvl_ss(tp: list | tuple, port, level, value, *args):
     tp_send_level_ss(tp, port, level, value, *args)
 
@@ -339,7 +379,7 @@ def tp_send_command(tp, port, command):
             log_debug(f"tp_send_command() : {tp.id} {port=} {command=}")
 
 
-@handle_exception
+# info - alias
 def tp_send_cmd(tp, port, command):
     tp_send_command(tp, port, command)
 
@@ -353,7 +393,7 @@ def tp_send_command_ss(tp_list: list | tuple, port, command):
         tp_send_command(tp, port, command)
 
 
-@handle_exception
+# info - alias
 def tp_send_cmd_ss(tp_list: list | tuple, port, command):
     tp_send_command_ss(tp_list, port, command)
 
@@ -363,18 +403,18 @@ def tp_set_button_text_unicode(tp, port, index_addr, text):
     tp_send_command(tp, port, f"^UNI-{index_addr},0,{convert_text_to_unicode(text)}")
 
 
-@handle_exception
-def tp_set_btn_text_unicode(tp, port, index_addr, text):
+# info - alias
+def tp_set_btn_txt_unicode(tp, port, index_addr, text):
     tp_set_button_text_unicode(tp, port, index_addr, text)
 
 
-@handle_exception
+# info - alias
 def tp_set_button_text_unicode_ss(tp_list: list | tuple, port, index_addr, text):
     tp_send_command_ss(tp_list, port, f"^UNI-{index_addr},0,{convert_text_to_unicode(text)}")
 
 
 @handle_exception
-def tp_set_btn_text_unicode_ss(tp_list: list | tuple, port, index_addr, text):
+def tp_set_btn_txt_unicode_ss(tp_list: list | tuple, port, index_addr, text):
     tp_set_button_text_unicode_ss(tp_list, port, index_addr, text)
 
 
@@ -383,8 +423,8 @@ def tp_set_button_text(tp, port, index_addr, text):
     tp_send_command(tp, port, f"^TXT-{index_addr},0,{text}")
 
 
-@handle_exception
-def tp_set_btn_text(tp, port, index_addr, text):
+# info - alias
+def tp_set_btn_txt(tp, port, index_addr, text):
     tp_set_button_text(tp, port, index_addr, text)
 
 
@@ -393,8 +433,8 @@ def tp_set_button_text_ss(tp_list: list | tuple, port, index_addr, text):
     tp_send_command_ss(tp_list, port, f"^TXT-{index_addr},0,{text}")
 
 
-@handle_exception
-def tp_set_btn_text_ss(tp_list: list | tuple, port, index_addr, text):
+# info - alias
+def tp_set_btn_txt_ss(tp_list: list | tuple, port, index_addr, text):
     tp_set_button_text_ss(tp_list, port, index_addr, text)
 
 
@@ -405,7 +445,7 @@ def tp_set_button_show_hide(tp, port, index_addr, value):
     tp.port[port].send_command(f"^ENA-{index_addr},{state_str}")
 
 
-@handle_exception
+# info - alias
 def tp_set_btn_show_hide(tp, port, index_addr, value):
     tp_set_button_show_hide(tp, port, index_addr, value)
 
