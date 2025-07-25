@@ -2,7 +2,7 @@ from lib.database import Database
 from lib.lib_yeoul import log_debug
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.07.14"
+VERSION = "2025.07.25"
 
 
 def get_version():
@@ -26,7 +26,7 @@ class Userdata(Database):
             log_debug(f"Userdata set_value() {self.db_path=} {k}:{self.data[k]}")
         self.save(k, self.data[k])
 
-    def get_value(self, key, default=None) -> dict:
+    def get_value(self, key, default=None):
         k = str(key)
         self.data[k] = self.load(k, default if default is not None else {})
         if self.debug:

@@ -9,7 +9,7 @@ from lib.eventmanager import EventManager
 from lib.lib_yeoul import handle_exception
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.07.15"
+VERSION = "2025.07.24"
 
 
 def get_version():
@@ -20,6 +20,8 @@ def get_version():
 DEFAULT_BUFFER_SIZE = 2048
 
 
+# ---------------------------------------------------------------------------- #
+# section: TcpServer
 # ---------------------------------------------------------------------------- #
 class TcpServer(EventManager):
     class ReceiveHandler:
@@ -96,6 +98,8 @@ class TcpServer(EventManager):
             client.send(data)
 
 
+# ---------------------------------------------------------------------------- #
+# section: TcpClient
 # ---------------------------------------------------------------------------- #
 class TcpClient(EventManager):
     class ReceiveHandler:
@@ -228,6 +232,9 @@ class TcpClient(EventManager):
         return self.connected
 
 
+# ---------------------------------------------------------------------------- #
+# section: UdpClient
+# ---------------------------------------------------------------------------- #
 class UdpClient(EventManager):
     class ReceiveHandler:
         def __init__(self, this):
@@ -273,6 +280,7 @@ class UdpClient(EventManager):
         while not self.connected:
             try:
                 self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                self.socket.setblocking(False)  # 블로킹 없애기 왜?
                 # 수신을 위해 소켓에 로컬 포트를 바인딩
                 self.socket.bind(("", 0 if self.port_bind is None else self.port_bind))
                 self.bound_port = self.socket.getsockname()[1]
@@ -351,6 +359,8 @@ class UdpClient(EventManager):
         return self.connected
 
 
+# ---------------------------------------------------------------------------- #
+# section: UdpServer
 # ---------------------------------------------------------------------------- #
 class UdpServer(EventManager):
     def __init__(self, port, buffer_size=DEFAULT_BUFFER_SIZE):
