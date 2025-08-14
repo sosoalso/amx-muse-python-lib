@@ -6,7 +6,7 @@ import urllib.request
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.07.04"
+VERSION = "2025.08.14"
 
 
 def get_version():
@@ -25,7 +25,7 @@ def url_get(url: str, header: dict = {}, callback=None, timeout: float = 0.5):
                 if callback:
                     callback(result)
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
-            context.log.error(f"url_get() 에러 : {e}")
+            context.log.error(f"url_get() 에러: {e}")
 
     threading.Thread(target=task, daemon=True).start()
 
@@ -42,7 +42,7 @@ def url_post(url: str, header: dict = {}, body=None, callback=None, timeout: flo
                 if callback:
                     callback(result)
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
-            context.log.error(f"url_post() 에러 : {e}")
+            context.log.error(f"url_post() 에러: {e}")
 
     threading.Thread(target=task, daemon=True).start()
 

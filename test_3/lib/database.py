@@ -2,10 +2,8 @@ import json
 import sqlite3
 from typing import Any, Dict, Optional
 
-from mojo import context
-
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.08.14"
+VERSION = "2025.07.26"
 
 
 def get_version():
@@ -58,7 +56,7 @@ class Database:
                 )
                 conn.commit()
         except Exception as e:
-            context.log.error(f"{self.db_path} _init_db() 에러: {e}")
+            context.log.error(f"{self.db_path} _init_db() 에러 : {e}")
 
     def __del__(self):
         """소멸자: 리소스 정리"""
@@ -98,7 +96,7 @@ class Database:
                 self.save(key, default)  # 기본값이 없으면 저장
                 return default
         except Exception as e:
-            context.log.error(f"{self.db_path} load() 초기값으로 저장 {default=} 에러: {e}")
+            context.log.error(f"{self.db_path} load() 에러 {default=}: {e}")
             self.save(key, default)  # 기본값이 없으면 저장
             return default
 
@@ -133,5 +131,5 @@ class Database:
                 conn.commit()
             return True
         except Exception as e:
-            context.log.error(f"{self.db_path} clear_all() 에러: {e}")
+            context.log.error(f"{self.db_path} clear_all() 에러 : {e}")
             return False

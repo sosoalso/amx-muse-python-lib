@@ -5,7 +5,7 @@ import threading
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.07.02"
+VERSION = "2025.08.14"
 
 
 def get_version():
@@ -14,10 +14,12 @@ def get_version():
 
 # ---------------------------------------------------------------------------- #
 get_device = context.devices.get
+# ---------------------------------------------------------------------------- #
 get_service = context.services.get
 
 
 def get_timeline():
+    context.log.error("타임라인은 정상적인 동작을 확인하기 전까지 개인적으로 사용을 매우 매우 비권장...")
     return context.services.get("timeline")
 
 
@@ -29,9 +31,9 @@ log_debug = context.log.debug
 
 
 def set_log_level(level):
-    valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "debug", "info", "warning", "error"]
+    valid_levels = ["DEBUG", "INFO", "WARN", "ERROR", "debug", "info", "warn", "error"]
     if level not in valid_levels:
-        raise ValueError(f"Invalid log level: {level}. Choose from {valid_levels}.")
+        raise ValueError(f"잘못된 로그 레벨: {level}. 선택 가능한 로그 레벨: {valid_levels}")
     context.log.level = level.upper()
 
 
@@ -41,7 +43,7 @@ def handle_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            context.log.error(f"함수 {func.__name__} 에러 발생: {e}")
+            context.log.error(f"{func.__name__}() 에러: {e}")
             return None
 
     return wrapper
@@ -118,23 +120,23 @@ def _hello(device):
         value = getattr(device, attr)
         # ---------------------------------------------------------------------------- #
         if callable(value):
-            context.log.debug(f"this is Method() -- {attr}")
+            context.log.debug(f"함수() -- {attr}")
             sig = inspect.signature(value)
-            context.log.debug(f"signature -- {sig}")
-            context.log.debug(f"signature parameters -- {sig.parameters}")
+            context.log.debug(f"시그니처 -- {sig}")
+            context.log.debug(f"시그니처 파라메터 -- {sig.parameters}")
             if all(param.default != inspect.Parameter.empty for param in sig.parameters.values()):
                 if attr == "shutdown":
-                    context.log.debug(f"Cannot call {attr} as it is literally SHUTDOWN")
+                    context.log.debug("말그대로 SHUTDOWN 이라 안댐ㅋ")
                 else:
-                    context.log.debug(f"calling method () -- {attr}")
-                    context.log.debug(f"return value == {value()}")
+                    context.log.debug(f"메소드 호출 () -- {attr}")
+                    context.log.debug(f"리턴 값 == {value()}")
             else:
-                context.log.debug(f"Cannot call {attr} as it requires arguments: {sig.parameters}")
+                context.log.debug(f"{attr} 메소드는 인자가 필요해서 호출할 수 없음 {sig.parameters=}")
         # ---------------------------------------------------------------------------- #
         elif isinstance(value, property):
-            context.log.debug(f"this is Property -- {attr} : {value}")
+            context.log.debug(f"프로퍼티 -- {attr} : {value}")
         # ---------------------------------------------------------------------------- #
         else:
-            context.log.debug(f"this is Attribute -- {attr} : {value}")
+            context.log.debug(f"어트리뷰트 -- {attr} : {value}")
         # ---------------------------------------------------------------------------- #
     context.log.debug("=" * 79)

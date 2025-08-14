@@ -1,10 +1,10 @@
 import concurrent.futures
 import time
 
-from lib.lib_yeoul import log_error
+from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.06.30"
+VERSION = "2025.08.14"
 
 
 def get_version():
@@ -32,7 +32,7 @@ class Scheduler:
             self.scheduled_tasks.append(future)
 
         except Exception as e:
-            log_error(f"{self.name} set_interval() 에러: {e}")
+            context.log.error(f"{self.name} set_interval() 에러: {e}")
         finally:
             self.clean()
 
@@ -46,7 +46,7 @@ class Scheduler:
             future = self.executor.submit(wrapper)
             self.scheduled_tasks.append(future)
         except Exception as e:
-            log_error(f"{self.name} set_timeout() 에러: {e}")
+            context.log.error(f"{self.name} set_timeout() 에러: {e}")
         finally:
             self.clean()
 
@@ -56,7 +56,7 @@ class Scheduler:
                 if future.done():
                     self.scheduled_tasks.remove(future)
         except Exception as e:
-            log_error(f"{self.name} clean() 에러: {e}")
+            context.log.error(f"{self.name} clean() 에러: {e}")
 
     def shutdown(self):
         try:
@@ -65,7 +65,7 @@ class Scheduler:
             self.executor.shutdown()
             self.task_executor.shutdown()
         except Exception as e:
-            log_error(f"{self.name} shutdown() 에러: {e}")
+            context.log.error(f"{self.name} shutdown() 에러: {e}")
 
 
 # ---------------------------------------------------------------------------- #

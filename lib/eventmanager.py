@@ -1,7 +1,7 @@
-from lib.lib_yeoul import log_debug, log_error, log_warn
+from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.07.03"
+VERSION = "2025.08.14"
 
 
 def get_version():
@@ -18,31 +18,30 @@ class EventManager:
             if action not in self.actions:
                 self.actions[action] = []
             else:
-                log_warn(f"add_event_action() {action=} : 이벤트가 이미 존재합니다. ")
+                context.log.warn(f"add_event_action() {action=} 이벤트가 이미 존재함")
         except Exception as e:
-            log_error(f"add_event_action() 에러 {action=} : {e}")
+            context.log.error(f"add_event_action() {action=} 에러: {e}")
 
     def remove_event(self, action):
         try:
             del self.actions[action]
         except Exception as e:
-            log_error(f"remove_event() 에러 {action=} : {e}")
+            context.log.error(f"remove_event() {action=} 에러: {e}")
 
     def add_event_handler(self, action, handler):
         try:
             if action not in self.actions:
-                log_debug(f"add_event_handler() {action=} : 해당 이벤트가 없습니다. 이벤트 액션을 추가합니다.")
+                context.log.debug(f"add_event_handler() {action=} : 해당 이벤트가 없으므로 이벤트 액션 추가")
                 self.add_event_action(action)
             if handler not in self.actions[action]:
                 self.actions[action].append(handler)
             else:
-                log_debug(
-                    f"add_event_handler() {action=} : 해당 이벤트에 동일한 핸들러가 이미 등록돼있습니다. {handler=} {self.actions[action]=}"
+                context.log.debug(
+                    f"add_event_handler() {action=} : 해당 이벤트에 동일한 핸들러가 이미 등록되어 있으나 중복 추가 진행 {handler=} {self.actions[action]=}"
                 )
-                log_debug("그래도 추가는 할겁니다.")
                 self.actions[action].append(handler)
         except Exception as e:
-            log_error(f"add_event_handler() 에러 {action=} : {e}")
+            context.log.error(f"add_event_handler() {action=} 에러: {e}")
 
     def on(self, action, handler):
         """add_event_handler 의 alias"""
@@ -52,18 +51,18 @@ class EventManager:
         try:
             self.actions[action].remove(handler)
         except Exception as e:
-            log_error(f"remove_event_handler() 에러 {action=} : {e}")
+            context.log.error(f"remove_event_handler() 에러 {action=} : {e}")
 
     def trigger_event(self, action, *args, **kwargs):
         try:
             if action in self.actions:
                 for handler in self.actions[action]:
-                    log_debug(f"trigger_event() 발생 {action=} {self.actions[action]=}")
+                    context.log.debug(f"trigger_event() 발생 - {action=} {self.actions[action]=}")
                     handler(*args, **kwargs)
             else:
-                log_error(f"trigger_event() {action=} : 해당 이벤트가 없습니다")
+                context.log.error(f"trigger_event() {action=} 해당 이벤트 없음")
         except Exception as e:
-            log_error(f"trigger_event() 에러 {action=} : {e}")
+            context.log.error(f"trigger_event() {action=} 에러: {e}")
 
     def emit(self, action, *args, **kwargs):
         """trigger_event 의 alias"""

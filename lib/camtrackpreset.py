@@ -1,4 +1,3 @@
-# from lib.lib_yeoul import handle_exception
 from lib.userdata import Userdata
 
 # ---------------------------------------------------------------------------- #

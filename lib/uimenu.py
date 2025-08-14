@@ -5,10 +5,10 @@ from lib.lib_tp import (
     tp_set_page,
     tp_show_popup,
 )
-from lib.lib_yeoul import handle_exception, log_error
+from lib.lib_yeoul import handle_exception
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.07.04"
+VERSION = "2025.07.26"
 
 
 def get_version():
@@ -44,10 +44,10 @@ class UIMenu:
     @handle_exception
     def show_page(self, index_page):
         if not isinstance(index_page, int):
-            log_error("UIMenu show_page() index_page 는 정수여야합니다.")
+            context.log.error("UIMenu show_page() index_page 는 정수여야합니다.")
             raise ValueError
         if not (1 <= index_page <= 9):
-            log_error("UIMenu show_page() index_page 는 1 - 9 사이의 정수여야합니다.")
+            context.log.error("UIMenu show_page() index_page 는 1 - 9 사이의 정수여야합니다.")
             raise ValueError
         self.hide_all_menu_popup()
         tp_set_page(self.tp, f"{index_page:02d}")
@@ -55,10 +55,10 @@ class UIMenu:
     @handle_exception
     def show_menu_popup(self, index_popup):
         if not isinstance(index_popup, int):
-            log_error("UIMenu show_page() index_popup 은 정수여야합니다.")
+            context.log.error("UIMenu show_page() index_popup 은 정수여야합니다.")
             raise ValueError
         if not (1 <= index_popup <= 20):
-            log_error("UIMenu show_page() index_popup 은 1 - 20 사이의 정수여야합니다.")
+            context.log.error("UIMenu show_page() index_popup 은 1 - 20 사이의 정수여야합니다.")
             raise ValueError
         self.selected_menu = index_popup
         self.refresh_menu_popup_button()

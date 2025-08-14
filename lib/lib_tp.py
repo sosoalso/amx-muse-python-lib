@@ -1,7 +1,7 @@
-from lib.lib_yeoul import handle_exception, log_debug, log_error, log_info
+from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.07.17"
+VERSION = "2025.08.11"
 
 
 def get_version():
@@ -37,28 +37,38 @@ def tp_set_debug_flag(
     DebugFlags.enable_debug_tp_send_command = enable_debug_tp_send_command
 
 
+def handle_exception(func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            context.log.error(f"함수 {func.__name__} 에러: {e}")
+            return None
+
+    return wrapper
+
+
 # ---------------------------------------------------------------------------- #
 def _notify(evt):
     if DebugFlags.enable_debug_tp_add_notification:
         _, port, _, button = (int(x) if x.isdigit() else x for x in evt.path.split("/"))
-        log_debug(f"버튼 {'누름' if evt.value else '떼짐'} : {evt.device} {port=} {button=}")
+        context.log.debug(f"버튼 {'누름' if evt.value else '떼짐'} : {evt.device} {port=} {button=}")
 
 
 @handle_exception
 def tp_add_notification(tp, port, button):
-
     if not _notify in tp.port[port].button[button].pythonWatchers or not any(
         watcher.__name__ == _notify.__name__ for watcher in tp.port[port].button[button].pythonWatchers
     ):
         tp.port[port].button[button].watch(_notify)
     # else:
-    #     log_debug(f"tp_add_notification() 중복 알림 등록됨. 기존 알림을 유지합니다. {tp.id=} {port=} {button=}")
+    #     context.log.debug(f"tp_add_notification() 중복 알림 등록됨. 기존 알림을 유지함 {tp.id=} {port=} {button=}")
 
 
 @handle_exception
 def tp_add_notification_ss(tp_list, port, button):
     if not isinstance(tp_list, (list, tuple)):
-        log_error("tp_add_notification_ss() 에러 : tp_list 는 장비로 튜플이나 리스트여야합니다.")
+        context.log.error("tp_add_notification_ss() 에러: tp_list 는 장비로 튜플이나 리스트여야함")
         raise TypeError
     for tp in tp_list:
         tp_add_notification(tp, port, button)
@@ -69,7 +79,7 @@ def tp_add_notification_level(tp, port, level):
     def _notify(evt):
         if DebugFlags.enable_debug_tp_add_notification_level:
             _, port, _, button = (int(x) if x.isdigit() else x for x in evt.path.split("/"))
-            log_info(f"레벨 값={evt.value} : {evt.device} {port=} {button=}")
+            context.log.info(f"레벨 값={evt.value} : {evt.device} {port=} {button=}")
 
     if not _notify in tp.port[port].level[level].pythonWatchers or not any(
         watcher.__name__ == _notify.__name__ for watcher in tp.port[port].level[level].pythonWatchers
@@ -80,7 +90,7 @@ def tp_add_notification_level(tp, port, level):
 @handle_exception
 def tp_add_notification_level_ss(tp_list, port, level):
     if not isinstance(tp_list, (list, tuple)):
-        log_error("tp_add_notification_level_ss() 에러 : tp_list 는 장비로 튜플이나 리스트여야합니다.")
+        context.log.error("tp_add_notification_level_ss() 에러: tp_list 는 장비로 튜플이나 리스트여야함")
         raise TypeError
     for tp in tp_list:
         tp_add_notification_level(tp, port, level)
@@ -96,21 +106,19 @@ def tp_get_device_state(tp):
 @handle_exception
 def tp_add_watcher(tp, port, button, handler):
     if DebugFlags.enable_debug_tp_add_watcher:
-        log_debug(f"tp_add_watcher() : {tp.id} {port=} {button=}")
+        context.log.debug(f"tp_add_watcher() : {tp.id} {port=} {button=}")
     if not tp.port[port].button[button].pythonWatchers or not handler in tp.port[port].button[button].pythonWatchers:
         tp.port[port].button[button].watch(handler)
     else:
-        log_debug(f"tp_add_watcher() 중복 등록됨. {tp.id=} {port=} {button=}")
-        log_debug("그래도 추가는 할겁니다.")
+        context.log.debug(f"tp_add_watcher() 중복 등록되었으나 추가 {tp.id=} {port=} {button=}")
         tp.port[port].button[button].watch(handler)
-
     tp_add_notification(tp, port, button)
 
 
 @handle_exception
 def tp_add_watcher_ss(tp_list: list | tuple, port, button, handler):
     if not isinstance(tp_list, (list, tuple)):
-        log_error("tp_add_watcher_ss() 에러 : tp_list 는 장비로 튜플이나 리스트여야합니다.")
+        context.log.error("tp_add_watcher_ss() 에러: tp_list 는 장비로 튜플이나 리스트여야함")
         raise TypeError
     for tp in tp_list:
         tp_add_watcher(tp, port, button, handler)
@@ -125,21 +133,20 @@ def tp_clear_watcher(tp, port, button):
 @handle_exception
 def tp_add_watcher_level(tp, port, level, handler):
     if DebugFlags.enable_debug_tp_add_watcher_level:
-        log_debug(f"tp_add_watcher_level() : {tp.id} {port=} {level=}")
+        context.log.debug(f"tp_add_watcher_level() : {tp.id} {port=} {level=}")
     if not tp.port[port].level[level].pythonWatchers or not handler in tp.port[port].level[level].pythonWatchers:
         tp.port[port].level[level].watch(handler)
     else:
-        log_debug(f"tp_add_watcher() 중복 등록됨. {tp.id=} {port=} {level=}")
-        log_debug("그래도 추가는 할겁니다.")
+        context.log.debug(f"tp_add_watcher() 중복 등록됨 {tp.id=} {port=} {level=}")
+        context.log.debug("그래도 추가는 할겁니다.")
         tp.port[port].level[level].watch(handler)
-
     tp_add_notification_level(tp, port, level)
 
 
 @handle_exception
 def tp_add_watcher_level_ss(tp_list: list | tuple, port, level, handler):
     if not isinstance(tp_list, (list, tuple)):
-        log_error("tp_add_watcher_level_ss() 에러 : tp_list 는 장비로 튜플이나 리스트여야합니다.")
+        context.log.error("tp_add_watcher_level_ss() 에러: tp_list 는 장비로 튜플이나 리스트여야함")
         raise TypeError
     for tp in tp_list:
         tp_add_watcher_level(tp, port, level, handler)
@@ -156,7 +163,9 @@ def tp_show_watcher(tp, port, button):
     if tp_get_device_state(tp):
         if tp.port[port].button[button].pythonWatchers:
             if isinstance(tp.port[port].button[button].pythonWatchers, list):
-                log_debug(f"{tp.id} {port=} {button=} num_watcher={len(tp.port[port].button[button].pythonWatchers)}")
+                context.log.debug(
+                    f"{tp.id} {port=} {button=} num_watcher={len(tp.port[port].button[button].pythonWatchers)}"
+                )
 
 
 # ---------------------------------------------------------------------------- #
@@ -176,7 +185,7 @@ def tp_get_btn_pushed(tp, port, button):
 def tp_get_button_state(tp, port, button):
     if tp_get_device_state(tp):
         return tp.port[port].channel[button].value
-    log_error(f"tp_get_button_state() : {tp.id} 은/는 온라인 상태가 아닙니다.")
+    context.log.error(f"tp_get_button_state() : {tp.id} 은/는 온라인 상태가 아님")
     return False
 
 
@@ -190,7 +199,7 @@ def tp_set_button(tp, port, button, value):
     if tp_get_device_state(tp):
         tp.port[port].channel[button].value = value
         if DebugFlags.enable_debug_tp_set_button:
-            log_debug(f"버튼 피드백 : {tp.id} {port=} {button=} {value=}")
+            context.log.debug(f"버튼 피드백 - {tp.id} {port=} {button=} {value=}")
 
 
 # info - alias
@@ -201,7 +210,7 @@ def tp_set_btn(tp, port, button, value):
 @handle_exception
 def tp_set_button_ss(tp_list: list | tuple, port, button, value):
     if not isinstance(tp_list, (list, tuple)):
-        log_error("tp_set_button_ss() 에러 : tp_list 는 장비로 튜플이나 리스트여야합니다.")
+        context.log.error("tp_set_button_ss() 에러: tp_list 는 장비로 튜플이나 리스트여야함")
         raise TypeError
     for tp in tp_list:
         tp_set_button(tp, port, button, value)
@@ -247,7 +256,7 @@ def tp_set_btn_in_range(tp, port, index_btn_start, index_btn_range, index_condit
 @handle_exception
 def tp_set_button_in_array(tp, port, btn_list: list | tuple, index_condition):
     if not isinstance(btn_list, (list, tuple)):
-        log_error("tp_set_button_in_array() 에러 : btn_list 는 버튼 인덱스 리스트여야합니다.")
+        context.log.error("tp_set_button_in_array() 에러: btn_list 는 버튼 인덱스 리스트여야함")
         raise TypeError
     for idx, btn in enumerate(btn_list):
         tp_set_button(tp, port, btn, index_condition == (idx + 1))
@@ -261,7 +270,7 @@ def tp_set_btn_in_array(tp, port, btn_list: list | tuple, index_condition):
 @handle_exception
 def tp_set_button_in_array_ss(tp_list: list | tuple, port, btn_list: list | tuple, index_condition):
     if not isinstance(tp_list, (list, tuple)):
-        log_error("tp_set_button_in_array_ss() 에러 : tp_list 는 장비로 튜플이나 리스트여야합니다.")
+        context.log.error("tp_set_button_in_array_ss() 에러: tp_list 는 장비로 튜플이나 리스트여야함")
         raise TypeError
     for tp in tp_list:
         tp_set_button_in_array(tp, port, btn_list, index_condition)
@@ -295,7 +304,7 @@ def tp_set_btn_in_list_ss(tp_list: list | tuple, port, btn_list: list | tuple, i
 @handle_exception
 def tp_set_button_in_range_ss(tp_list: list | tuple, port, index_btn_start, index_btn_range, index_condition):
     if not isinstance(tp_list, (list, tuple)):
-        log_error("tp_send_level_ss() 에러 : tp_list 는 장비로 튜플이나 리스트여야합니다.")
+        context.log.error("tp_send_level_ss() 에러: tp_list 는 장비로 튜플이나 리스트여야함")
         raise TypeError
     for tp in tp_list:
         tp_set_button_in_range(tp, port, index_btn_start, index_btn_range, index_condition)
@@ -310,7 +319,7 @@ def tp_set_btn_in_range_ss(tp_list: list | tuple, port, index_btn_start, index_b
 def tp_get_level(tp, port, level):
     if tp_get_device_state(tp):
         return int(tp.port[port].level[level].value)
-    log_error(f"tp_get_level() : {tp.id} 은/는 온라인 상태가 아닙니다.")
+    context.log.error(f"tp_get_level() : {tp.id} 은/는 온라인 상태가 아님")
     return 0
 
 
@@ -324,7 +333,7 @@ def tp_send_level(tp, port, level, value):
     if tp_get_device_state(tp):
         tp.port[port].level[level].value = value
         if DebugFlags.enable_debug_tp_send_level:
-            log_debug(f"레벨 값 변경 : {tp.id} {port=} {level=} {value=}")
+            context.log.debug(f"레벨 값 변경 - {tp.id} {port=} {level=} {value=}")
 
 
 # info - alias
@@ -345,7 +354,7 @@ def tp_set_lvl(tp, port, level, value, *args):
 @handle_exception
 def tp_send_level_ss(tp_list: list | tuple, port, level, value):
     if not isinstance(tp_list, (list, tuple)):
-        log_error("tp_send_level_ss() 에러 : tp_list는 튜플이나 리스트여야합니다.")
+        context.log.error("tp_send_level_ss() 에러: tp_list는 튜플이나 리스트여야함")
         raise TypeError
     for tp in tp_list:
         tp_send_level(tp, port, level, value)
@@ -376,7 +385,7 @@ def tp_send_command(tp, port, command):
     if tp_get_device_state(tp):
         tp.port[port].send_command(command)
         if DebugFlags.enable_debug_tp_send_command:
-            log_debug(f"tp_send_command() : {tp.id} {port=} {command=}")
+            context.log.debug(f"tp_send_command() : {tp.id} {port=} {command=}")
 
 
 # info - alias
@@ -387,7 +396,7 @@ def tp_send_cmd(tp, port, command):
 @handle_exception
 def tp_send_command_ss(tp_list: list | tuple, port, command):
     if not isinstance(tp_list, (list, tuple)):
-        log_error(f"tp_send_command_ss() {command=} 에러 : tp_list는 튜플이나 리스트여야합니다.")
+        context.log.error(f"tp_send_command_ss() {command=} 에러: tp_list는 튜플이나 리스트여야함")
         raise TypeError
     for tp in tp_list:
         tp_send_command(tp, port, command)

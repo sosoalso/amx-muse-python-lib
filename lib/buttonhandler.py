@@ -4,10 +4,9 @@ import time
 from mojo import context
 
 from lib.eventmanager import EventManager
-from lib.lib_yeoul import handle_exception, log_error
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.07.04"
+VERSION = "2025.08.14"
 
 
 def get_version():
@@ -30,19 +29,16 @@ class ButtonHandler(EventManager):
         # ---------------------------------------------------------------------------- #
         self.init(init_action, init_handler)
 
-    @handle_exception
     def init(self, init_action=None, init_handler=None):
         if init_action and init_handler:
             self.add_event_handler(init_action, init_handler)
 
-    @handle_exception
     def start_hold(self):
         time.sleep(self.hold_time)  # 홀드 시간 대기
         if self.is_pushed and not self.is_hold:
             self.is_hold = True
             self.emit("hold")  # 홀드 이벤트 트리거
 
-    @handle_exception
     def start_repeat(self):
         while self.is_pushed:
             if self.is_pushed:
@@ -70,18 +66,17 @@ class ButtonHandler(EventManager):
                 self.repeat_interval = repeat_interval
             # ---------------------------------------------------------------------------- #
             else:
-                log_error(f"add_event_handler() {action=} 에러 : 알 수 없는 액션 ")
+                context.log.error(f"add_event_handler() {action=} 에러 : 알 수 없는 액션")
                 raise ValueError
             # ---------------------------------------------------------------------------- #
             super().add_event_handler(a, handler)
         except ValueError as exc:
-            log_error(f"add_event_handler() {action=} : {exc}")
+            context.log.error(f"add_event_handler() {action=} : {exc}")
             raise
         except Exception as exc:
-            log_error(f"add_event_handler() {action=} 에러 : 처리 중 오류 발생")
+            context.log.error(f"add_event_handler() {action=} 에러 : 처리 중 오류 발생")
             raise ValueError from exc
 
-    @handle_exception
     def handle_event(self, evt):
         if evt.value:
             self.is_pushed = True
@@ -101,6 +96,26 @@ class ButtonHandler(EventManager):
             if self.trigger_release_on_hold or not self.is_hold:
                 self.emit("release")  # 릴리즈 이벤트 트리거
             self.is_hold = False
+            if self.hold_thread and self.hold_thread.is_alive() and threading.current_thread() != self.hold_thread:
+                try:
+                    self.hold_thread.join(timeout=1.0)
+                except RuntimeError as e:
+                    context.log.error(f"handle_event() hold_thread join 에러: {e}")
+                finally:
+                    if self.hold_thread.is_alive():
+                        context.log.warn("handle_event() hold_thread가 타임아웃 내에 종료되지 않음")
+            if (
+                self.repeat_thread
+                and self.repeat_thread.is_alive()
+                and threading.current_thread() != self.repeat_thread
+            ):
+                try:
+                    self.repeat_thread.join(timeout=1.0)
+                except RuntimeError as e:
+                    context.log.error(f"handle_event() repeat_thread join 에러: {e}")
+                finally:
+                    if self.repeat_thread.is_alive():
+                        context.log.warn("handle_event() repeat_thread가 타임아웃 내에 종료되지 않음")
 
 
 # ---------------------------------------------------------------------------- #
@@ -109,12 +124,10 @@ class LevelHandler(EventManager):
         super().__init__("level")
         self.init(init_handler)
 
-    @handle_exception
     def init(self, init_handler=None):
         if init_handler:
             self.add_event_handler("level", init_handler)
 
-    @handle_exception
     def handle_event(self, evt):
         value = int(evt.value)
         self.emit("level", value)  # 레벨 이벤트 트리거

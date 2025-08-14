@@ -1,11 +1,9 @@
-from mojo import context
-
 from lib.button import add_button_ss
 from lib.lib_tp import tp_set_button
 from lib.lib_yeoul import pulse
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.08.14"
+VERSION = "2025.07.26"
 
 
 def get_version():
