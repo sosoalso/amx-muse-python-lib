@@ -83,7 +83,7 @@ class UIMenu:
 #         if count > 100:
 #             s.shutdown()
 #             return
-#         tp_send_level_ss(TP_LIST, 1, 1, count)
+#         tp_send_lvl_ss(TP_LIST, 1, 1, count)
 #         count += 1
 #     s.set_interval(loading_bar, 0.1)
 #     return loading_bar()

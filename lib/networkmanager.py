@@ -1,4 +1,3 @@
-import asyncio
 import socket
 import threading
 import time
@@ -9,7 +8,7 @@ from mojo import context
 
 from lib.eventmanager import EventManager
 
-VERSION = "2025.08.14"
+VERSION = "2025.08.15"
 
 
 def get_version():
@@ -242,13 +241,8 @@ class UdpServer(EventManager):
     def stop(self):
         context.log.debug(f"{self.name} stop()")
         self.running = False
-        for _, client_info in self.clients.items():
-            try:
-                client_socket = client_info.get("socket")
-                if client_socket:
-                    client_socket.close()
-            except Exception as e:
-                context.log.error(f"{self.name} stop() 클라이언트 소켓 닫기 실패 에러: {e}")
+        with self.client_lock:
+            self.clients.clear()
         if self.socket:
             try:
                 self.socket.close()
@@ -277,7 +271,7 @@ class UdpServer(EventManager):
                     break
                 data, addr = self.socket.recvfrom(self.buffer_size)
                 if not data:
-                    break  # 클라이언트에 의해 연결 중단
+                    continue
                 last_seen = time.time()
                 with self.client_lock:
                     self.clients[addr] = last_seen
@@ -291,11 +285,13 @@ class UdpServer(EventManager):
             except OSError as e:
                 if self.running:
                     context.log.error(f"{self.name} _receive_loop() 소켓 에러: {e}")
-                time.sleep(1)  # 에러 발생 시 대기 후 재시도
+                    time.sleep(1)  # 에러 발생 시 대기 후 재시도
+                    continue
             except Exception as e:
                 if self.running:
                     context.log.error(f"{self.name} _receive_loop() 메세지 수신 에러: {e}")
-                time.sleep(1)  # 에러 발생 시 대기 후 재시도
+                    time.sleep(1)  # 에러 발생 시 대기 후 재시도
+                    continue  # 재시도 루프를 계속 진행
 
     def send_to(self, host: str, port: int, data: bytes | bytearray) -> bool:
         if not self.socket:
@@ -335,8 +331,7 @@ class UdpServer(EventManager):
                                 f"{self.name} _cleanup_clients() {self.port} 비활성 클라이언트 제거: {client_addr=}"
                             )
                         except KeyError:
-                            # 클라이언트가 이미 제거된 경우
-                            pass
+                            pass  #  클라이언트가 이미 제거된 경우
                 time.sleep(self.time_cleanup_clients)  # 10초마다 정리
             except Exception as e:
                 context.log.error(f"{self.name} _cleanup_clients() {self.port} 클라이언트 정리 에러: {e}")
@@ -391,7 +386,6 @@ class TcpClient(EventManager):
         if not self.reconnect:
             context.log.debug(f"{self.name} connect() reconnect 비활성화")
             return
-
         if self.connected:
             context.log.debug(f"{self.name} connect() 이미 연결됨")
             return

@@ -1,7 +1,7 @@
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.08.11"
+VERSION = "2025.08.15"
 
 
 def get_version():
@@ -304,7 +304,7 @@ def tp_set_btn_in_list_ss(tp_list: list | tuple, port, btn_list: list | tuple, i
 @handle_exception
 def tp_set_button_in_range_ss(tp_list: list | tuple, port, index_btn_start, index_btn_range, index_condition):
     if not isinstance(tp_list, (list, tuple)):
-        context.log.error("tp_send_level_ss() 에러: tp_list 는 장비로 튜플이나 리스트여야함")
+        context.log.error("tp_send_lvl_ss() 에러: tp_list 는 장비로 튜플이나 리스트여야함")
         raise TypeError
     for tp in tp_list:
         tp_set_button_in_range(tp, port, index_btn_start, index_btn_range, index_condition)
@@ -354,7 +354,7 @@ def tp_set_lvl(tp, port, level, value, *args):
 @handle_exception
 def tp_send_level_ss(tp_list: list | tuple, port, level, value):
     if not isinstance(tp_list, (list, tuple)):
-        context.log.error("tp_send_level_ss() 에러: tp_list는 튜플이나 리스트여야함")
+        context.log.error("tp_send_lvl_ss() 에러: tp_list는 튜플이나 리스트여야함")
         raise TypeError
     for tp in tp_list:
         tp_send_level(tp, port, level, value)
@@ -372,12 +372,17 @@ def tp_set_level_ss(tp: list | tuple, port, level, value, *args):
 
 # info - alias
 def tp_set_lvl_ss(tp: list | tuple, port, level, value, *args):
-    tp_send_level_ss(tp, port, level, value, *args)
+    tp_send_lvl_ss(tp, port, level, value, *args)
 
 
 @handle_exception
 def convert_text_to_unicode(text):
     return "".join(format(ord(char), "04X") for char in text)
+
+
+# info - alias
+def convert_txt_to_unicode(text):
+    convert_text_to_unicode(text)
 
 
 @handle_exception
