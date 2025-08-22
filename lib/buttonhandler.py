@@ -37,6 +37,7 @@ class ButtonHandler(EventManager):
             self.add_event_handler(init_action, init_handler)
 
     def start_hold(self):
+        self.hold_event.clear()
         if not self.hold_event.wait(self.hold_time):
             if self.is_pushed and not self.is_hold:
                 self.is_hold = True
