@@ -1,12 +1,13 @@
 import threading
 import time
+from typing import Optional
 
 from mojo import context
 
 from lib.eventmanager import EventManager
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.08.14"
+VERSION = "2025.08.22"
 
 
 def get_version():
@@ -24,8 +25,8 @@ class ButtonHandler(EventManager):
         self.is_pushed = False  # 버튼이 눌렸는지 여부
         self.is_hold = False  # 버튼이 홀드 상태인지 여부
         self.trigger_release_on_hold = trigger_release_on_hold  # 홀드 상태에서 릴리즈 트리거 여부
-        self.hold_thread = None
-        self.repeat_thread = None
+        self.hold_thread: Optional[threading.Thread] = None
+        self.repeat_thread: Optional[threading.Thread] = None
         # ---------------------------------------------------------------------------- #
         self.init(init_action, init_handler)
 
@@ -41,8 +42,9 @@ class ButtonHandler(EventManager):
 
     def start_repeat(self):
         while self.is_pushed:
-            if self.is_pushed:
-                self.emit("repeat")  # 반복 이벤트 트리거
+            if not self.is_pushed:
+                break
+            self.emit("repeat")  # 반복 이벤트 트리거
             time.sleep(self.repeat_interval)  # 반복 간격 대기
 
     def add_event_handler(self, action, handler):
@@ -78,44 +80,26 @@ class ButtonHandler(EventManager):
             raise ValueError from exc
 
     def handle_event(self, evt):
+        # ---------------------------------------------------------------------------- #
         if evt.value:
             self.is_pushed = True
             self.emit("push")
             # ---------------------------------------------------------------------------- #
             if "hold" in self.actions and self.actions["hold"]:
                 if self.hold_thread is None or not self.hold_thread.is_alive():
-                    self.hold_thread = threading.Thread(target=self.start_hold, daemon=True)
+                    self.hold_thread = threading.Thread(target=self.start_hold)
                     self.hold_thread.start()
             # ---------------------------------------------------------------------------- #
             if "repeat" in self.actions and self.actions["repeat"]:
                 if self.repeat_thread is None or not self.repeat_thread.is_alive():
-                    self.repeat_thread = threading.Thread(target=self.start_repeat, daemon=True)
+                    self.repeat_thread = threading.Thread(target=self.start_repeat)
                     self.repeat_thread.start()
+        # ---------------------------------------------------------------------------- #
         else:
             self.is_pushed = False
+            self.is_hold = False
             if self.trigger_release_on_hold or not self.is_hold:
                 self.emit("release")  # 릴리즈 이벤트 트리거
-            self.is_hold = False
-            if self.hold_thread and self.hold_thread.is_alive() and threading.current_thread() != self.hold_thread:
-                try:
-                    self.hold_thread.join(timeout=1.0)
-                except RuntimeError as e:
-                    context.log.error(f"handle_event() hold_thread join 에러: {e}")
-                finally:
-                    if self.hold_thread.is_alive():
-                        context.log.warn("handle_event() hold_thread가 타임아웃 내에 종료되지 않음")
-            if (
-                self.repeat_thread
-                and self.repeat_thread.is_alive()
-                and threading.current_thread() != self.repeat_thread
-            ):
-                try:
-                    self.repeat_thread.join(timeout=1.0)
-                except RuntimeError as e:
-                    context.log.error(f"handle_event() repeat_thread join 에러: {e}")
-                finally:
-                    if self.repeat_thread.is_alive():
-                        context.log.warn("handle_event() repeat_thread가 타임아웃 내에 종료되지 않음")
 
 
 # ---------------------------------------------------------------------------- #
