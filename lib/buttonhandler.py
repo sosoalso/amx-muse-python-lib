@@ -27,6 +27,8 @@ class ButtonHandler(EventManager):
         self.trigger_release_on_hold = trigger_release_on_hold  # 홀드 상태에서 릴리즈 트리거 여부
         self.hold_thread: Optional[threading.Thread] = None
         self.repeat_thread: Optional[threading.Thread] = None
+        self.hold_event = threading.Event()
+        self.repeat_event = threading.Event()
         # ---------------------------------------------------------------------------- #
         self.init(init_action, init_handler)
 
@@ -35,17 +37,17 @@ class ButtonHandler(EventManager):
             self.add_event_handler(init_action, init_handler)
 
     def start_hold(self):
-        time.sleep(self.hold_time)  # 홀드 시간 대기
-        if self.is_pushed and not self.is_hold:
-            self.is_hold = True
-            self.emit("hold")  # 홀드 이벤트 트리거
+        if not self.hold_event.wait(self.hold_time):
+            if self.is_pushed and not self.is_hold:
+                self.is_hold = True
+                self.emit("hold")  # 홀드 이벤트 트리거
 
     def start_repeat(self):
-        while self.is_pushed:
-            if not self.is_pushed:
-                break
+        self.repeat_event.clear()
+        while self.is_pushed and not self.repeat_event.is_set():
             self.emit("repeat")  # 반복 이벤트 트리거
-            time.sleep(self.repeat_interval)  # 반복 간격 대기
+            if self.repeat_event.wait(self.repeat_interval):
+                break
 
     def add_event_handler(self, action, handler):
         try:
@@ -98,6 +100,8 @@ class ButtonHandler(EventManager):
         else:
             self.is_pushed = False
             self.is_hold = False
+            self.hold_event.set()  # 스레드 종료 신호
+            self.repeat_event.set()  # 스레드 종료 신호
             if self.trigger_release_on_hold or not self.is_hold:
                 self.emit("release")  # 릴리즈 이벤트 트리거
 
