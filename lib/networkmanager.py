@@ -8,7 +8,7 @@ from mojo import context
 
 from lib.eventmanager import EventManager
 
-VERSION = "2025.08.15"
+VERSION = "2025.08.26"
 
 
 def get_version():
@@ -27,7 +27,7 @@ class TcpServer(EventManager):
             self.this = this
 
         def listen(self, listener):
-            self.this.add_event_handler("received", listener)
+            self.this.on("received", listener)
 
     def __init__(self, port, buffer_size=DEFAULT_BUFFER_SIZE, name=None):
         super().__init__("received", "online", "offline", "connected", "disconnected")
@@ -47,10 +47,10 @@ class TcpServer(EventManager):
         self.restart = True
 
     def online(self, handler):
-        self.add_event_handler("online", handler)
+        self.on("online", handler)
 
     def offline(self, handler):
-        self.add_event_handler("offline", handler)
+        self.on("offline", handler)
 
     def start(self):
         context.log.debug(f"{self.name} start()")
@@ -132,6 +132,8 @@ class TcpServer(EventManager):
                 context.log.debug(f"{self.name} _receive_loop() 수신 -- {data=} {address=}")
                 event = SimpleNamespace()
                 event.source = self
+                if not isinstance(data, (bytes, bytearray)):
+                    data = str(data).encode()  # Ensure msg is in bytes
                 event.arguments = {"data": data, "address": address}
                 self.emit("received", event)
                 if self.echo:
@@ -204,7 +206,7 @@ class UdpServer(EventManager):
             self.this = this
 
         def listen(self, listener):
-            self.this.add_event_handler("received", listener)
+            self.this.on("received", listener)
 
     def __init__(self, port, buffer_size=DEFAULT_BUFFER_SIZE, name=None):
         super().__init__("received")
@@ -280,6 +282,8 @@ class UdpServer(EventManager):
                 context.log.debug(f"{self.name} _receive_loop() 수신 -- {data=} {addr=}")
                 event = SimpleNamespace()
                 event.source = self
+                if not isinstance(data, (bytes, bytearray)):
+                    data = str(data).encode()  # Ensure msg is in bytes
                 event.arguments = {"data": data, "address": addr}
                 self.emit("received", event)
                 if self.echo:
@@ -345,7 +349,7 @@ class TcpClient(EventManager):
             self.this = this
 
         def listen(self, listener):
-            self.this.add_event_handler("received", listener)
+            self.this.on("received", listener)
 
     def __init__(
         self,
@@ -372,10 +376,10 @@ class TcpClient(EventManager):
         self.last_received_time = 0
 
     def online(self, handler):
-        self.add_event_handler("online", handler)
+        self.on("online", handler)
 
     def offline(self, handler):
-        self.add_event_handler("offline", handler)
+        self.on("offline", handler)
 
     def connect(self):
         if not self.reconnect:
@@ -436,12 +440,14 @@ class TcpClient(EventManager):
                 if not self.socket:
                     context.log.error(f"{self.name} _receive_loop() 소켓 초기화 필요")
                 else:
-                    msg = self.socket.recv(self.buffer_size)
-                    if msg:
-                        context.log.debug(f"{self.name} _receive_loop() 수신 -- {msg=}")
+                    data = self.socket.recv(self.buffer_size)
+                    if data:
+                        context.log.debug(f"{self.name} _receive_loop() 수신 -- {data=}")
                         event = SimpleNamespace()
                         event.source = self
-                        event.arguments = {"data": msg}
+                        if not isinstance(data, (bytes, bytearray)):
+                            data = str(data).encode()  # Ensure data is in bytes
+                        event.arguments = {"data": data}
                         self.emit("received", event)
                     else:
                         self.connected = False
@@ -513,13 +519,14 @@ class UdpClient(EventManager):
             self.this = this
 
         def listen(self, listener):
-            self.this.add_event_handler("received", listener)
+            self.this.on("received", listener)
 
     def __init__(
         self,
         server_ip,
         server_port,
         time_reconnect=10,
+        connection_timeout=60.0,
         buffer_size=DEFAULT_BUFFER_SIZE,
         bound_port=None,
         name=None,
@@ -538,7 +545,7 @@ class UdpClient(EventManager):
         self.bound_port: Optional[int] = bound_port
         self.bind_port: Optional[int] = None
         self.last_received_time = 0
-        self.connection_timeout = 60.0
+        self.connection_timeout = connection_timeout
         self.time_monitor_connection = 10.0
 
     def connect(self):
@@ -553,7 +560,6 @@ class UdpClient(EventManager):
             self.receive_thread.start()
             self.monitor_thread = threading.Thread(target=self._monitor_connection)
             self.monitor_thread.start()
-            self.emit("connected")
         except Exception as e:
             context.log.error(f"{self.name} connect() 시작 실패 에러: {e}")
 
@@ -599,12 +605,14 @@ class UdpClient(EventManager):
                 if not self.socket:
                     context.log.error(f"{self.name} 소켓 초기화 필요")
                     break
-                msg, addr = self.socket.recvfrom(self.buffer_size)
+                data, addr = self.socket.recvfrom(self.buffer_size)
                 self.last_received_time = time.time()  # 수신 시간 업데이트
-                context.log.debug(f"{self.name} _receive_loop() 수신 - {msg=} {addr=}")
+                context.log.debug(f"{self.name} _receive_loop() 수신 - {data=} {addr=}")
                 event = SimpleNamespace()
                 event.source = self
-                event.arguments = {"data": msg, "address": addr}
+                if not isinstance(data, (bytes, bytearray)):
+                    data = str(data).encode()  # Ensure data is in bytes
+                event.arguments = {"data": data, "address": addr}
                 self.emit("received", event)
             except socket.timeout:
                 continue

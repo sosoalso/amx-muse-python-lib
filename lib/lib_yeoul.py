@@ -5,7 +5,7 @@ import threading
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.08.14"
+VERSION = "2025.08.26"
 
 
 def get_version():
@@ -51,12 +51,12 @@ def handle_exception(func):
 
 # ---------------------------------------------------------------------------- #
 @handle_exception
-def pulse(duration, off_method, *off_args, **off_kwargs):
+def pulse(duration_seconds, off_method, *off_args, **off_kwargs):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             result = func(*args, **kwargs)
-            threading.Timer(duration, off_method, args=off_args, kwargs=off_kwargs).start()
+            threading.Timer(duration_seconds, off_method, args=off_args, kwargs=off_kwargs).start()
             return result
 
         return wrapper
