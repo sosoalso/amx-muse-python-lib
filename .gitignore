@@ -3,12 +3,11 @@
 **/__pycache__/
 /garbage
 /test
-/test_2
-/test_3
-/test_4
+/test_[0-9]*
 *.json
 .vscode
 .venv
 /.venv
 /.site_packages
 **/.site_packages/
+/pythonosc

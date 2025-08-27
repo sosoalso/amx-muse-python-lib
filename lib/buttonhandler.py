@@ -1,13 +1,13 @@
 import threading
-import time
 from typing import Optional
 
 from mojo import context
 
 from lib.eventmanager import EventManager
+from lib.lib_yeoul import debounce
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.08.22"
+VERSION = "2025.08.27"
 
 
 def get_version():
@@ -34,7 +34,7 @@ class ButtonHandler(EventManager):
 
     def init(self, init_action=None, init_handler=None):
         if init_action and init_handler:
-            self.add_event_handler(init_action, init_handler)
+            self.on(init_action, init_handler)
 
     def start_hold(self):
         self.hold_event.clear()
@@ -50,7 +50,7 @@ class ButtonHandler(EventManager):
             if self.repeat_event.wait(self.repeat_interval):
                 break
 
-    def add_event_handler(self, action, handler):
+    def on(self, action, handler):
         try:
             # ---------------------------------------------------------------------------- #
             if action in ("push", "release", "hold", "repeat"):
@@ -63,6 +63,13 @@ class ButtonHandler(EventManager):
                     raise ValueError("0.5 < hold_time <= 30 범위어야 함")
                 self.hold_time = hold_time
             # ---------------------------------------------------------------------------- #
+            elif action.startswith("hold="):
+                a = "hold"
+                hold_time = float(action.split("=")[1])
+                if not (0.5 <= hold_time <= 30):
+                    raise ValueError("0.5 < hold_time <= 30 범위어야 함")
+                self.hold_time = hold_time
+            # ---------------------------------------------------------------------------- #
             elif action.startswith("repeat_"):
                 a = "repeat"
                 repeat_interval = float(action.split("_")[1])
@@ -70,16 +77,23 @@ class ButtonHandler(EventManager):
                     raise ValueError("0.1 <= repeat_interval <= 3.0 범위어야 함")
                 self.repeat_interval = repeat_interval
             # ---------------------------------------------------------------------------- #
+            elif action.startswith("repeat="):
+                a = "repeat"
+                repeat_interval = float(action.split("=")[1])
+                if not (0.1 <= repeat_interval <= 3.0):
+                    raise ValueError("0.1 <= repeat_interval <= 3.0 범위어야 함")
+                self.repeat_interval = repeat_interval
+            # ---------------------------------------------------------------------------- #
             else:
-                context.log.error(f"add_event_handler() {action=} 에러 : 알 수 없는 액션")
+                context.log.error(f"on() {action=} 에러 : 알 수 없는 액션")
                 raise ValueError
             # ---------------------------------------------------------------------------- #
-            super().add_event_handler(a, handler)
+            super().on(a, handler)
         except ValueError as exc:
-            context.log.error(f"add_event_handler() {action=} : {exc}")
+            context.log.error(f"on() {action=} : {exc}")
             raise
         except Exception as exc:
-            context.log.error(f"add_event_handler() {action=} 에러 : 처리 중 오류 발생")
+            context.log.error(f"on() {action=} 에러 : 처리 중 오류 발생")
             raise ValueError from exc
 
     def handle_event(self, evt):
@@ -109,14 +123,21 @@ class ButtonHandler(EventManager):
 
 # ---------------------------------------------------------------------------- #
 class LevelHandler(EventManager):
-    def __init__(self, init_handler=None):
-        super().__init__("level")
-        self.init(init_handler)
 
-    def init(self, init_handler=None):
+    def __init__(self, init_handler=None, debounce_ms=100):
+        super().__init__("level")
+        self.debounce_ms = debounce_ms
+        context.log.warn("debounce_ms 는 초기화 시 설정되며 이후 변경이 적용되지 않습니다.")
+
+        @debounce(self.debounce_ms)
+        def debounced_emit(value):
+            self.emit("level", value)  # 레벨 이벤트 트리거
+
+        self.debounced_emit = debounced_emit
+
         if init_handler:
-            self.add_event_handler("level", init_handler)
+            self.on("level", init_handler)
 
     def handle_event(self, evt):
         value = int(evt.value)
-        self.emit("level", value)  # 레벨 이벤트 트리거
+        self.debounced_emit(value)

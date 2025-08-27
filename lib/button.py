@@ -39,6 +39,7 @@ def add_button(tp, port, button, action, callback, comment=None):
     return new_button
 
 
+# info - alias
 def add_btn(tp, port, button, action, callback, comment=None):
     return add_button(tp, port, button, action, callback, comment)
 
@@ -53,24 +54,26 @@ def add_button_ss(tp_list, port, button, action, callback, comment=None):
     return new_button
 
 
+# info - alias
 def add_btn_ss(tp_list, port, button, action, callback, comment=None):
     return add_button_ss(tp_list, port, button, action, callback, comment)
 
 
-def add_level(tp, port, level, callback, comment=None):
-    level_handler = LevelHandler(init_handler=callback)
+def add_level(tp, port, level, callback, debounce_ms, comment=None):
+    level_handler = LevelHandler(init_handler=callback, debounce_ms=debounce_ms)
     tp_add_watcher_level(tp, port, level, level_handler.handle_event)
     if DebugFlags.enable_debug_add_level:
         context.log.debug(f"add_level() -- {tp.id} {port=} {level=} {': ' + comment if comment else ''}")
     return level_handler
 
 
-def add_lvl(tp, port, level, callback, comment=None):
-    return add_level(tp, port, level, callback, comment)
+# info - alias
+def add_lvl(tp, port, level, callback, debounce_ms, comment=None):
+    return add_level(tp, port, level, callback, debounce_ms, comment)
 
 
-def add_level_ss(tp_list, port, level, callback, comment=None):
-    level_handler = LevelHandler(init_handler=callback)
+def add_level_ss(tp_list, port, level, callback, debounce_ms, comment=None):
+    level_handler = LevelHandler(init_handler=callback, debounce_ms=debounce_ms)
     tp_add_watcher_level_ss(tp_list, port, level, level_handler.handle_event)
     if DebugFlags.enable_debug_add_level:
         context.log.debug(
@@ -79,5 +82,6 @@ def add_level_ss(tp_list, port, level, callback, comment=None):
     return level_handler
 
 
-def add_lvl_ss(tp_list, port, level, callback, comment=None):
-    return add_level_ss(tp_list, port, level, callback, comment)
+# info - alias
+def add_lvl_ss(tp_list, port, level, callback, debounce_ms, comment=None):
+    return add_level_ss(tp_list, port, level, callback, debounce_ms, comment)

@@ -5,7 +5,7 @@ import threading
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.08.26"
+VERSION = "2025.08.27"
 
 
 def get_version():
@@ -69,10 +69,11 @@ def pulse(duration_seconds, off_method, *off_args, **off_kwargs):
 def debounce(timeout_ms: float):
     def decorator(func):
         lock = threading.Lock()
+        func_timer = None
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            func_timer = None
+            nonlocal func_timer
             with lock:
                 if func_timer and func_timer.is_alive():
                     func_timer.cancel()

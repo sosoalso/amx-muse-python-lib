@@ -8,7 +8,7 @@ from mojo import context
 
 from lib.eventmanager import EventManager
 
-VERSION = "2025.08.26"
+VERSION = "2025.08.27"
 
 
 def get_version():
@@ -31,6 +31,7 @@ class TcpServer(EventManager):
 
     def __init__(self, port, buffer_size=DEFAULT_BUFFER_SIZE, name=None):
         super().__init__("received", "online", "offline", "connected", "disconnected")
+        self.debug = False
         self.port = port
         self.name = name or f"TcpServer:{port}"
         self.buffer_size = buffer_size
@@ -42,7 +43,7 @@ class TcpServer(EventManager):
         self.clients: Dict[Tuple[str, int], Dict[str, Any]] = {}
         self.client_lock = threading.Lock()
         self.client_timeout = 60.0
-        self.time_cleanup_clients = 10.0
+        self.time_cleanup_clients = float(self.client_timeout // 2)
         self.echo = False
         self.restart = True
 
@@ -53,14 +54,15 @@ class TcpServer(EventManager):
         self.on("offline", handler)
 
     def start(self):
-        context.log.debug(f"{self.name} start()")
+        context.log.info(f"{self.name} start() 서버 시작")
         self.running = True
-        self.server_thread = threading.Thread(target=self._start_server)
-        self.server_thread.start()
+        if not self.server_thread or not self.server_thread.is_alive():
+            self.server_thread = threading.Thread(target=self._start_server)
+            self.server_thread.start()
 
     def _start_server(self):
-        context.log.debug(f"{self.name} _start_server()")
-        time.sleep(1)
+        context.log.debug(f"{self.name} _start_server() 스레드 시작")
+        time.sleep(1.0)
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -73,12 +75,13 @@ class TcpServer(EventManager):
                     self.running = False
                 return
             self.socket.listen()
-            self.cleanup_thread = threading.Thread(target=self._cleanup_clients)
-            self.cleanup_thread.start()
-            context.log.debug(f"{self.name} _start_server() 서버 시작")
+            if not self.cleanup_thread or not self.cleanup_thread.is_alive():
+                self.cleanup_thread = threading.Thread(target=self._cleanup_clients)
+                self.cleanup_thread.start()
             while self.running:
                 try:
                     client, address = self.socket.accept()
+                    context.log.debug(f"{self.name} _start_server() 클라이언트 접속 {address=}")
                     with self.client_lock:
                         self.clients[address] = {"socket": client, "last_seen": time.time()}
                     self.emit("online", address=address)
@@ -94,7 +97,8 @@ class TcpServer(EventManager):
                 self.start()
 
     def stop(self):
-        context.log.debug(f"{self.name} stop()")
+        if self.debug:
+            context.log.debug(f"{self.name} stop() 실행")
         self.running = False
         for _, client_info in self.clients.items():
             try:
@@ -115,10 +119,10 @@ class TcpServer(EventManager):
                 self.server_thread.join(timeout=1.0)
             except RuntimeError as e:
                 context.log.error(f"{self.name} stop() 서버 스레드 조인 실패 에러: {e}")
-        context.log.debug(f"{self.name} stop() 서버 중지")
+        context.log.info(f"{self.name} stop() 서버 중지")
 
     def _receive_loop(self, client_socket: socket.socket, address: Tuple[str, int]):
-        context.log.debug(f"{self.name} _receive_loop()")
+        context.log.debug(f"{self.name} _receive_loop() 시작 {address=}")
         try:
             while self.running:
                 data = client_socket.recv(self.buffer_size)
@@ -129,7 +133,8 @@ class TcpServer(EventManager):
                     # 업데이트 클라이언트 라스트 씬 타임
                     if address in self.clients:
                         self.clients[address]["last_seen"] = last_seen
-                context.log.debug(f"{self.name} _receive_loop() 수신 -- {data=} {address=}")
+                if self.debug:
+                    context.log.debug(f"{self.name} _receive_loop() 수신 -- {data=} {address=}")
                 event = SimpleNamespace()
                 event.source = self
                 if not isinstance(data, (bytes, bytearray)):
@@ -139,7 +144,7 @@ class TcpServer(EventManager):
                 if self.echo:
                     client_socket.sendall(data)
         except (ConnectionResetError, BrokenPipeError):
-            context.log.debug(f"{self.name} _receive_loop() 클라이언트 연결 끊김 {address=}")
+            context.log.info(f"{self.name} _receive_loop() 클라이언트 연결 끊김 {address=}")
         except Exception as e:
             if self.running:
                 context.log.error(f"{self.name} _receive_loop() 에러: {e}")
@@ -150,7 +155,7 @@ class TcpServer(EventManager):
                     del self.clients[address]
             self.emit("offline", address=address)
             self.emit("disconnected", address=address)
-            context.log.debug(f"{self.name} _receive_loop() 클라이언트 연결 종료 {address=}")
+            context.log.info(f"{self.name} _receive_loop() 클라이언트 연결 종료 {address=}")
 
     def send_to(self, client_socket: socket.socket, data: bytes | bytearray):
         try:
@@ -171,7 +176,8 @@ class TcpServer(EventManager):
             context.log.error(f"{self.name} send() 전송 실패 에러: {e}")
 
     def _cleanup_clients(self):
-        context.log.debug(f"{self.name} _cleanup_clients() 클라이언트 정리 스레드 시작")
+        if self.debug:
+            context.log.debug(f"{self.name} _cleanup_clients() 클라이언트 정리 스레드 시작")
         while self.running:
             try:
                 current_time = time.time()
@@ -193,6 +199,8 @@ class TcpServer(EventManager):
             except Exception as e:
                 context.log.error(f"{self.name} _cleanup_clients() 클라이언트 정리 에러: {e}")
                 time.sleep(self.time_cleanup_clients)
+        if self.debug:
+            context.log.debug(f"{self.name} _cleanup_clients() 스레드 종료")
 
     def is_running(self):
         return self.running
@@ -210,6 +218,7 @@ class UdpServer(EventManager):
 
     def __init__(self, port, buffer_size=DEFAULT_BUFFER_SIZE, name=None):
         super().__init__("received")
+        self.debug = False
         self.name = name or f"UdpServer:{port}"
         self.port = port
         self.buffer_size = buffer_size
@@ -221,11 +230,11 @@ class UdpServer(EventManager):
         self.clients: Dict[Tuple[str, int], float] = {}
         self.client_lock = threading.Lock()
         self.client_timeout = 60.0
-        self.time_cleanup_clients = 10.0  # 클라이언트 정리 주기 (초)
+        self.time_cleanup_clients = float(self.client_timeout // 2)
         self.echo = False
 
     def start(self):
-        context.log.debug(f"{self.name} start()")
+        context.log.info(f"{self.name} start() 서버 시작")
         if self.running and self.socket:
             context.log.info(f"{self.name} start() 이미 실행 중")
             return
@@ -234,17 +243,19 @@ class UdpServer(EventManager):
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.socket.bind(("", self.port))
             self.running = True
-            self.receive_thread = threading.Thread(target=self._receive_loop)
-            self.receive_thread.start()
-            self.cleanup_thread = threading.Thread(target=self._cleanup_clients)
-            self.cleanup_thread.start()
-            context.log.debug(f"{self.name} start() 서버 시작")
+            if not self.receive_thread or not self.receive_thread.is_alive():
+                self.receive_thread = threading.Thread(target=self._receive_loop)
+                self.receive_thread.start()
+            if not self.cleanup_thread or not self.cleanup_thread.is_alive():
+                self.cleanup_thread = threading.Thread(target=self._cleanup_clients)
+                self.cleanup_thread.start()
+            if self.debug:
+                context.log.debug(f"{self.name} start() 서버 시작")
         except Exception as e:
             self.running = False
             context.log.error(f"{self.name} start() 서버 시작 실패 에러: {e}")
 
     def stop(self):
-        context.log.debug(f"{self.name} stop()")
         self.running = False
         with self.client_lock:
             self.clients.clear()
@@ -265,9 +276,11 @@ class UdpServer(EventManager):
                 self.cleanup_thread.join(timeout=1.0)
             except RuntimeError as e:
                 context.log.error(f"{self.name} stop() 서버 스레드 조인 실패 에러: {e}")
+        context.log.info(f"{self.name} stop() 서버 중지")
 
     def _receive_loop(self):
-        context.log.debug(f"{self.name} _receive_loop()")
+        if self.debug:
+            context.log.debug(f"{self.name} _receive_loop() 스레드 시작")
         while self.running:
             try:
                 if not self.socket:
@@ -279,7 +292,8 @@ class UdpServer(EventManager):
                 last_seen = time.time()
                 with self.client_lock:
                     self.clients[addr] = last_seen
-                context.log.debug(f"{self.name} _receive_loop() 수신 -- {data=} {addr=}")
+                if self.debug:
+                    context.log.debug(f"{self.name} _receive_loop() 수신 -- {data=} {addr=}")
                 event = SimpleNamespace()
                 event.source = self
                 if not isinstance(data, (bytes, bytearray)):
@@ -296,6 +310,8 @@ class UdpServer(EventManager):
                 if self.running:
                     context.log.error(f"{self.name} _receive_loop() 메세지 수신 에러: {e}")
                     time.sleep(1)  # 에러 발생 시 대기 후 재시도
+        if self.debug:
+            context.log.debug(f"{self.name} _receive_loop() 스레드 종료")
 
     def send_to(self, host: str, port: int, data: bytes | bytearray):
         if not self.socket:
@@ -316,7 +332,8 @@ class UdpServer(EventManager):
                 context.log.error(f"{self.name} send() {client_addr} 전송 실패 에러: {e}")
 
     def _cleanup_clients(self):
-        context.log.debug(f"{self.name} _cleanup_clients() 클라이언트 정리 스레드 시작")
+        if self.debug:
+            context.log.debug(f"{self.name} _cleanup_clients() 클라이언트 정리 스레드 시작")
         while self.running:
             try:
                 current_time = time.time()
@@ -335,6 +352,8 @@ class UdpServer(EventManager):
             except Exception as e:
                 context.log.error(f"{self.name} _cleanup_clients() 클라이언트 정리 에러: {e}")
                 time.sleep(self.time_cleanup_clients)  # 에러 발생 시에도 대기
+        if self.debug:
+            context.log.debug(f"{self.name} _cleanup_clients() 스레드 종료")
 
     def is_running(self):
         return self.running
@@ -355,24 +374,24 @@ class TcpClient(EventManager):
         self,
         server_ip,
         server_port,
-        reconnect=True,
-        time_reconnect=5.0,
+        time_reconnect=30.0,
         buffer_size=DEFAULT_BUFFER_SIZE,
         name=None,
     ):
         super().__init__("connected", "received", "online", "offline")
+        self.debug = False
         self.name = name or f"TcpClient:{server_ip}:{server_port}"
         self.server_ip = server_ip
         self.server_port = server_port
         self.receive = self.ReceiveHandler(self)
         self.time_reconnect = time_reconnect
-        self.timeout = 1.0
+        self.timeout_send_once = 1.0
         self.buffer_size = buffer_size
         self.connected = False
         self.socket: Optional[socket.socket] = None
         self.connect_thread: Optional[threading.Thread] = None
         self.receive_thread: Optional[threading.Thread] = None
-        self.reconnect = reconnect
+        self.reconnect = False
         self.last_received_time = 0
 
     def online(self, handler):
@@ -382,15 +401,17 @@ class TcpClient(EventManager):
         self.on("offline", handler)
 
     def connect(self):
+        self.reconnect = True
+        context.log.info(f"{self.name} connect() 연결 시작")
         if not self.reconnect:
             context.log.debug(f"{self.name} connect() reconnect 비활성화")
             return
         if self.connected:
             context.log.debug(f"{self.name} connect() 이미 연결됨")
             return
-        context.log.debug(f"{self.name} connect()")
-        self.connect_thread = threading.Thread(target=self._connect)
-        self.connect_thread.start()
+        if not self.connect_thread or not self.connect_thread.is_alive():
+            self.connect_thread = threading.Thread(target=self._connect)
+            self.connect_thread.start()
 
     def _connect(self):
         while not self.connected:
@@ -398,7 +419,7 @@ class TcpClient(EventManager):
                 self.socket = socket.create_connection((self.server_ip, self.server_port))
                 if self.socket:
                     if not self.reconnect:
-                        self.socket.settimeout(self.timeout)  # reconnect 하지 않으면 수신 타임아웃 설정하기
+                        self.socket.settimeout(self.timeout_send_once)  # reconnect 하지 않으면 수신 타임아웃 설정하기
                     self._run_thread_receive()
                     self.connected = True
             except ConnectionRefusedError:
@@ -411,30 +432,48 @@ class TcpClient(EventManager):
                 time.sleep(self.time_reconnect)
                 if not self.reconnect:
                     break
-            except Exception:
-                context.log.error(f"{self.name} _connect() 에러")
+            except Exception as e:
+                context.log.error(f"{self.name} _connect() 에러: {e}")
                 time.sleep(self.time_reconnect)
                 if not self.reconnect:
                     break
 
     def disconnect(self):
+        self.reconnect = False
         if self.socket:
-            self.socket.close()
+            try:
+                self.socket.shutdown(socket.SHUT_RDWR)  # 읽기/쓰기 모두 종료
+            except OSError as e:
+                print(f"소켓 shutdown 실패: {e}")
+            finally:
+                self.socket.close()  # 소켓 닫기
         self.connected = False
         self.socket = None
-        context.log.debug(f"{self.name} disconnect() 연결 끊김")
+        if self.connect_thread and self.connect_thread.is_alive() and threading.current_thread() != self.connect_thread:
+            try:
+                self.connect_thread.join(timeout=1.0)
+            except RuntimeError as e:
+                context.log.error(f"{self.name} disconnect() connect_thread 조인 에러: {e}")
+        if self.receive_thread and self.receive_thread.is_alive() and threading.current_thread() != self.receive_thread:
+            try:
+                self.receive_thread.join(timeout=1.0)
+            except RuntimeError as e:
+                context.log.error(f"{self.name} disconnect() receive_thread 조인 에러: {e}")
+        context.log.info(f"{self.name} disconnect() 연결 중지 -- reconnect 해제")
 
     def handle_reconnect(self):
         if self.reconnect:
             self.connect()
 
     def _run_thread_receive(self):
-        self.receive_thread = threading.Thread(target=self._receive_loop)
-        self.receive_thread.start()
+        if not self.receive_thread or not self.receive_thread.is_alive():
+            self.receive_thread = threading.Thread(target=self._receive_loop)
+            self.receive_thread.start()
 
     def _receive_loop(self):
+        if self.debug:
+            context.log.debug(f"{self.name} _receive_loop() 스레드 시작")
         self.emit("connected")
-        context.log.debug(f"{self.name} _receive_loop() 연결됨")
         while self.connected:
             try:
                 if not self.socket:
@@ -442,7 +481,8 @@ class TcpClient(EventManager):
                 else:
                     data = self.socket.recv(self.buffer_size)
                     if data:
-                        context.log.debug(f"{self.name} _receive_loop() 수신 -- {data=}")
+                        if self.debug:
+                            context.log.debug(f"{self.name} _receive_loop() 수신 -- {data=}")
                         event = SimpleNamespace()
                         event.source = self
                         if not isinstance(data, (bytes, bytearray)):
@@ -451,7 +491,7 @@ class TcpClient(EventManager):
                         self.emit("received", event)
                     else:
                         self.connected = False
-                        context.log.debug(f"{self.name} connect() 수신 없음 연결 끊김")
+                        context.log.info(f"{self.name} connect() 수신 없음 연결 끊김")
                         self.handle_reconnect()
                         break
             except socket.timeout:  # 데이터가 없는 타임 아웃 : reconnect 없으면 disconnect
@@ -465,12 +505,14 @@ class TcpClient(EventManager):
                 context.log.error(f"{self.name} _receive_loop() 에러: {e}")
                 self.handle_reconnect()
                 break
+        context.log.debug(f"{self.name} _receive_loop() 스레드 종료")
 
     def send(self, message):
         if self.reconnect:
             if self.socket and self.connected:
                 try:
-                    context.log.debug(f"{self.name} send() 송신 -- {message=}")
+                    if self.debug:
+                        context.log.debug(f"{self.name} send() 송신 -- {message=}")
                     self.socket.sendall(message)
                 except Exception as e:
                     context.log.error(f"{self.name} send() 송신 실패 에러: {e}")
@@ -478,13 +520,13 @@ class TcpClient(EventManager):
                     self.handle_reconnect()
         else:
 
-            def one_shot_send():
+            def send_once():
                 try:
-                    sock = socket.create_connection((self.server_ip, self.server_port), timeout=self.timeout)
+                    sock = socket.create_connection((self.server_ip, self.server_port), timeout=self.timeout_send_once)
                     sock.sendall(message)
                     context.log.info(f"송신 - {message}")
                     try:
-                        sock.settimeout(self.timeout)
+                        sock.settimeout(self.timeout_send_once)
                         msg = sock.recv(self.buffer_size)
                         if msg:
                             context.log.info(f"수신 - {msg=}")
@@ -493,18 +535,16 @@ class TcpClient(EventManager):
                             event.arguments = {"data": msg}
                             self.emit("received", event)
                         else:
-                            context.log.info(
-                                f"{self.name} one_shot_send() 서버에 의해 연결이 종료되어 응답을 받지 못함"
-                            )
+                            context.log.info(f"{self.name} send_once() 서버에 의해 연결이 종료되어 응답을 받지 못함")
                     except socket.timeout:
-                        context.log.info(f"{self.name} one_shot_send() {self.timeout} 초 이내에 응답을 받지 못함")
+                        context.log.info(f"{self.name} send_once() {self.timeout_send_once}초 이내에 응답을 받지 못함")
                     finally:
                         sock.close()
-                        context.log.info(f"{self.name} one_shot_send() 연결 닫힘")
+                        context.log.info(f"{self.name} send_once() 연결 닫힘")
                 except Exception as e:
-                    context.log.error(f"{self.name} one_shot_send() 전송 실패 에러: {e=}")
+                    context.log.error(f"{self.name} send_once() 전송 실패 에러: {e=}")
 
-            threading.Thread(target=one_shot_send).start()
+            threading.Thread(target=send_once).start()
 
     def is_connected(self):
         return self.connected
@@ -525,18 +565,17 @@ class UdpClient(EventManager):
         self,
         server_ip,
         server_port,
-        time_reconnect=10,
         connection_timeout=60.0,
         buffer_size=DEFAULT_BUFFER_SIZE,
         bound_port=None,
         name=None,
     ):
         super().__init__("connected", "received")
+        self.debug = False
         self.name = name or f"UdpClient:{server_ip}:{server_port}"
         self.server_ip = server_ip
         self.server_port = server_port
         self.receive = self.ReceiveHandler(self)
-        self.time_reconnect = time_reconnect
         self.buffer_size = buffer_size
         self.connected = False
         self.socket: Optional[socket.socket] = None
@@ -546,9 +585,10 @@ class UdpClient(EventManager):
         self.bind_port: Optional[int] = None
         self.last_received_time = 0
         self.connection_timeout = connection_timeout
-        self.time_monitor_connection = 10.0
+        self.time_monitor_connection = float(self.connection_timeout // 2)
 
     def connect(self):
+        context.log.info(f"{self.name} connect() 시작")
         try:
             if self.connected:
                 return
@@ -556,10 +596,12 @@ class UdpClient(EventManager):
             if not self.connected:
                 return
             self.last_received_time = time.time()  # 연결 시 수신 시간 초기화
-            self.receive_thread = threading.Thread(target=self._receive_loop)
-            self.receive_thread.start()
-            self.monitor_thread = threading.Thread(target=self._monitor_connection)
-            self.monitor_thread.start()
+            if not self.receive_thread or not self.receive_thread.is_alive():
+                self.receive_thread = threading.Thread(target=self._receive_loop)
+                self.receive_thread.start()
+            if not self.monitor_thread or not self.monitor_thread.is_alive():
+                self.monitor_thread = threading.Thread(target=self._monitor_connection)
+                self.monitor_thread.start()
         except Exception as e:
             context.log.error(f"{self.name} connect() 시작 실패 에러: {e}")
 
@@ -570,7 +612,8 @@ class UdpClient(EventManager):
             self.socket.settimeout(1.0)  # recvfrom timeout 설정
             self.socket.bind(("", 0 if self.bound_port is None else self.bound_port))
             self.bind_port = self.socket.getsockname()[1]
-            context.log.debug(f"{self.name} _connect() 바인딩된 포트: {self.bind_port}")
+            if self.debug:
+                context.log.debug(f"{self.name} _connect() 바인딩된 포트: {self.bind_port}")
             self.connected = True
             self.emit("connected")
         except Exception as e:
@@ -591,54 +634,6 @@ class UdpClient(EventManager):
                 self.socket = None
         context.log.info(f"{self.name} disconnect() 연결 중지")
 
-    def send(self, msg: bytes | bytearray):
-        if self.socket and self.connected:
-            try:
-                self.socket.sendto(msg, (self.server_ip, self.server_port))
-                context.log.debug(f"{self.name} send() 송신 - {msg=}")
-            except Exception as e:
-                context.log.error(f"{self.name} send() 송신 실패: {e}")
-
-    def _receive_loop(self):
-        while self.connected:
-            try:
-                if not self.socket:
-                    context.log.error(f"{self.name} 소켓 초기화 필요")
-                    break
-                data, addr = self.socket.recvfrom(self.buffer_size)
-                self.last_received_time = time.time()  # 수신 시간 업데이트
-                context.log.debug(f"{self.name} _receive_loop() 수신 - {data=} {addr=}")
-                event = SimpleNamespace()
-                event.source = self
-                if not isinstance(data, (bytes, bytearray)):
-                    data = str(data).encode()  # Ensure data is in bytes
-                event.arguments = {"data": data, "address": addr}
-                self.emit("received", event)
-            except socket.timeout:
-                continue
-            except OSError as e:
-                if self.connected:
-                    context.log.error(f"{self.name} _receive_loop() 소켓 에러: {e}")
-                break
-            except Exception as e:
-                if self.connected:
-                    context.log.debug(f"{self.name} _receive_loop() 메세지 수신 중 에러: {e}")
-                break
-
-    def _monitor_connection(self):
-        while self.connected:
-            try:
-                current_time = time.time()
-                # 초기 연결 후 충분한 시간을 기다린 후에만 타임아웃 체크
-                if self.last_received_time > 0 and current_time - self.last_received_time > self.connection_timeout:
-                    context.log.warn(f"{self.name} _monitor_connection() 연결 타임아웃, 연결 재시도")
-                    self.handle_reconnect()
-                time.sleep(self.time_monitor_connection)
-            except Exception as e:
-                if self.connected:
-                    context.log.error(f"{self.name} _monitor_connection() 모니터링 중 에러: {e}")
-                time.sleep(self.time_monitor_connection)
-
     def handle_reconnect(self):
         try:
             old_connected = self.connected
@@ -655,3 +650,63 @@ class UdpClient(EventManager):
                 self.connect()
         except Exception as e:
             context.log.error(f"{self.name} handle_reconnect() 재연결 실패: {e}")
+
+    def send(self, msg: bytes | bytearray):
+        if self.socket and self.connected:
+            try:
+                self.socket.sendto(msg, (self.server_ip, self.server_port))
+                if self.debug:
+                    context.log.debug(f"{self.name} send() 송신 - {msg=}")
+            except Exception as e:
+                context.log.error(f"{self.name} send() 송신 실패: {e}")
+
+    def _receive_loop(self):
+        if self.debug:
+            context.log.debug(f"{self.name} _receive_loop() 스레드 시작")
+        while self.connected:
+            try:
+                if not self.socket:
+                    context.log.error(f"{self.name} 소켓 초기화 필요")
+                    break
+                data, addr = self.socket.recvfrom(self.buffer_size)
+                self.last_received_time = time.time()  # 수신 시간 업데이트
+                if self.debug:
+                    context.log.debug(f"{self.name} _receive_loop() 수신 - {data=} {addr=}")
+                event = SimpleNamespace()
+                event.source = self
+                if not isinstance(data, (bytes, bytearray)):
+                    data = str(data).encode()  # Ensure data is in bytes
+                event.arguments = {"data": data, "address": addr}
+                self.emit("received", event)
+            except socket.timeout:
+                continue
+            except OSError as e:
+                if self.connected:
+                    context.log.error(f"{self.name} _receive_loop() 소켓 에러: {e}")
+                break
+            except Exception as e:
+                if self.connected:
+                    context.log.error(f"{self.name} _receive_loop() 메세지 수신 중 에러: {e}")
+                break
+        if self.debug:
+            context.log.debug(f"{self.name} _receive_loop() 스레드 종료")
+
+    def _monitor_connection(self):
+        if self.debug:
+            context.log.debug(f"{self.name} _monitor_connection() 스레드 시작")
+        while self.connected:
+            try:
+                current_time = time.time()
+                time.sleep(self.time_monitor_connection)
+                if self.debug:
+                    context.log.debug(f"{self.connected=} {self.last_received_time=} {current_time=}")
+                if self.last_received_time > 0 and current_time - self.last_received_time > self.connection_timeout:
+                    if self.debug:
+                        context.log.debug(f"{self.name} _monitor_connection() 연결 타임아웃, 연결 재시도")
+                    self.handle_reconnect()
+            except Exception as e:
+                if self.connected:
+                    context.log.error(f"{self.name} _monitor_connection() 모니터링 중 에러: {e}")
+                time.sleep(self.time_monitor_connection)
+        if self.debug:
+            context.log.debug(f"{self.name} _monitor_connection() 스레드 종료")
