@@ -3,7 +3,7 @@ from mojo import context
 from lib.database import Database
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.08.14"
+VERSION = "2025.09.18"
 
 
 def get_version():
@@ -41,3 +41,6 @@ class Userdata(Database):
             if self.debug:
                 context.log.debug(f"Userdata - delete_value() {self.db_path=} {k=}")
             self.save(k, self.data)
+
+    def items(self):
+        return self.data.items()

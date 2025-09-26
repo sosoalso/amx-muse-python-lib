@@ -1,3 +1,5 @@
+from mojo import context
+
 from lib.button import add_button
 from lib.lib_tp import (
     tp_hide_all_popup,
@@ -8,7 +10,7 @@ from lib.lib_tp import (
 from lib.lib_yeoul import handle_exception
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.07.26"
+VERSION = "2025.09.27"
 
 
 def get_version():
@@ -46,7 +48,7 @@ class UIMenu:
         if not isinstance(index_page, int):
             context.log.error("UIMenu show_page() index_page 는 정수여야합니다.")
             raise ValueError
-        if not (1 <= index_page <= 9):
+        if not 1 <= index_page <= 9:
             context.log.error("UIMenu show_page() index_page 는 1 - 9 사이의 정수여야합니다.")
             raise ValueError
         self.hide_all_menu_popup()
@@ -57,7 +59,7 @@ class UIMenu:
         if not isinstance(index_popup, int):
             context.log.error("UIMenu show_page() index_popup 은 정수여야합니다.")
             raise ValueError
-        if not (1 <= index_popup <= 20):
+        if not 1 <= index_popup <= 20:
             context.log.error("UIMenu show_page() index_popup 은 1 - 20 사이의 정수여야합니다.")
             raise ValueError
         self.selected_menu = index_popup

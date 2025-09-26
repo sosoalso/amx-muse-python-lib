@@ -5,7 +5,7 @@ import threading
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.08.27"
+VERSION = "2025.08.29"
 
 
 def get_version():
@@ -83,6 +83,26 @@ def debounce(timeout_ms: float):
         return wrapper
 
     return decorator
+
+
+def atoi(s: str) -> int:
+    s = s.strip()
+    if not s:
+        return 0
+
+    # 부호 처리
+    sign = 1
+    if s[0] == "-":
+        sign = -1
+    elif s[0] == "+":
+        sign = 1
+
+    # 숫자만 추출
+    digits = [ch for ch in s if ch.isdigit()]
+    if not digits:
+        return 0
+
+    return sign * int("".join(digits))
 
 
 # ---------------------------------------------------------------------------- #

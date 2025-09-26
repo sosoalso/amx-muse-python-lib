@@ -1,5 +1,4 @@
 import threading
-from typing import Optional
 
 from mojo import context
 
@@ -25,8 +24,8 @@ class ButtonHandler(EventManager):
         self.is_pushed = False  # 버튼이 눌렸는지 여부
         self.is_hold = False  # 버튼이 홀드 상태인지 여부
         self.trigger_release_on_hold = trigger_release_on_hold  # 홀드 상태에서 릴리즈 트리거 여부
-        self.hold_thread: Optional[threading.Thread] = None
-        self.repeat_thread: Optional[threading.Thread] = None
+        self.hold_thread: threading.Thread | None = None
+        self.repeat_thread: threading.Thread | None = None
         self.hold_event = threading.Event()
         self.repeat_event = threading.Event()
         # ---------------------------------------------------------------------------- #

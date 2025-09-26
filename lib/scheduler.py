@@ -1,10 +1,11 @@
+import atexit
 import concurrent.futures
 import time
 
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.08.14"
+VERSION = "2025.09.27"
 
 
 def get_version():
@@ -19,6 +20,7 @@ class Scheduler:
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers)
         self.scheduled_tasks = []
         self.task_executor = concurrent.futures.ThreadPoolExecutor()
+        atexit.register(self.shutdown)
 
     def set_interval(self, func, interval):
         try:

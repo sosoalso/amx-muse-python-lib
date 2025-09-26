@@ -1,6 +1,6 @@
 import json
 import sqlite3
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from mojo import context
 
@@ -86,7 +86,7 @@ class Database:
             context.log.error(f"{self.db_path} save() 에러 : {e}")
             return False
 
-    def load(self, key: str, default: Any) -> Optional[Dict[str, Any]]:
+    def load(self, key: str, default: Any) -> Dict[str, Any] | None:
         try:
             with sqlite3.connect(self.db_path, timeout=self.timeout) as conn:
                 cursor = conn.cursor()

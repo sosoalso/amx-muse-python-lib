@@ -1,7 +1,7 @@
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.08.15"
+VERSION = "2025.09.26"
 
 
 def get_version():
@@ -10,8 +10,8 @@ def get_version():
 
 # ---------------------------------------------------------------------------- #
 class DebugFlags:
-    enable_debug_tp_add_watcher = True
-    enable_debug_tp_add_watcher_level = True
+    enable_debug_tp_add_watcher = False
+    enable_debug_tp_add_watcher_level = False
     enable_debug_tp_add_notification = True
     enable_debug_tp_add_notification_level = True
     enable_debug_tp_set_button = False
@@ -20,8 +20,8 @@ class DebugFlags:
 
 
 def tp_set_debug_flag(
-    tp_add_watcher=True,
-    tp_add_watcher_level=True,
+    tp_add_watcher=False,
+    tp_add_watcher_level=False,
     tp_add_notification=True,
     tp_add_notification_level=True,
     tp_set_button=False,

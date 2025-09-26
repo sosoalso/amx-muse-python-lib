@@ -2,19 +2,20 @@ import socket
 import threading
 import time
 from types import SimpleNamespace
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
 
 from mojo import context
 
 from lib.eventmanager import EventManager
 
-VERSION = "2025.08.27"
+VERSION = "2025.09.27"
 
 
 def get_version():
     return VERSION
 
 
+# ---------------------------------------------------------------------------- #
 DEFAULT_BUFFER_SIZE = 2048
 
 
@@ -35,11 +36,11 @@ class TcpServer(EventManager):
         self.port = port
         self.name = name or f"TcpServer:{port}"
         self.buffer_size = buffer_size
-        self.socket: Optional[socket.socket] = None
+        self.socket: socket.socket | None = None
         self.receive = self.ReceiveHandler(self)
         self.running = False
-        self.server_thread: Optional[threading.Thread] = None
-        self.cleanup_thread: Optional[threading.Thread] = None
+        self.server_thread: threading.Thread | None = None
+        self.cleanup_thread: threading.Thread | None = None
         self.clients: Dict[Tuple[str, int], Dict[str, Any]] = {}
         self.client_lock = threading.Lock()
         self.client_timeout = 60.0
@@ -84,8 +85,8 @@ class TcpServer(EventManager):
                     context.log.debug(f"{self.name} _start_server() 클라이언트 접속 {address=}")
                     with self.client_lock:
                         self.clients[address] = {"socket": client, "last_seen": time.time()}
-                    self.emit("online", address=address)
                     self.emit("connected", address=address)
+                    self.emit("online", address=address)
                     threading.Thread(target=self._receive_loop, args=(client, address)).start()
                 except OSError:  # 소켓이 닫혀 있을 경우 발생할 수 있음
                     self.running = False
@@ -137,8 +138,8 @@ class TcpServer(EventManager):
                     context.log.debug(f"{self.name} _receive_loop() 수신 -- {data=} {address=}")
                 event = SimpleNamespace()
                 event.source = self
-                if not isinstance(data, (bytes, bytearray)):
-                    data = str(data).encode()  # Ensure msg is in bytes
+                # if not isinstance(data, (bytes, bytearray)):
+                #     data = str(data).encode()  # Ensure msg is in bytes
                 event.arguments = {"data": data, "address": address}
                 self.emit("received", event)
                 if self.echo:
@@ -163,7 +164,7 @@ class TcpServer(EventManager):
         except Exception as e:
             context.log.error(f"{self.name} send_to() 전송 실패 에러: {e}")
 
-    def send(self, data: bytes | bytearray, exclude_client: Optional[Tuple[str, int]] = None):
+    def send(self, data: bytes | bytearray, exclude_client: tuple[str, int] | None = None):
         try:
             with self.client_lock:
                 clients_copy = dict(self.clients)
@@ -222,11 +223,11 @@ class UdpServer(EventManager):
         self.name = name or f"UdpServer:{port}"
         self.port = port
         self.buffer_size = buffer_size
-        self.socket: Optional[socket.socket] = None
+        self.socket: socket.socket | None = None
         self.receive = self.ReceiveHandler(self)
         self.running = False
-        self.receive_thread: Optional[threading.Thread] = None
-        self.cleanup_thread: Optional[threading.Thread] = None
+        self.receive_thread: threading.Thread | None = None
+        self.cleanup_thread: threading.Thread | None = None
         self.clients: Dict[Tuple[str, int], float] = {}
         self.client_lock = threading.Lock()
         self.client_timeout = 60.0
@@ -296,8 +297,8 @@ class UdpServer(EventManager):
                     context.log.debug(f"{self.name} _receive_loop() 수신 -- {data=} {addr=}")
                 event = SimpleNamespace()
                 event.source = self
-                if not isinstance(data, (bytes, bytearray)):
-                    data = str(data).encode()  # Ensure msg is in bytes
+                # if not isinstance(data, (bytes, bytearray)):
+                # data = str(data).encode()  # Ensure msg is in bytes
                 event.arguments = {"data": data, "address": addr}
                 self.emit("received", event)
                 if self.echo:
@@ -322,7 +323,7 @@ class UdpServer(EventManager):
         except Exception as e:
             context.log.error(f"{self.name} send_to() 전송 실패 에러: {e}")
 
-    def send(self, data: bytes | bytearray, exclude_client: Optional[Tuple[str, int]] = None):
+    def send(self, data: bytes | bytearray, exclude_client: tuple[str, int] | None = None):
         with self.client_lock:
             try:
                 for client_addr in self.clients:
@@ -388,9 +389,9 @@ class TcpClient(EventManager):
         self.timeout_send_once = 1.0
         self.buffer_size = buffer_size
         self.connected = False
-        self.socket: Optional[socket.socket] = None
-        self.connect_thread: Optional[threading.Thread] = None
-        self.receive_thread: Optional[threading.Thread] = None
+        self.socket: socket.socket | None = None
+        self.connect_thread: threading.Thread | None = None
+        self.receive_thread: threading.Thread | None = None
         self.reconnect = False
         self.last_received_time = 0
 
@@ -474,6 +475,7 @@ class TcpClient(EventManager):
         if self.debug:
             context.log.debug(f"{self.name} _receive_loop() 스레드 시작")
         self.emit("connected")
+        self.emit("online")
         while self.connected:
             try:
                 if not self.socket:
@@ -485,8 +487,8 @@ class TcpClient(EventManager):
                             context.log.debug(f"{self.name} _receive_loop() 수신 -- {data=}")
                         event = SimpleNamespace()
                         event.source = self
-                        if not isinstance(data, (bytes, bytearray)):
-                            data = str(data).encode()  # Ensure data is in bytes
+                        # if not isinstance(data, (bytes, bytearray)):
+                        #     data = str(data).encode()  # Ensure data is in bytes
                         event.arguments = {"data": data}
                         self.emit("received", event)
                     else:
@@ -524,15 +526,17 @@ class TcpClient(EventManager):
                 try:
                     sock = socket.create_connection((self.server_ip, self.server_port), timeout=self.timeout_send_once)
                     sock.sendall(message)
-                    context.log.info(f"송신 - {message}")
+                    if self.debug:
+                        context.log.debug(f"{self.name} send_once() 송신 -- {message=}")
                     try:
                         sock.settimeout(self.timeout_send_once)
-                        msg = sock.recv(self.buffer_size)
-                        if msg:
-                            context.log.info(f"수신 - {msg=}")
+                        data = sock.recv(self.buffer_size)
+                        if data:
+                            if self.debug:
+                                context.log.debug(f"{self.name} send_once() 수신 -- {data=}")
                             event = SimpleNamespace()
                             event.source = self
-                            event.arguments = {"data": msg}
+                            event.arguments = {"data": data}
                             self.emit("received", event)
                         else:
                             context.log.info(f"{self.name} send_once() 서버에 의해 연결이 종료되어 응답을 받지 못함")
@@ -578,11 +582,11 @@ class UdpClient(EventManager):
         self.receive = self.ReceiveHandler(self)
         self.buffer_size = buffer_size
         self.connected = False
-        self.socket: Optional[socket.socket] = None
-        self.receive_thread: Optional[threading.Thread] = None
-        self.monitor_thread: Optional[threading.Thread] = None
-        self.bound_port: Optional[int] = bound_port
-        self.bind_port: Optional[int] = None
+        self.socket: socket.socket | None = None
+        self.receive_thread: threading.Thread | None = None
+        self.monitor_thread: threading.Thread | None = None
+        self.bound_port: int | None = bound_port
+        self.bind_port: int | None = None
         self.last_received_time = 0
         self.connection_timeout = connection_timeout
         self.time_monitor_connection = float(self.connection_timeout // 2)
@@ -616,6 +620,7 @@ class UdpClient(EventManager):
                 context.log.debug(f"{self.name} _connect() 바인딩된 포트: {self.bind_port}")
             self.connected = True
             self.emit("connected")
+            self.emit("online")
         except Exception as e:
             context.log.error(f"{self.name} _connect() 연결 실패 에러: {e}")
             self.connected = False
@@ -641,7 +646,7 @@ class UdpClient(EventManager):
             if self.socket:
                 try:
                     self.socket.close()
-                except Exception:
+                except Exception as e:
                     context.log.error(f"{self.name} handle_reconnect() 소켓 닫기 실패 에러: {e}")
                 finally:
                     self.socket = None
@@ -674,8 +679,8 @@ class UdpClient(EventManager):
                     context.log.debug(f"{self.name} _receive_loop() 수신 - {data=} {addr=}")
                 event = SimpleNamespace()
                 event.source = self
-                if not isinstance(data, (bytes, bytearray)):
-                    data = str(data).encode()  # Ensure data is in bytes
+                # if not isinstance(data, (bytes, bytearray)):
+                # data = str(data).encode()  # Ensure data is in bytes
                 event.arguments = {"data": data, "address": addr}
                 self.emit("received", event)
             except socket.timeout:

@@ -1,7 +1,7 @@
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.08.14"
+VERSION = "2025.09.25"
 
 
 def get_version():
@@ -12,6 +12,7 @@ def get_version():
 class EventManager:
     def __init__(self, *initial_actions):
         self.actions = {event: [] for event in initial_actions}
+        self.event_manager_debug = False
 
     def add_event_action(self, action):
         try:
@@ -31,7 +32,8 @@ class EventManager:
     def add_event_handler(self, action, handler):
         try:
             if action not in self.actions:
-                context.log.debug(f"add_event_handler() {action=} : 해당 이벤트가 없으므로 이벤트 액션 추가")
+                if self.event_manager_debug:
+                    context.log.debug(f"add_event_handler() {action=} : 해당 이벤트가 없으므로 이벤트 액션 추가")
                 self.add_event_action(action)
             if handler not in self.actions[action]:
                 self.actions[action].append(handler)
@@ -57,10 +59,11 @@ class EventManager:
         try:
             if action in self.actions:
                 for handler in self.actions[action]:
-                    context.log.debug(f"trigger_event() 발생 - {action=} {self.actions[action]=}")
+                    if self.event_manager_debug:
+                        context.log.debug(f"trigger_event() 발생 - {action=} {self.actions[action]=} {args=} {kwargs=}")
                     handler(*args, **kwargs)
             else:
-                context.log.error(f"trigger_event() {action=} 해당 이벤트 없음")
+                context.log.info(f"trigger_event() {action=} 해당 이벤트 없음")
         except Exception as e:
             context.log.error(f"trigger_event() {action=} 에러: {e}")
 
