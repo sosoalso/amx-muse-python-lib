@@ -58,28 +58,28 @@ class ButtonHandler(EventManager):
             elif action.startswith("hold_"):
                 a = "hold"
                 hold_time = float(action.split("_")[1])
-                if not (0.5 <= hold_time <= 30):
+                if not 0.5 <= hold_time <= 30:
                     raise ValueError("0.5 < hold_time <= 30 범위어야 함")
                 self.hold_time = hold_time
             # ---------------------------------------------------------------------------- #
             elif action.startswith("hold="):
                 a = "hold"
                 hold_time = float(action.split("=")[1])
-                if not (0.5 <= hold_time <= 30):
+                if not 0.5 <= hold_time <= 30:
                     raise ValueError("0.5 < hold_time <= 30 범위어야 함")
                 self.hold_time = hold_time
             # ---------------------------------------------------------------------------- #
             elif action.startswith("repeat_"):
                 a = "repeat"
                 repeat_interval = float(action.split("_")[1])
-                if not (0.1 <= repeat_interval <= 3.0):
+                if not 0.1 <= repeat_interval <= 3.0:
                     raise ValueError("0.1 <= repeat_interval <= 3.0 범위어야 함")
                 self.repeat_interval = repeat_interval
             # ---------------------------------------------------------------------------- #
             elif action.startswith("repeat="):
                 a = "repeat"
                 repeat_interval = float(action.split("=")[1])
-                if not (0.1 <= repeat_interval <= 3.0):
+                if not 0.1 <= repeat_interval <= 3.0:
                     raise ValueError("0.1 <= repeat_interval <= 3.0 범위어야 함")
                 self.repeat_interval = repeat_interval
             # ---------------------------------------------------------------------------- #
@@ -101,22 +101,22 @@ class ButtonHandler(EventManager):
             self.is_pushed = True
             self.emit("push")
             # ---------------------------------------------------------------------------- #
-            if "hold" in self.actions and self.actions["hold"]:
-                if self.hold_thread is None or not self.hold_thread.is_alive():
-                    self.hold_thread = threading.Thread(target=self.start_hold)
-                    self.hold_thread.start()
-            # ---------------------------------------------------------------------------- #
             if "repeat" in self.actions and self.actions["repeat"]:
                 if self.repeat_thread is None or not self.repeat_thread.is_alive():
                     self.repeat_thread = threading.Thread(target=self.start_repeat)
                     self.repeat_thread.start()
+            # ---------------------------------------------------------------------------- #
+            if "hold" in self.actions and self.actions["hold"]:
+                if self.hold_thread is None or not self.hold_thread.is_alive():
+                    self.hold_thread = threading.Thread(target=self.start_hold)
+                    self.hold_thread.start()
         # ---------------------------------------------------------------------------- #
         else:
             self.is_pushed = False
-            self.is_hold = False
-            self.hold_event.set()  # 스레드 종료 신호
             self.repeat_event.set()  # 스레드 종료 신호
-            if self.trigger_release_on_hold or not self.is_hold:
+            self.hold_event.set()  # 스레드 종료 신호
+            self.is_hold = False
+            if self.trigger_release_on_hold:
                 self.emit("release")  # 릴리즈 이벤트 트리거
 
 
@@ -126,7 +126,7 @@ class LevelHandler(EventManager):
     def __init__(self, init_handler=None, debounce_ms=100):
         super().__init__("level")
         self.debounce_ms = debounce_ms
-        context.log.warn("debounce_ms 는 초기화 시 설정되며 이후 변경이 적용되지 않습니다.")
+        context.log.warn("debounce_ms 는 초기화 시 설정되며 이후 변경이 적용되지 않음")
 
         @debounce(self.debounce_ms)
         def debounced_emit(value):

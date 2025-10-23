@@ -8,7 +8,7 @@ from mojo import context
 
 from lib.eventmanager import EventManager
 
-VERSION = "2025.09.27"
+VERSION = "2025.09.29"
 
 
 def get_version():
@@ -373,19 +373,19 @@ class TcpClient(EventManager):
 
     def __init__(
         self,
-        server_ip,
-        server_port,
-        time_reconnect=30.0,
+        ip,
+        port,
+        reconnect_time=30.0,
         buffer_size=DEFAULT_BUFFER_SIZE,
         name=None,
     ):
         super().__init__("connected", "received", "online", "offline")
         self.debug = False
-        self.name = name or f"TcpClient:{server_ip}:{server_port}"
-        self.server_ip = server_ip
-        self.server_port = server_port
+        self.name = name or f"TcpClient:{ip}:{port}"
+        self.ip = ip
+        self.port = port
         self.receive = self.ReceiveHandler(self)
-        self.time_reconnect = time_reconnect
+        self.reconnect_time = reconnect_time
         self.timeout_send_once = 1.0
         self.buffer_size = buffer_size
         self.connected = False
@@ -417,7 +417,7 @@ class TcpClient(EventManager):
     def _connect(self):
         while not self.connected:
             try:
-                self.socket = socket.create_connection((self.server_ip, self.server_port))
+                self.socket = socket.create_connection((self.ip, self.port))
                 if self.socket:
                     if not self.reconnect:
                         self.socket.settimeout(self.timeout_send_once)  # reconnect 하지 않으면 수신 타임아웃 설정하기
@@ -425,17 +425,17 @@ class TcpClient(EventManager):
                     self.connected = True
             except ConnectionRefusedError:
                 context.log.error(f"{self.name} _connect() 연결 거부")
-                time.sleep(self.time_reconnect)
+                time.sleep(self.reconnect_time)
                 if not self.reconnect:
                     break
             except TimeoutError:
                 context.log.error(f"{self.name} _connect() 연결 타임아웃")
-                time.sleep(self.time_reconnect)
+                time.sleep(self.reconnect_time)
                 if not self.reconnect:
                     break
             except Exception as e:
                 context.log.error(f"{self.name} _connect() 에러: {e}")
-                time.sleep(self.time_reconnect)
+                time.sleep(self.reconnect_time)
                 if not self.reconnect:
                     break
 
@@ -524,7 +524,7 @@ class TcpClient(EventManager):
 
             def send_once():
                 try:
-                    sock = socket.create_connection((self.server_ip, self.server_port), timeout=self.timeout_send_once)
+                    sock = socket.create_connection((self.ip, self.port), timeout=self.timeout_send_once)
                     sock.sendall(message)
                     if self.debug:
                         context.log.debug(f"{self.name} send_once() 송신 -- {message=}")
@@ -567,8 +567,8 @@ class UdpClient(EventManager):
 
     def __init__(
         self,
-        server_ip,
-        server_port,
+        ip,
+        port,
         connection_timeout=60.0,
         buffer_size=DEFAULT_BUFFER_SIZE,
         bound_port=None,
@@ -576,9 +576,9 @@ class UdpClient(EventManager):
     ):
         super().__init__("connected", "received")
         self.debug = False
-        self.name = name or f"UdpClient:{server_ip}:{server_port}"
-        self.server_ip = server_ip
-        self.server_port = server_port
+        self.name = name or f"UdpClient:{ip}:{port}"
+        self.ip = ip
+        self.port = port
         self.receive = self.ReceiveHandler(self)
         self.buffer_size = buffer_size
         self.connected = False
@@ -659,7 +659,7 @@ class UdpClient(EventManager):
     def send(self, msg: bytes | bytearray):
         if self.socket and self.connected:
             try:
-                self.socket.sendto(msg, (self.server_ip, self.server_port))
+                self.socket.sendto(msg, (self.ip, self.port))
                 if self.debug:
                     context.log.debug(f"{self.name} send() 송신 - {msg=}")
             except Exception as e:
