@@ -101,12 +101,12 @@ class ButtonHandler(EventManager):
             # ---------------------------------------------------------------------------- #
             if "repeat" in self.actions and self.actions["repeat"]:
                 if self.repeat_thread is None or not self.repeat_thread.is_alive():
-                    self.repeat_thread = threading.Thread(target=self.start_repeat)
+                    self.repeat_thread = threading.Thread(target=self.start_repeat, daemon=True)
                     self.repeat_thread.start()
             # ---------------------------------------------------------------------------- #
             if "hold" in self.actions and self.actions["hold"]:
                 if self.hold_thread is None or not self.hold_thread.is_alive():
-                    self.hold_thread = threading.Thread(target=self.start_hold)
+                    self.hold_thread = threading.Thread(target=self.start_hold, daemon=True)
                     self.hold_thread.start()
         # ---------------------------------------------------------------------------- #
         else:

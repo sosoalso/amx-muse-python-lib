@@ -68,7 +68,7 @@ class Timeline:
                     self.trigger(s, t)
 
         # ---------------------------------------------------------------------------- #
-        threading.Thread(target=runner).start()
+        threading.Thread(target=runner, daemon=True).start()
         # ---------------------------------------------------------------------------- #
 
     def trigger(self, s: int, t: int):

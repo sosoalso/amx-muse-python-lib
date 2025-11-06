@@ -28,7 +28,7 @@ def url_get(url: str, header: dict = {}, callback=None, timeout: float = 0.5):
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
             context.log.error(f"url_get() 에러: {e}")
 
-    thread_url_get = threading.Thread(target=task)
+    thread_url_get = threading.Thread(target=task, daemon=True)
     thread_url_get.start()
 
 
@@ -47,7 +47,7 @@ def url_post(url: str, header: dict = {}, body=None, callback=None, timeout: flo
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
             context.log.error(f"url_post() 에러: {e}")
 
-    thread_url_post = threading.Thread(target=task)
+    thread_url_post = threading.Thread(target=task, daemon=True)
     thread_url_post.start()
 
 

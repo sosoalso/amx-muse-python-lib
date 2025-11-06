@@ -58,7 +58,7 @@ class TcpServer(EventManager):
         context.log.info(f"{self.name} start() 서버 시작")
         self.running = True
         if not self.server_thread or not self.server_thread.is_alive():
-            self.server_thread = threading.Thread(target=self._start_server)
+            self.server_thread = threading.Thread(target=self._start_server, daemon=True)
             self.server_thread.start()
 
     def _start_server(self):
@@ -77,7 +77,7 @@ class TcpServer(EventManager):
                 return
             self.socket.listen()
             if not self.cleanup_thread or not self.cleanup_thread.is_alive():
-                self.cleanup_thread = threading.Thread(target=self._cleanup_clients)
+                self.cleanup_thread = threading.Thread(target=self._cleanup_clients, daemon=True)
                 self.cleanup_thread.start()
             while self.running:
                 try:
@@ -87,7 +87,7 @@ class TcpServer(EventManager):
                         self.clients[address] = {"socket": client, "last_seen": time.time()}
                     self.emit("connected", address=address)
                     self.emit("online", address=address)
-                    threading.Thread(target=self._receive_loop, args=(client, address)).start()
+                    threading.Thread(target=self._receive_loop, args=(client, address), daemon=True).start()
                 except OSError:  # 소켓이 닫혀 있을 경우 발생할 수 있음
                     self.running = False
                     break
@@ -245,10 +245,10 @@ class UdpServer(EventManager):
             self.socket.bind(("", self.port))
             self.running = True
             if not self.receive_thread or not self.receive_thread.is_alive():
-                self.receive_thread = threading.Thread(target=self._receive_loop)
+                self.receive_thread = threading.Thread(target=self._receive_loop, daemon=True)
                 self.receive_thread.start()
             if not self.cleanup_thread or not self.cleanup_thread.is_alive():
-                self.cleanup_thread = threading.Thread(target=self._cleanup_clients)
+                self.cleanup_thread = threading.Thread(target=self._cleanup_clients, daemon=True)
                 self.cleanup_thread.start()
             if self.debug:
                 context.log.debug(f"{self.name} start() 서버 시작")
@@ -411,7 +411,7 @@ class TcpClient(EventManager):
             context.log.debug(f"{self.name} connect() 이미 연결됨")
             return
         if not self.connect_thread or not self.connect_thread.is_alive():
-            self.connect_thread = threading.Thread(target=self._connect)
+            self.connect_thread = threading.Thread(target=self._connect, daemon=True)
             self.connect_thread.start()
 
     def _connect(self):
@@ -468,7 +468,7 @@ class TcpClient(EventManager):
 
     def _run_thread_receive(self):
         if not self.receive_thread or not self.receive_thread.is_alive():
-            self.receive_thread = threading.Thread(target=self._receive_loop)
+            self.receive_thread = threading.Thread(target=self._receive_loop, daemon=True)
             self.receive_thread.start()
 
     def _receive_loop(self):
@@ -601,10 +601,10 @@ class UdpClient(EventManager):
                 return
             self.last_received_time = time.time()  # 연결 시 수신 시간 초기화
             if not self.receive_thread or not self.receive_thread.is_alive():
-                self.receive_thread = threading.Thread(target=self._receive_loop)
+                self.receive_thread = threading.Thread(target=self._receive_loop, daemon=True)
                 self.receive_thread.start()
             if not self.monitor_thread or not self.monitor_thread.is_alive():
-                self.monitor_thread = threading.Thread(target=self._monitor_connection)
+                self.monitor_thread = threading.Thread(target=self._monitor_connection, daemon=True)
                 self.monitor_thread.start()
         except Exception as e:
             context.log.error(f"{self.name} connect() 시작 실패 에러: {e}")
