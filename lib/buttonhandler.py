@@ -15,9 +15,7 @@ def get_version():
 
 # ---------------------------------------------------------------------------- #
 class ButtonHandler(EventManager):
-    def __init__(
-        self, hold_time=30.0, repeat_interval=0.3, trigger_release_on_hold=False, init_action=None, init_handler=None
-    ):
+    def __init__(self, hold_time=30.0, repeat_interval=0.3, trigger_release_on_hold=False, init_action=None, init_handler=None):
         super().__init__("push", "release", "hold", "repeat")
         self.hold_time = hold_time  # 버튼을 누르고 있는 시간
         self.repeat_interval = repeat_interval  # 반복 이벤트 간격
@@ -115,9 +113,9 @@ class ButtonHandler(EventManager):
             self.is_pushed = False
             self.repeat_event.set()  # 스레드 종료 신호
             self.hold_event.set()  # 스레드 종료 신호
-            self.is_hold = False
-            if self.trigger_release_on_hold:
+            if not self.is_hold or self.trigger_release_on_hold:
                 self.emit("release")  # 릴리즈 이벤트 트리거
+            self.is_hold = False
 
 
 # ---------------------------------------------------------------------------- #
