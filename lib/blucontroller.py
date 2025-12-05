@@ -105,15 +105,11 @@ class BluController:
     def init(self, *path_lists: Sequence[Union[list[str], tuple[str, ...]]]):
         for path_list in path_lists:
             if not isinstance(path_list, (list, tuple)):
-                context.log.error(
-                    f"{self.__class__} init() 에러: path_lists 의 개별 요소는 path str 으로 구성된 list 나 tuple 이어야 함"
-                )
+                context.log.error(f"{self.__class__} init() 에러: path_lists 의 개별 요소는 path str 으로 구성된 list 나 tuple 이어야 함")
                 raise TypeError
             for path in path_list:
                 if not isinstance(path, tuple):
-                    context.log.error(
-                        f"{self.__class__} init() 에러 : 각각의 path 는 path str 으로 구성된 tuple 이어야 함"
-                    )
+                    context.log.error(f"{self.__class__} init() 에러 : 각각의 path 는 path str 으로 구성된 tuple 이어야 함")
                     raise TypeError
                 component = self.get_component(path)
                 if component is not None:
@@ -127,9 +123,7 @@ class BluController:
     # NOTE : 컴포넌트 가져오기
     def get_component(self, path: tuple[str, ...]):
         if not isinstance(path, tuple):
-            context.log.error(
-                f"{self.__class__} get_component() 에러 : path 의 개별 요소는 는 tuple 로 둘러쌓여진 str 으로 구성돼야 함"
-            )
+            context.log.error(f"{self.__class__} get_component() 에러 : path 의 개별 요소는 는 tuple 로 둘러쌓여진 str 으로 구성돼야 함")
             raise TypeError
         nested_component = self.dv  # Logic 때문에 self.dv 에서 시작
         for p in path:
@@ -138,9 +132,7 @@ class BluController:
 
     def get_state(self, path: tuple[str, ...]):
         if not isinstance(path, tuple):
-            context.log.error(
-                f"{self.__class__} get_state() 에러 : path 의 개별 요소는 는 tuple 로 둘러쌓여진 str 으로 구성돼야 함"
-            )
+            context.log.error(f"{self.__class__} get_state() 에러 : path 의 개별 요소는 는 tuple 로 둘러쌓여진 str 으로 구성돼야 함")
             raise TypeError
         return self.states.get_state(path)
 

@@ -8,7 +8,7 @@ from mojo import context
 
 from lib.eventmanager import EventManager
 
-VERSION = "2025.09.29"
+VERSION = "2025.12.05"
 
 
 def get_version():
