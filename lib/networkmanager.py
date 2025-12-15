@@ -8,7 +8,7 @@ from mojo import context
 
 from lib.eventmanager import EventManager
 
-VERSION = "2025.12.05"
+VERSION = "2025.12.15"
 
 
 def get_version():
@@ -421,8 +421,8 @@ class TcpClient(EventManager):
                 if self.socket:
                     if not self.reconnect:
                         self.socket.settimeout(self.timeout_send_once)  # reconnect 하지 않으면 수신 타임아웃 설정하기
-                    self._run_thread_receive()
                     self.connected = True
+                    self._run_thread_receive()
             except ConnectionRefusedError:
                 context.log.error(f"{self.name} _connect() 연결 거부")
                 time.sleep(self.reconnect_time)
