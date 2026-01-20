@@ -519,7 +519,13 @@ class TcpClient(EventManager):
                 except Exception as e:
                     context.log.error(f"{self.name} send() 송신 실패 에러: {e}")
                     self.connected = False
-                    self.handle_reconnect()
+                    context.log.warn(f"{self.name} send() 연결 끊김. {self.reconnect_time}초 후 재연결 시도.")
+
+                    def wait_and_reconnect():
+                        time.sleep(self.reconnect_time)
+                        self.handle_reconnect()
+
+                    threading.Thread(target=wait_and_reconnect).start()
         else:
 
             def send_once():
