@@ -3,7 +3,7 @@ from typing import Sequence, Union
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.08.14"
+VERSION = "2026.02.10"
 
 
 def get_version():
@@ -17,7 +17,7 @@ UNIT_VAL = 1  # 단위 값
 
 
 # ---------------------------------------------------------------------------- #
-class BluObserver:
+class BssObserver:
     # 옵저버 리스트 초기화
     def __init__(self):
         self._observers = []
@@ -37,11 +37,11 @@ class BluObserver:
 
 
 # ---------------------------------------------------------------------------- #
-class BluState:
+class BssState:
     # 상태 저장 딕셔너리 초기화
     def __init__(self):
         self._states = {}
-        self._event = BluObserver()  # 이벤트 옵저버 초기화
+        self._event = BssObserver()  # 이벤트 옵저버 초기화
 
     # 상태 가져오기
     def get_state(self, key):
@@ -69,10 +69,10 @@ class BluState:
 
 
 # ---------------------------------------------------------------------------- #
-class BluController:
+class BssController:
     def __init__(self, dv, states=None, min_val=MIN_VAL, max_val=MAX_VAL, unit_val=UNIT_VAL, debug=False):
         self.dv = dv  # 장치 설정
-        self.states = BluState() if states is None else states  # 컴포넌트 상태 설정
+        self.states = BssState() if states is None else states  # 컴포넌트 상태 설정
         self.MIN_VAL = min_val  # 최소 값 설정
         self.MAX_VAL = max_val  # 최대 값 설정
         self.UNIT_VAL = unit_val  # 볼륨 조절 단위 값 설정

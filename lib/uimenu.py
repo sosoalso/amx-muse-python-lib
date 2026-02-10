@@ -28,9 +28,7 @@ class UIMenu:
     def init(self):
         add_button(self.tp, 1, 100, "push", self.hide_all_menu_popup, comment="모든 팝업 닫기 버튼")
         for idx in range(1, 10):  # 1 ~ 9
-            add_button(
-                self.tp, 1, idx, "push", lambda idx=idx: self.show_page(idx), comment=f"페이지 {idx+1} 번 전환 버튼"
-            )
+            add_button(self.tp, 1, idx, "push", lambda idx=idx: self.show_page(idx), comment=f"페이지 {idx+1} 번 전환 버튼")
         for idx in range(1, 20):  # 11 ~ 39
             add_button(
                 self.tp,

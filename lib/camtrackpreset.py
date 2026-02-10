@@ -1,7 +1,7 @@
 from lib.userdata import Userdata
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.07.05"
+VERSION = "2026.02.10"
 
 
 def get_version():
@@ -25,19 +25,16 @@ class CamtrackPreset:
     - 프리셋을 가져올 때는 get_preset(preset_index) 또는 get_preset_cam(preset_index), get_preset_cam_preset(preset_index)를 사용합니다.
     """
 
-    def __init__(self, max_preset_index=40, db_path="camtrack_preset.db"):
+    def __init__(self, max_preset_index=40, filename="camtrack_preset.json"):
         self.max_preset_index = max_preset_index
-        self.userdata = Userdata(db_path=db_path)
-        self.camtrack_preset = self.userdata.get_value("camtrack_preset", self.make_dummy_presets())
+        self.camtrack_preset = Userdata(filename=filename)
+        # self.camtrack_preset = self.userdata.get_value("camtrack_preset", self.make_dummy_presets())
 
     def make_dummy_presets(self):
-        return {
-            f"preset_{preset_index:03d}": {"camera": 0, "preset": 0}
-            for preset_index in range(1, self.max_preset_index + 1)
-        }
+        return {f"preset_{preset_index:03d}": {"camera": 0, "preset": 0} for preset_index in range(1, self.max_preset_index + 1)}
 
     def get_preset(self, preset_index):
-        return self.camtrack_preset.get(f"preset_{preset_index:03d}", {})
+        return self.camtrack_preset.get_value(f"preset_{preset_index:03d}") or {}
         # return next((preset for preset in self.camtrack_preset or {} if preset["index"] == index), {})
 
     def get_preset_cam(self, preset_index):
@@ -49,5 +46,5 @@ class CamtrackPreset:
         return preset.get("preset", 0)
 
     def set_preset(self, preset_index, cam_no, preset_no):
-        self.camtrack_preset[f"preset_{preset_index:03d}"] = {"camera": cam_no, "preset": preset_no}
-        self.userdata.set_value("camtrack_preset", self.camtrack_preset)  # camtrack_preset.db에 저장
+        self.camtrack_preset.set_value(f"preset_{preset_index:03d}", {"camera": cam_no, "preset": preset_no})
+        # self.camtrack_preset.set_value("camtrack_preset", self.camtrack_preset)  # camtrack_preset.db에 저장

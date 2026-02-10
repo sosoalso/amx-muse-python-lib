@@ -48,9 +48,7 @@ def add_button_ss(tp_list, port, button, action, callback, comment=None):
     new_button = ButtonHandler(init_action=action, init_handler=callback)
     tp_add_watcher_ss(tp_list, port, button, new_button.handle_event)
     if DebugFlags.enable_debug_add_button:
-        context.log.debug(
-            f"add_button_ss() -- {[tp.id for tp in tp_list]} {port=} {button=} {action=} {': ' + comment if comment else ''}"
-        )
+        context.log.debug(f"add_button_ss() -- {[tp.id for tp in tp_list]} {port=} {button=} {action=} {': ' + comment if comment else ''}")
     return new_button
 
 
@@ -76,9 +74,7 @@ def add_level_ss(tp_list, port, level, callback, debounce_ms, comment=None):
     level_handler = LevelHandler(init_handler=callback, debounce_ms=debounce_ms)
     tp_add_watcher_level_ss(tp_list, port, level, level_handler.handle_event)
     if DebugFlags.enable_debug_add_level:
-        context.log.debug(
-            f"add_level_ss() -- {[tp.id for tp in tp_list]} {port=} {level=} {': ' + comment if comment else ''}"
-        )
+        context.log.debug(f"add_level_ss() -- {[tp.id for tp in tp_list]} {port=} {level=} {': ' + comment if comment else ''}")
     return level_handler
 
 

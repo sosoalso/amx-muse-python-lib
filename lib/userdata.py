@@ -1,9 +1,11 @@
+# ---------------------------------------------------------------------------- #
+import json
+import os
+
 from mojo import context
 
-from lib.database import Database
-
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.09.18"
+VERSION = "2026.02.10"
 
 
 def get_version():
@@ -11,36 +13,98 @@ def get_version():
 
 
 # ---------------------------------------------------------------------------- #
-class Userdata(Database):
+def handle_exception(func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            context.log.error(f"UserData 에러: {e}")
+            return None
 
-    def __init__(self, db_path="userdata.db", debug=False):
-        super().__init__(db_path=db_path)
-        self.data = {}  # 여기에 db에서 불러온 키에 대한 값들을 저장할 거임
-        self.debug = debug
-        if self.debug:
-            context.log.debug(f"Userdata - __init__() {self.db_path=}")
+    return wrapper
 
+
+# ---------------------------------------------------------------------------- #
+class UserData:
+    def __init__(self, filename="user_data.json", foldername=None):
+        self.filename = filename
+        self.foldername = foldername
+        self.filepath = self.get_file_path()
+        self.data = {}
+        self.init()
+
+    @handle_exception
+    def get_file_path(self):
+        return f"{self.foldername}/" + self.filename if self.foldername is not None else self.filename
+
+    @handle_exception
+    def init(self):
+        if self.foldername:
+            if not os.path.exists(self.foldername):
+                os.makedirs(self.foldername)
+        if not os.path.exists(self.filepath):
+            context.log.debug(f"init() :: 파일 {self.filepath} 없음, 새 파일 생성")
+            self.data = {}
+            self.save_file()
+        else:
+            context.log.debug(f"init() :: 파일 {self.filepath} 불러오기")
+            self.load_file()
+
+    @handle_exception
+    def load_file(self):
+        with open(self.filepath, "r", encoding="utf-8") as file:
+            self.data = json.load(file)
+
+    @handle_exception
+    def save_file(self):
+        with open(self.filepath, "w", encoding="utf-8") as output_file:
+            json.dump(self.data, output_file, indent=2)
+
+    @handle_exception
     def set_value(self, key, value):
-        k = str(key)
-        self.data[k] = value
-        if self.debug:
-            context.log.debug(f"Userdata - set_value() {self.db_path=} {k}:{self.data[k]}")
-        self.save(k, self.data[k])
+        self.data[key] = value
+        context.log.debug(f"set_value() {key=} {value=}")
+        self.save_file()
 
-    def get_value(self, key, default=None):
-        k = str(key)
-        self.data[k] = self.load(k, default if default is not None else {})
-        if self.debug:
-            context.log.debug(f"Userdata - get_value() {self.db_path=} {k}:{self.data[k]}")
-        return self.data.get(k, default if default is not None else {})
+    @handle_exception
+    def get_value(self, key):
+        return self.data.get(key)
 
+    @handle_exception
     def delete_value(self, key):
-        k = str(key)
-        if k in self.data:
-            del self.data[k]
-            if self.debug:
-                context.log.debug(f"Userdata - delete_value() {self.db_path=} {k=}")
-            self.save(k, self.data)
+        if key in self.data:
+            del self.data[key]
+            context.log.debug(f"delete_value() {key=} 삭제")
+            self.save_file()
+        else:
+            context.log.debug(f"delete_value() {key=} 없음")
 
-    def items(self):
-        return self.data.items()
+
+# 간소화 버전
+class var:
+    @classmethod
+    def as_dict(cls):
+        return {attr: getattr(cls, attr) for attr in dir(cls) if not attr.startswith("_") and not callable(getattr(cls, attr))}
+
+    @classmethod
+    def save_to_json(cls, filepath):
+        with open(filepath, "w", encoding="UTF-8") as f:
+            json.dump(cls.as_dict(), f, ensure_ascii=False, indent=4)
+
+    @classmethod
+    def from_dict(cls, data):
+        # 저장된 키가 클래스에 존재하면 속성값을 재할당
+        for key, value in data.items():
+            if hasattr(cls, key):
+                setattr(cls, key, value)
+            else:
+                context.log.debug(f"{cls.__name__} 에서 키 {key} 를 찾을 수 없음.")
+
+    @classmethod
+    def load_from_json(cls, filepath):
+        with open(filepath, "r", encoding="UTF-8") as f:
+            data = json.load(f)
+        cls.from_dict(data)
+
+
+# ---------------------------------------------------------------------------- #

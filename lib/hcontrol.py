@@ -3,7 +3,7 @@ import json
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.08.14"
+VERSION = "2026.02.10"
 
 
 def get_version():
@@ -13,21 +13,21 @@ def get_version():
 # ---------------------------------------------------------------------------- #
 
 
-def req_hc_get(dv, path, f):
+def hc_get(dv, path, f):
     send_json = {"path": path, "format": f}
     send = json.dumps(send_json)
     send = "get " + send + "\n"
     dv.send(send)
 
 
-def req_hc_set(dv, path, f, v):
+def hc_set(dv, path, f, v):
     send_json = {"path": path, "format": f, "value": v}
     send = json.dumps(send_json)
     send = "set " + send + "\n"
     dv.send(send)
 
 
-def req_hc_subscribe(dv, path, f):
+def hc_subscribe(dv, path, f):
     send_json = {"path": path, "format": f}
     send = json.dumps(send_json)
     send = "subscribe " + send + "\n"
