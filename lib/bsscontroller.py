@@ -3,7 +3,7 @@ from typing import Sequence, Union
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2026.02.10"
+VERSION = "2026.02.12"
 
 
 def get_version():
@@ -50,10 +50,15 @@ class BssState:
 
     def set_state(self, key, val):
         self._states[key] = val
-
-    def update_state(self, key, val):
-        self.set_state(key, val)  # 상태 업데이트
         self._event.notify(key)  # 상태 변경 알림
+
+    # def update_state(self, key, val):
+    #     self.set_state(key, val)  # 상태 업데이트
+    #     self._event.notify(key)  # 상태 변경 알림
+
+    def remove_state(self, key):
+        self._event.unsubscribe(key)
+        self._states.pop(key)
 
     # 상태 변경 강제 알림
     def override_notify(self, key):
@@ -78,9 +83,15 @@ class BssController:
         self.UNIT_VAL = unit_val  # 볼륨 조절 단위 값 설정
         self.debug = debug
 
-    def blu_log_debug(self, message):
+    def log_debug(self, message):
         if self.debug:
             context.log.debug(message)
+
+    def log_error(self, message):
+        context.log.error(message)
+
+    def log_warn(self, message):
+        context.log.warn(message)
 
     def db_to_tp(self, x):  # NOTE : dB 값을 터치패널 0-255 값으로 변환
         try:
@@ -91,7 +102,7 @@ class BssController:
             y = (x - x_min) * (y_max - y_min) / (x_max - x_min) + y_min
             return y
         except Exception as e:
-            context.log.error(f"{self.__class__}db_to_tp() 에러 : {e}")
+            self.log_error(f"{self.__class__}db_to_tp() 에러 : {e}")
             return 0
 
     def tp_to_db(self, x):  # NOTE : 터치패널 0-255 값을 dB 값으로 변환
@@ -105,25 +116,28 @@ class BssController:
     def init(self, *path_lists: Sequence[Union[list[str], tuple[str, ...]]]):
         for path_list in path_lists:
             if not isinstance(path_list, (list, tuple)):
-                context.log.error(f"{self.__class__} init() 에러: path_lists 의 개별 요소는 path str 으로 구성된 list 나 tuple 이어야 함")
+                self.log_error(f"{self.__class__} init() 에러: path_lists 의 개별 요소는 path str 으로 구성된 list 나 tuple 이어야 함")
                 raise TypeError
             for path in path_list:
                 if not isinstance(path, tuple):
-                    context.log.error(f"{self.__class__} init() 에러 : 각각의 path 는 path str 으로 구성된 tuple 이어야 함")
+                    self.log_error(f"{self.__class__} init() 에러 : 각각의 path 는 path str 으로 구성된 tuple 이어야 함")
                     raise TypeError
                 component = self.get_component(path)
                 if component is not None:
-                    self.states.update_state(path, component.value)
-                    component.watch(lambda evt, path=path: self.states.update_state(path, evt.value))
-                    self.states.override_notify(path)
+                    self.states.set_state(path, component.value)
+                    component.watch(lambda evt, path=path: self.states.set_state(path, evt.value))
+
+    def add_path_event(self, observer):
+        self.log_warn("add_path_event() 는 더 이상 사용되지 않음, subscribe() 를 사용하세요.")
+        self.states.subscribe(observer)
 
     def subscribe(self, observer):
-        self.states.subscribe(observer)
+        self.add_path_event(observer)
 
     # NOTE : 컴포넌트 가져오기
     def get_component(self, path: tuple[str, ...]):
         if not isinstance(path, tuple):
-            context.log.error(f"{self.__class__} get_component() 에러 : path 의 개별 요소는 는 tuple 로 둘러쌓여진 str 으로 구성돼야 함")
+            self.log_error(f"{self.__class__} get_component() 에러 : path 의 개별 요소는 는 tuple 로 둘러쌓여진 str 으로 구성돼야 함")
             raise TypeError
         nested_component = self.dv  # Logic 때문에 self.dv 에서 시작
         for p in path:
@@ -132,12 +146,12 @@ class BssController:
 
     def get_state(self, path: tuple[str, ...]):
         if not isinstance(path, tuple):
-            context.log.error(f"{self.__class__} get_state() 에러 : path 의 개별 요소는 는 tuple 로 둘러쌓여진 str 으로 구성돼야 함")
+            self.log_error(f"{self.__class__} get_state() 에러 : path 의 개별 요소는 는 tuple 로 둘러쌓여진 str 으로 구성돼야 함")
             raise TypeError
         return self.states.get_state(path)
 
     # NOTE : 컴포넌트 값 업데이트
-    def update_state(self, path: tuple[str, ...], new_value: Union[str, float]):
+    def set_state(self, path: tuple[str, ...], new_value: Union[str, float]):
         if self.dv.isOnline():
             component = self.get_component(path)
             if component is not None:
@@ -151,43 +165,43 @@ class BssController:
             return None
 
     def vol_up(self, path):
-        self.blu_log_debug(f"{self.__class__} vol_up() {path=}")
+        self.log_debug(f"{self.__class__} vol_up() {path=}")
         val = self.check_val_convert_float(self.states.get_state(path))
         if val is not None and val <= self.MAX_VAL - self.UNIT_VAL:
-            self.update_state(path, round(val + self.UNIT_VAL))
+            self.set_state(path, round(val + self.UNIT_VAL))
 
     def vol_down(self, path):
-        self.blu_log_debug(f"{self.__class__} vol_down() {path=}")
+        self.log_debug(f"{self.__class__} vol_down() {path=}")
         val = self.check_val_convert_float(self.states.get_state(path))
         if val is not None and val >= self.MIN_VAL + self.UNIT_VAL:
-            self.update_state(path, round(val - self.UNIT_VAL))
+            self.set_state(path, round(val - self.UNIT_VAL))
 
     def set_vol(self, path, val: float):
-        self.blu_log_debug(f"{self.__class__} set_vol() {path=} {val=}")
+        self.log_debug(f"{self.__class__} set_vol() {path=} {val=}")
         if val is not None and self.MIN_VAL <= val <= self.MAX_VAL:
-            self.update_state(path, round(val))
+            self.set_state(path, round(val))
 
     def toggle_on_off(self, path, *args):
-        self.blu_log_debug(f"{self.__class__} toggle_on_off() {path=}")
+        self.log_debug(f"{self.__class__} toggle_on_off() {path=}")
         val = self.states.get_state(path)
-        if val == "On":
+        val == "On":
             val_str = "Off"
         elif val == "Off":
             val_str = "On"
         else:
             return
-        self.update_state(path, val_str)
+        self.set_state(path, val_str)
 
     def set_on(self, path):
-        self.blu_log_debug(f"{self.__class__} set_on() {path=}")
-        self.update_state(path, "On")
+        self.log_debug(f"{self.__class__} set_on() {path=}")
+        self.set_state(path, "On")
 
     def set_off(self, path):
-        self.blu_log_debug(f"{self.__class__} set_off() {path=}")
-        self.update_state(path, "Off")
+        self.log_debug(f"{self.__class__} set_off() {path=}")
+        self.set_state(path, "Off")
 
     def toggle_muted_unmuted(self, path):
-        self.blu_log_debug(f"{self.__class__} toggle_muted_unmuted() {path=}")
+        self.log_debug(f"{self.__class__} toggle_muted_unmuted() {path=}")
         val = self.states.get_state(path)
         if val == "Unmuted":
             val_str = "Muted"
@@ -195,12 +209,17 @@ class BssController:
             val_str = "Unmuted"
         else:
             return
-        self.update_state(path, val_str)
+        self.set_state(path, val_str)
 
     def set_muted(self, path):
-        self.blu_log_debug(f"{self.__class__} set_muted() {path=}")
-        self.update_state(path, "Muted")
+        self.log_debug(f"{self.__class__} set_muted() {path=}")
+        self.set_state(path, "Muted")
 
     def set_unmuted(self, path):
-        self.blu_log_debug(f"{self.__class__}set_unmuted() {path=}")
-        self.update_state(path, "Unmuted")
+        self.log_debug(f"{self.__class__}set_unmuted() {path=}")
+        self.set_state(path, "Unmuted")
+
+    # ---------------------------------------------------------------------------- #
+    def set_val(self, path, val):
+        self.log_debug(f"{self.__class__} set_val() {path=} {val=}")
+        self.set_state(path, val)
