@@ -45,15 +45,15 @@ class EventManager:
         except Exception as e:
             context.log.error(f"add_event_handler() {action=} 에러: {e}")
 
-    def on(self, action, handler):
-        """add_event_handler 의 alias"""
-        self.add_event_handler(action, handler)
-
     def remove_event_handler(self, action, handler):
         try:
             self.actions[action].remove(handler)
         except Exception as e:
             context.log.error(f"remove_event_handler() 에러 {action=} : {e}")
+
+    def on(self, action, handler):
+        """add_event_handler 의 alias"""
+        self.add_event_handler(action, handler)
 
     def trigger_event(self, action, *args, **kwargs):
         try:

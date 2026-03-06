@@ -32,7 +32,6 @@ class Scheduler:
 
             future = self.executor.submit(wrapper)
             self.scheduled_tasks.append(future)
-
         except Exception as e:
             context.log.error(f"{self.name} set_interval() 에러: {e}")
         finally:

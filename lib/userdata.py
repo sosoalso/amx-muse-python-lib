@@ -5,7 +5,7 @@ import os
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2026.02.10"
+VERSION = "2026.03.05"
 
 
 def get_version():
@@ -25,7 +25,7 @@ def handle_exception(func):
 
 
 # ---------------------------------------------------------------------------- #
-class UserData:
+class Userdata:
     def __init__(self, filename="user_data.json", foldername=None):
         self.filename = filename
         self.foldername = foldername
@@ -67,8 +67,8 @@ class UserData:
         self.save_file()
 
     @handle_exception
-    def get_value(self, key):
-        return self.data.get(key)
+    def get_value(self, key, default=None):
+        return self.data.get(key) or default
 
     @handle_exception
     def delete_value(self, key):

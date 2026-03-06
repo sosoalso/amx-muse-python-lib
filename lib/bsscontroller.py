@@ -184,7 +184,7 @@ class BssController:
     def toggle_on_off(self, path, *args):
         self.log_debug(f"{self.__class__} toggle_on_off() {path=}")
         val = self.states.get_state(path)
-        val == "On":
+        if val == "On":
             val_str = "Off"
         elif val == "Off":
             val_str = "On"

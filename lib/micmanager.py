@@ -55,10 +55,27 @@ class MicManager(EventManager):
         self.handle_last_mic_on()
 
     # ---------------------------------------------------------------------------- #
+    def mic_on(self, mic_index):
+        context.log.debug(f"MicManager -- mic_on() {mic_index=}")
+        self.handle_mic_on(mic_index)
+
+    def mic_off(self, mic_index):
+        context.log.debug(f"MicManager -- mic_off() {mic_index=}")
+        self.handle_mic_off(mic_index)
+
+    def all_mic_off(self):
+        context.log.debug("MicManager -- all_mic_off()")
+        self.handle_all_mic_off()
+
+    def last_mic_on(self):
+        context.log.debug("MicManager -- last_mic_on()")
+        self.handle_last_mic_on()
+
+    # ---------------------------------------------------------------------------- #
     def handle_all_mic_off(self):
         context.log.debug("MicManager -- handle_all_mic_off()")
         self.reset_mic_state()
-        self.trigger_event("mic_all_off()")
+        self.emit("mic_all_off")
 
     def handle_last_mic_on(self):
         context.log.debug("MicManager -- handle_last_mic_on()")
@@ -74,7 +91,7 @@ class MicManager(EventManager):
             if mic_idx in self.last_on_mics:
                 self.last_on_mics.remove(mic_idx)
             self.last_on_mics.append(mic_idx)
-            self.trigger_event("mic_on", mic_index)
+            self.emit("mic_on", mic_index)
 
     def handle_mic_off(self, mic_index):
         context.log.debug(f"MicManager -- handle_mic_off() {mic_index=}")
@@ -85,14 +102,14 @@ class MicManager(EventManager):
                 self.last_on_mics.remove(mic_idx)
             # ---------------------------------------------------------------------------- #
             if self.last_on_mics:
-                self.trigger_event("mic_off", mic_index)
+                self.emit("mic_off", mic_index)
                 if self.last_mic_enabled:
                     last_mic_index = self.get_last_on_mic()
                     if last_mic_index:
-                        self.trigger_event("mic_on()", last_mic_index)
+                        self.emit("mic_on()", last_mic_index)
             # if not self.last_on_mics:
             else:
-                self.trigger_event("mic_all_off")
+                self.emit("mic_all_off")
 
     def get_mic_status(self, mic_index):
         mic_idx = self.index_to_idx(mic_index)
