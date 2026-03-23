@@ -5,7 +5,7 @@ import os
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2026.03.05"
+VERSION = "2026.03.23"
 
 
 def get_version():
@@ -67,7 +67,7 @@ class Userdata:
         self.save_file()
 
     @handle_exception
-    def get_value(self, key, default=None):
+    def get_value(self, key, default):
         return self.data.get(key) or default
 
     @handle_exception

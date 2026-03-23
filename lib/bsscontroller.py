@@ -3,7 +3,7 @@ from typing import Sequence, Union
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2026.02.12"
+VERSION = "2026.03.23"
 
 
 def get_version():
@@ -128,10 +128,10 @@ class BssController:
                     component.watch(lambda evt, path=path: self.states.set_state(path, evt.value))
 
     def add_path_event(self, observer):
-        self.log_warn("add_path_event() 는 더 이상 사용되지 않음, subscribe() 를 사용하세요.")
         self.states.subscribe(observer)
 
     def subscribe(self, observer):
+        self.log_warn("subscribe() 는 더 이상 사용되지 않음, add_path_event() 를 사용하세요.")
         self.add_path_event(observer)
 
     # NOTE : 컴포넌트 가져오기
