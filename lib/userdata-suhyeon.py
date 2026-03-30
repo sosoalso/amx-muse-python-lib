@@ -5,7 +5,7 @@ import os
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2026.03.05"
+VERSION = "2026.03.23"
 
 
 def get_version():

@@ -1,10 +1,10 @@
 import math
 from enum import IntEnum
 
-from _mojo import context
+from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2026.02.12"
+VERSION = "2026.03.30"
 
 
 def get_version():
@@ -557,15 +557,15 @@ class LondonController:
     def check_vol_range(self, val: float) -> bool:
         return val is not None and self.MIN_VAL <= val <= self.MAX_VAL
 
-    def val_add_unit(self, val: int) -> int:
+    def add_unit_val(self, val: int) -> int:
         val_db = self.convert_value_to_db(val)
         return self.convert_db_to_value(round(val_db + self.UNIT_VAL)) if self.check_vol_range(val_db) else val
 
-    def val_sub_unit(self, val: int) -> int:
+    def sub_unit_val(self, val: int) -> int:
         val_db = self.convert_value_to_db(val)
         return self.convert_db_to_value(round(val_db - self.UNIT_VAL)) if self.check_vol_range(val_db) else val
 
-    def val_toggle(self, val: int) -> int:
+    def toggle_val(self, val: int) -> int:
         if val == 0:
             return 1
         elif val == 1:
@@ -583,7 +583,7 @@ class LondonController:
             index_input,
             index_output,
             index_param,
-            self.val_add_unit(self.get_val_by_node_sv(node_addr, index_device, index_input, index_output, index_param)),
+            self.add_unit_val(self.get_val_by_node_sv(node_addr, index_device, index_input, index_output, index_param)),
         )
 
     def set_gain_down(self, node_addr, index_device, index_input, index_output, index_param):
@@ -593,7 +593,7 @@ class LondonController:
             index_input,
             index_output,
             index_param,
-            self.val_sub_unit(self.get_val_by_node_sv(node_addr, index_device, index_input, index_output, index_param)),
+            self.sub_unit_val(self.get_val_by_node_sv(node_addr, index_device, index_input, index_output, index_param)),
         )
 
     def set_val_toggle(self, node_addr, index_device, index_input, index_output, index_param):
@@ -603,8 +603,29 @@ class LondonController:
             index_input,
             index_output,
             index_param,
-            self.val_toggle(self.get_val_by_node_sv(node_addr, index_device, index_input, index_output, index_param)),
+            self.toggle_val(self.get_val_by_node_sv(node_addr, index_device, index_input, index_output, index_param)),
         )
+
+    # ---------------------------------------------------------------------------- #
+    def db_to_tp(self, x):  # NOTE : dB 값을 터치패널 0-255 값으로 변환
+        try:
+            x_min = self.MIN_VAL
+            x_max = self.MAX_VAL
+            y_min = 0
+            y_max = 255
+            y = (x - x_min) * (y_max - y_min) / (x_max - x_min) + y_min
+            return y
+        except Exception as e:
+            self.log_error(f"{self.__class__}db_to_tp() 에러 : {e}")
+            return 0
+
+    def tp_to_db(self, x):  # NOTE : 터치패널 0-255 값을 dB 값으로 변환
+        x_min = 0
+        x_max = 255
+        y_min = self.MIN_VAL
+        y_max = self.MAX_VAL
+        y = (x - x_min) * (y_max - y_min) / (x_max - x_min) + y_min
+        return y
 
 
 if __name__ == "__main__":

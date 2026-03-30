@@ -3,7 +3,7 @@ from typing import Sequence, Union
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2026.03.23"
+VERSION = "2026.03.30"
 
 
 def get_version():
@@ -166,20 +166,40 @@ class BssController:
 
     def vol_up(self, path):
         self.log_debug(f"{self.__class__} vol_up() {path=}")
-        val = self.check_val_convert_float(self.states.get_state(path))
-        if val is not None and val <= self.MAX_VAL - self.UNIT_VAL:
-            self.set_state(path, round(val + self.UNIT_VAL))
+        val_db = self.check_val_convert_float(self.states.get_state(path))
+        if val_db is not None:
+            val_db = round(val_db + self.UNIT_VAL)
+            if self.MIN_VAL <= val_db <= self.MAX_VAL:
+                return self.set_state(path, val_db)
+            elif val_db > self.MAX_VAL:
+                return self.set_state(path, self.MAX_VAL)
+            elif val_db < self.MIN_VAL:
+                return self.set_state(path, self.MIN_VAL)
+        # if val is not None and val <= self.MAX_VAL - self.UNIT_VAL:
+        #     self.set_state(path, round(val + self.UNIT_VAL))
 
     def vol_down(self, path):
         self.log_debug(f"{self.__class__} vol_down() {path=}")
-        val = self.check_val_convert_float(self.states.get_state(path))
-        if val is not None and val >= self.MIN_VAL + self.UNIT_VAL:
-            self.set_state(path, round(val - self.UNIT_VAL))
+        val_db = self.check_val_convert_float(self.states.get_state(path))
+        if val_db is not None:
+            val_db = round(val_db - self.UNIT_VAL)
+            if self.MIN_VAL <= val_db <= self.MAX_VAL:
+                return self.set_state(path, val_db)
+            elif val_db > self.MAX_VAL:
+                return self.set_state(path, self.MAX_VAL)
+            elif val_db < self.MIN_VAL:
+                return self.set_state(path, self.MIN_VAL)
 
     def set_vol(self, path, val: float):
         self.log_debug(f"{self.__class__} set_vol() {path=} {val=}")
-        if val is not None and self.MIN_VAL <= val <= self.MAX_VAL:
-            self.set_state(path, round(val))
+        if val is not None:
+            val = round(val)
+            if self.MIN_VAL <= val <= self.MAX_VAL:
+                self.set_state(path, val)
+            elif val > self.MAX_VAL:
+                self.set_state(path, self.MAX_VAL)
+            elif val < self.MIN_VAL:
+                self.set_state(path, self.MIN_VAL)
 
     def toggle_on_off(self, path, *args):
         self.log_debug(f"{self.__class__} toggle_on_off() {path=}")

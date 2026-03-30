@@ -28,7 +28,7 @@ class CamtrackPreset:
     def __init__(self, max_preset_index=40, filename="camtrack_preset.json"):
         self.max_preset_index = max_preset_index
         self.userdata = Userdata(filename=filename)
-        self.camtrack_preset = self.userdata.get_value("camtrack_preset") or self.make_dummy_presets()
+        self.camtrack_preset = self.userdata.get_value("camtrack_preset", self.make_dummy_presets())
 
     def make_dummy_presets(self):
         return {f"preset_{preset_index:03d}": {"camera": 0, "preset": 0} for preset_index in range(1, self.max_preset_index + 1)}
