@@ -1,7 +1,7 @@
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.09.26"
+VERSION = "2026.04.10"
 
 
 def get_version():
@@ -28,6 +28,7 @@ def tp_set_debug_flag(
     tp_send_level=False,
     enable_debug_tp_send_command=False,
 ):
+    # 디버그 플래그 클래스 변수들을 인자 값으로 설정
     DebugFlags.enable_debug_tp_add_watcher = tp_add_watcher
     DebugFlags.enable_debug_tp_add_watcher_level = tp_add_watcher_level
     DebugFlags.enable_debug_tp_add_notification = tp_add_notification
@@ -38,6 +39,7 @@ def tp_set_debug_flag(
 
 
 def handle_exception(func):
+    # 함수 실행 중 예외 발생 시 에러 로그를 출력하고 None 반환하는 데코레이터
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -50,13 +52,16 @@ def handle_exception(func):
 
 # ---------------------------------------------------------------------------- #
 def _notify(evt):
+    # 버튼 상태 변화 이벤트를 디버그 로깅
     if DebugFlags.enable_debug_tp_add_notification:
+        # 이벤트 경로를 '/'로 분할하여 포트와 버튼 번호 추출
         _, port, _, button = (int(x) if x.isdigit() else x for x in evt.path.split("/"))
         context.log.debug(f"버튼 {'누름' if evt.value else '떼짐'} : {evt.device} {port=} {button=}")
 
 
 @handle_exception
 def tp_add_notification(tp, port, button):
+    # 버튼 상태 변화를 감지하는 워처 등록 (중복 등록 방지)
     if not _notify in tp.port[port].button[button].pythonWatchers or not any(
         watcher.__name__ == _notify.__name__ for watcher in tp.port[port].button[button].pythonWatchers
     ):
@@ -67,6 +72,7 @@ def tp_add_notification(tp, port, button):
 
 @handle_exception
 def tp_add_notification_ss(tp_list, port, button):
+    # 여러 터치패널 장비에 동일한 버튼 알림 등록
     if not isinstance(tp_list, (list, tuple)):
         context.log.error("tp_add_notification_ss() 에러: tp_list 는 장비로 튜플이나 리스트여야함")
         raise TypeError
@@ -76,11 +82,14 @@ def tp_add_notification_ss(tp_list, port, button):
 
 @handle_exception
 def tp_add_notification_level(tp, port, level):
+    # 레벨(슬라이더) 값 변화를 감지하는 내부 워처 함수
     def _notify(evt):
         if DebugFlags.enable_debug_tp_add_notification_level:
+            # 이벤트 경로에서 포트와 버튼 번호 추출
             _, port, _, button = (int(x) if x.isdigit() else x for x in evt.path.split("/"))
             context.log.info(f"레벨 값={evt.value} : {evt.device} {port=} {button=}")
 
+    # 레벨 값 변화 워처 등록 (중복 등록 방지)
     if not _notify in tp.port[port].level[level].pythonWatchers or not any(
         watcher.__name__ == _notify.__name__ for watcher in tp.port[port].level[level].pythonWatchers
     ):
@@ -89,6 +98,7 @@ def tp_add_notification_level(tp, port, level):
 
 @handle_exception
 def tp_add_notification_level_ss(tp_list, port, level):
+    # 여러 터치패널 장비에 동일한 레벨 알림 등록
     if not isinstance(tp_list, (list, tuple)):
         context.log.error("tp_add_notification_level_ss() 에러: tp_list 는 장비로 튜플이나 리스트여야함")
         raise TypeError
@@ -99,12 +109,14 @@ def tp_add_notification_level_ss(tp_list, port, level):
 # ---------------------------------------------------------------------------- #
 @handle_exception
 def tp_get_device_state(tp):
+    # 터치패널 온라인 상태 확인 (isOnline이 메서드인 경우와 프로퍼티인 경우 모두 처리)
     return tp.isOnline() if tp.isOnline else False
 
 
 # ---------------------------------------------------------------------------- #
 @handle_exception
 def tp_add_watcher(tp, port, button, handler):
+    # 버튼에 사용자 정의 핸들러 함수 등록 (중복 등록 방지 로직이 있으나 항상 등록함)
     if DebugFlags.enable_debug_tp_add_watcher:
         context.log.debug(f"tp_add_watcher() : {tp.id} {port=} {button=}")
     if not tp.port[port].button[button].pythonWatchers or not handler in tp.port[port].button[button].pythonWatchers:
@@ -117,6 +129,7 @@ def tp_add_watcher(tp, port, button, handler):
 
 @handle_exception
 def tp_add_watcher_ss(tp_list: list | tuple, port, button, handler):
+    # 여러 터치패널 장비에 동일한 버튼 핸들러 등록
     if not isinstance(tp_list, (list, tuple)):
         context.log.error("tp_add_watcher_ss() 에러: tp_list 는 장비로 튜플이나 리스트여야함")
         raise TypeError
@@ -126,12 +139,14 @@ def tp_add_watcher_ss(tp_list: list | tuple, port, button, handler):
 
 @handle_exception
 def tp_clear_watcher(tp, port, button):
+    # 버튼의 모든 워처 제거
     if isinstance(tp.port[port].button[button].pythonWatchers, list):
         tp.port[port].button[button].pythonWatchers.clear()
 
 
 @handle_exception
 def tp_add_watcher_level(tp, port, level, handler):
+    # 레벨에 사용자 정의 핸들러 함수 등록 (중복 등록 방지 로직이 있으나 항상 등록함)
     if DebugFlags.enable_debug_tp_add_watcher_level:
         context.log.debug(f"tp_add_watcher_level() : {tp.id} {port=} {level=}")
     if not tp.port[port].level[level].pythonWatchers or not handler in tp.port[port].level[level].pythonWatchers:
@@ -145,6 +160,7 @@ def tp_add_watcher_level(tp, port, level, handler):
 
 @handle_exception
 def tp_add_watcher_level_ss(tp_list: list | tuple, port, level, handler):
+    # 여러 터치패널 장비에 동일한 레벨 핸들러 등록
     if not isinstance(tp_list, (list, tuple)):
         context.log.error("tp_add_watcher_level_ss() 에러: tp_list 는 장비로 튜플이나 리스트여야함")
         raise TypeError
@@ -154,61 +170,65 @@ def tp_add_watcher_level_ss(tp_list: list | tuple, port, level, handler):
 
 @handle_exception
 def tp_clear_watcher_level(tp, port, level):
+    # 레벨의 모든 워처 제거
     if isinstance(tp.port[port].level[level].pythonWatchers, list):
         tp.port[port].level[level].pythonWatchers.clear()
 
 
 @handle_exception
 def tp_show_watcher(tp, port, button):
+    # 등록된 버튼 워처의 개수를 디버그 로깅
     if tp_get_device_state(tp):
         if tp.port[port].button[button].pythonWatchers:
             if isinstance(tp.port[port].button[button].pythonWatchers, list):
-                context.log.debug(
-                    f"{tp.id} {port=} {button=} num_watcher={len(tp.port[port].button[button].pythonWatchers)}"
-                )
+                context.log.debug(f"{tp.id} {port=} {button=} num_watcher={len(tp.port[port].button[button].pythonWatchers)}")
 
 
 # ---------------------------------------------------------------------------- #
 @handle_exception
 def tp_get_button_pushed(tp, port, button):
+    # 버튼의 현재 상태 값(누르지 않음=False, 누름=True) 반환
     if tp_get_device_state(tp):
         return tp.port[port].button[button].value
     return False
 
 
-# info - alias
+# 별칭 함수
 def tp_get_btn_pushed(tp, port, button):
-    tp_get_button_pushed(tp, port, button)
+    return tp_get_button_pushed(tp, port, button)
 
 
 @handle_exception
 def tp_get_button_state(tp, port, button):
+    # 채널 상태 값 반환
     if tp_get_device_state(tp):
         return tp.port[port].channel[button].value
     context.log.error(f"tp_get_button_state() : {tp.id} 은/는 온라인 상태가 아님")
     return False
 
 
-# info - alias
+# 별칭 함수
 def tp_get_btn_state(tp, port, button):
-    tp_get_button_state(tp, port, button)
+    return tp_get_button_state(tp, port, button)
 
 
 @handle_exception
 def tp_set_button(tp, port, button, value):
+    # 버튼 피드백(채널 값) 설정
     if tp_get_device_state(tp):
         tp.port[port].channel[button].value = value
         if DebugFlags.enable_debug_tp_set_button:
             context.log.debug(f"버튼 피드백 - {tp.id} {port=} {button=} {value=}")
 
 
-# info - alias
+# 별칭 함수
 def tp_set_btn(tp, port, button, value):
     tp_set_button(tp, port, button, value)
 
 
 @handle_exception
 def tp_set_button_ss(tp_list: list | tuple, port, button, value):
+    # 여러 터치패널 장비에 동일한 버튼 피드백 설정
     if not isinstance(tp_list, (list, tuple)):
         context.log.error("tp_set_button_ss() 에러: tp_list 는 장비로 튜플이나 리스트여야함")
         raise TypeError
@@ -216,45 +236,49 @@ def tp_set_button_ss(tp_list: list | tuple, port, button, value):
         tp_set_button(tp, port, button, value)
 
 
-# info - alias
+# 별칭 함수
 def tp_set_btn_ss(tp_list: list | tuple, port, button, value):
     tp_set_button_ss(tp_list, port, button, value)
 
 
 @handle_exception
 def tp_set_button_state(tp, port, button, value):
+    # 버튼 상태 설정 (장치 온라인 확인 후 tp_set_button 호출)
     if tp_get_device_state(tp):
         tp_set_button(tp, port, button, value)
 
 
-# info - alias
+# 별칭 함수
 def tp_set_btn_state(tp, port, button, value):
     tp_set_button_state(tp, port, button, value)
 
 
 @handle_exception
 def tp_set_button_state_ss(tp: list | tuple, port, button, value):
+    # 여러 터치패널의 버튼 상태 설정
     tp_set_button_ss(tp, port, button, value)
 
 
-# info - alias
+# 별칭 함수
 def tp_set_btn_state_ss(tp: list | tuple, port, button, value):
     tp_set_button_state_ss(tp, port, button, value)
 
 
 @handle_exception
 def tp_set_button_in_range(tp, port, index_btn_start, index_btn_range, index_condition):
+    # 버튼 범위 설정: 조건에 해당하는 버튼만 True, 나머지는 False
     for index in range(index_btn_start, index_btn_start + index_btn_range):
         tp_set_button(tp, port, index, index_condition == (index - index_btn_start + 1))
 
 
-# info - alias
+# 별칭 함수
 def tp_set_btn_in_range(tp, port, index_btn_start, index_btn_range, index_condition):
     tp_set_button_in_range(tp, port, index_btn_start, index_btn_range, index_condition)
 
 
 @handle_exception
 def tp_set_button_in_array(tp, port, btn_list: list | tuple, index_condition):
+    # 버튼 배열 설정: 조건에 해당하는 버튼만 True, 나머지는 False
     if not isinstance(btn_list, (list, tuple)):
         context.log.error("tp_set_button_in_array() 에러: btn_list 는 버튼 인덱스 리스트여야함")
         raise TypeError
@@ -262,13 +286,14 @@ def tp_set_button_in_array(tp, port, btn_list: list | tuple, index_condition):
         tp_set_button(tp, port, btn, index_condition == (idx + 1))
 
 
-# info - alias
+# 별칭 함수
 def tp_set_btn_in_array(tp, port, btn_list: list | tuple, index_condition):
     tp_set_button_in_array(tp, port, btn_list, index_condition)
 
 
 @handle_exception
 def tp_set_button_in_array_ss(tp_list: list | tuple, port, btn_list: list | tuple, index_condition):
+    # 여러 터치패널의 버튼 배열 설정
     if not isinstance(tp_list, (list, tuple)):
         context.log.error("tp_set_button_in_array_ss() 에러: tp_list 는 장비로 튜플이나 리스트여야함")
         raise TypeError
@@ -276,130 +301,141 @@ def tp_set_button_in_array_ss(tp_list: list | tuple, port, btn_list: list | tupl
         tp_set_button_in_array(tp, port, btn_list, index_condition)
 
 
-# info - alias
+# 별칭 함수
 def tp_set_btn_in_array_ss(tp_list: list | tuple, port, btn_list: list | tuple, index_condition):
     tp_set_button_in_array_ss(tp_list, port, btn_list, index_condition)
 
 
 @handle_exception
 def tp_set_button_in_list(tp, port, btn_list: list | tuple, index_condition):
+    # 버튼 리스트 설정 (배열 설정과 동일)
     tp_set_button_in_array(tp, port, btn_list, index_condition)
 
 
-# info - alias
+# 별칭 함수
 def tp_set_btn_in_list(tp, port, btn_list: list | tuple, index_condition):
     tp_set_button_in_array(tp, port, btn_list, index_condition)
 
 
 @handle_exception
 def tp_set_button_in_list_ss(tp_list: list | tuple, port, btn_list: list | tuple, index_condition):
+    # 여러 터치패널의 버튼 리스트 설정
     tp_set_button_in_array_ss(tp_list, port, btn_list, index_condition)
 
 
-# info - alias
+# 별칭 함수
 def tp_set_btn_in_list_ss(tp_list: list | tuple, port, btn_list: list | tuple, index_condition):
     tp_set_button_in_array_ss(tp_list, port, btn_list, index_condition)
 
 
 @handle_exception
 def tp_set_button_in_range_ss(tp_list: list | tuple, port, index_btn_start, index_btn_range, index_condition):
+    # 여러 터치패널의 버튼 범위 설정
     if not isinstance(tp_list, (list, tuple)):
-        context.log.error("tp_send_lvl_ss() 에러: tp_list 는 장비로 튜플이나 리스트여야함")
+        context.log.error("tp_set_button_in_range_ss() 에러: tp_list 는 장비로 튜플이나 리스트여야함")
         raise TypeError
     for tp in tp_list:
         tp_set_button_in_range(tp, port, index_btn_start, index_btn_range, index_condition)
 
 
-# info - alias
+# 별칭 함수
 def tp_set_btn_in_range_ss(tp_list: list | tuple, port, index_btn_start, index_btn_range, index_condition):
     tp_set_button_in_range_ss(tp_list, port, index_btn_start, index_btn_range, index_condition)
 
 
 @handle_exception
 def tp_get_level(tp, port, level):
+    # 레벨(슬라이더) 값을 정수로 반환
     if tp_get_device_state(tp):
         return int(tp.port[port].level[level].value)
     context.log.error(f"tp_get_level() : {tp.id} 은/는 온라인 상태가 아님")
     return 0
 
 
-# info - alias
+# 별칭 함수
 def tp_get_lvl(tp, port, level):
     return tp_get_level(tp, port, level)
 
 
 @handle_exception
 def tp_send_level(tp, port, level, value):
+    # 레벨 값 전송/설정
     if tp_get_device_state(tp):
         tp.port[port].level[level].value = value
         if DebugFlags.enable_debug_tp_send_level:
             context.log.debug(f"레벨 값 변경 - {tp.id} {port=} {level=} {value=}")
 
 
-# info - alias
+# 별칭 함수
 def tp_send_lvl(tp, port, level, value):
     tp_send_level(tp, port, level, value)
 
 
 @handle_exception
 def tp_set_level(tp, port, level, value, *args):
+    # 레벨 설정 (tp_send_level 호출)
     tp_send_level(tp, port, level, value, *args)
 
 
-# info - alias
+# 별칭 함수
 def tp_set_lvl(tp, port, level, value, *args):
     tp_send_level(tp, port, level, value, *args)
 
 
 @handle_exception
 def tp_send_level_ss(tp_list: list | tuple, port, level, value):
+    # 여러 터치패널에 동일한 레벨 값 전송
     if not isinstance(tp_list, (list, tuple)):
-        context.log.error("tp_send_lvl_ss() 에러: tp_list는 튜플이나 리스트여야함")
+        context.log.error("tp_send_level_ss() 에러: tp_list는 튜플이나 리스트여야함")
         raise TypeError
     for tp in tp_list:
         tp_send_level(tp, port, level, value)
 
 
-# info - alias
+# 별칭 함수
 def tp_send_lvl_ss(tp_list: list | tuple, port, level, value):
     tp_send_level_ss(tp_list, port, level, value)
 
 
 @handle_exception
 def tp_set_level_ss(tp: list | tuple, port, level, value, *args):
+    # 여러 터치패널의 레벨 설정
     tp_send_level_ss(tp, port, level, value, *args)
 
 
-# info - alias
+# 별칭 함수
 def tp_set_lvl_ss(tp: list | tuple, port, level, value, *args):
     tp_send_lvl_ss(tp, port, level, value, *args)
 
 
 @handle_exception
 def convert_text_to_unicode(text):
+    # 텍스트를 유니코드 포맷 문자열로 변환 (각 문자를 4자리 16진수로 표현)
     return "".join(format(ord(char), "04X") for char in text)
 
 
-# info - alias
+# 별칭 함수
 def convert_txt_to_unicode(text):
-    convert_text_to_unicode(text)
+    return convert_text_to_unicode(text)
 
 
 @handle_exception
 def tp_send_command(tp, port, command):
+    # 터치패널에 명령어 전송
     if tp_get_device_state(tp):
         tp.port[port].send_command(command)
         if DebugFlags.enable_debug_tp_send_command:
             context.log.debug(f"tp_send_command() : {tp.id} {port=} {command=}")
 
 
-# info - alias
+# 별칭 함수
 def tp_send_cmd(tp, port, command):
     tp_send_command(tp, port, command)
 
 
 @handle_exception
 def tp_send_command_ss(tp_list: list | tuple, port, command):
+    # 여러 터치패널에 동일한 명령어 전송
     if not isinstance(tp_list, (list, tuple)):
         context.log.error(f"tp_send_command_ss() {command=} 에러: tp_list는 튜플이나 리스트여야함")
         raise TypeError
@@ -407,23 +443,25 @@ def tp_send_command_ss(tp_list: list | tuple, port, command):
         tp_send_command(tp, port, command)
 
 
-# info - alias
+# 별칭 함수
 def tp_send_cmd_ss(tp_list: list | tuple, port, command):
     tp_send_command_ss(tp_list, port, command)
 
 
 @handle_exception
 def tp_set_button_text_unicode(tp, port, index_addr, text):
+    # 버튼 텍스트를 유니코드로 설정하는 명령어 전송
     tp_send_command(tp, port, f"^UNI-{index_addr},0,{convert_text_to_unicode(text)}")
 
 
-# info - alias
+# 별칭 함수
 def tp_set_btn_txt_unicode(tp, port, index_addr, text):
     tp_set_button_text_unicode(tp, port, index_addr, text)
 
 
-# info - alias
+# 별칭 함수
 def tp_set_button_text_unicode_ss(tp_list: list | tuple, port, index_addr, text):
+    # 여러 터치패널의 버튼 텍스트를 유니코드로 설정
     tp_send_command_ss(tp_list, port, f"^UNI-{index_addr},0,{convert_text_to_unicode(text)}")
 
 
@@ -434,71 +472,82 @@ def tp_set_btn_txt_unicode_ss(tp_list: list | tuple, port, index_addr, text):
 
 @handle_exception
 def tp_set_button_text(tp, port, index_addr, text):
+    # 버튼 텍스트 설정
     tp_send_command(tp, port, f"^TXT-{index_addr},0,{text}")
 
 
-# info - alias
+# 별칭 함수
 def tp_set_btn_txt(tp, port, index_addr, text):
     tp_set_button_text(tp, port, index_addr, text)
 
 
 @handle_exception
 def tp_set_button_text_ss(tp_list: list | tuple, port, index_addr, text):
+    # 여러 터치패널의 버튼 텍스트 설정
     tp_send_command_ss(tp_list, port, f"^TXT-{index_addr},0,{text}")
 
 
-# info - alias
+# 별칭 함수
 def tp_set_btn_txt_ss(tp_list: list | tuple, port, index_addr, text):
     tp_set_button_text_ss(tp_list, port, index_addr, text)
 
 
 @handle_exception
 def tp_set_button_show_hide(tp, port, index_addr, value):
+    # 버튼 표시/숨김 및 활성화/비활성화 설정
     state_str = 1 if value else 0
     tp.port[port].send_command(f"^SHO-{index_addr},{state_str}")
     tp.port[port].send_command(f"^ENA-{index_addr},{state_str}")
 
 
-# info - alias
+# 별칭 함수
 def tp_set_btn_show_hide(tp, port, index_addr, value):
     tp_set_button_show_hide(tp, port, index_addr, value)
 
 
 @handle_exception
 def tp_set_page(tp, page_name):
+    # 터치패널 페이지 변경
     tp_send_command(tp, 1, f"^PGE-{page_name}")
 
 
 @handle_exception
 def tp_show_popup(tp, popup_name):
+    # 팝업 표시
     tp_send_command(tp, 1, f"^PPN-{popup_name}")
 
 
 @handle_exception
 def tp_hide_popup(tp, popup_name):
+    # 팝업 숨김
     tp_send_command(tp, 1, f"^PPF-{popup_name}")
 
 
 @handle_exception
 def tp_hide_all_popup(tp):
+    # 모든 팝업 숨김
     tp_send_command(tp, 1, "^PPX")
 
 
 @handle_exception
 def tp_set_page_ss(tp: list | tuple, page_name):
+    # 여러 터치패널의 페이지 변경
     tp_send_command_ss(tp, 1, f"^PGE-{page_name}")
 
 
 @handle_exception
 def tp_show_popup_ss(tp: list | tuple, popup_name):
+    # 여러 터치패널에 팝업 표시
     tp_send_command_ss(tp, 1, f"^PPN-{popup_name}")
 
 
 @handle_exception
 def tp_hide_popup_ss(tp: list | tuple, popup_name):
+    # 여러 터치패널의 팝업 숨김
     tp_send_command_ss(tp, 1, f"^PPF-{popup_name}")
 
 
 @handle_exception
 def tp_hide_all_popup_ss(tp: list | tuple):
+    # 여러 터치패널의 모든 팝업 숨김
     tp_send_command_ss(tp, 1, "^PPX")

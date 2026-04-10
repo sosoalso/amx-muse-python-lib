@@ -6,7 +6,7 @@ import urllib.request
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.08.22"
+VERSION = "2026.04.10"
 
 
 def get_version():
@@ -14,39 +14,48 @@ def get_version():
 
 
 # ---------------------------------------------------------------------------- #
-def url_get(url: str, header: dict = {}, callback=None, timeout: float = 0.5):
-    thread_url_get: threading.Thread = None
+def url_get(url: str, header: dict, callback=None, timeout: float = 0.5):
+    # 데몬 스레드로 비동기 GET 요청 실행
+    thread_url_get: threading.Thread
     context.log.debug(f"url_get() {url=} {header=} {callback=} {timeout=}")
 
     def task():
         req = urllib.request.Request(url=url, headers=header, method="GET")
         try:
+            # URL 연결 후 응답 데이터 수신
             with urllib.request.urlopen(req, timeout=timeout) as response:
                 result = response.read()
+                # 응답 처리 콜백 실행
                 if callback:
                     callback(result)
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
             context.log.error(f"url_get() 에러: {e}")
 
+    # 백그라운드에서 실행되는 스레드 생성 및 시작
     thread_url_get = threading.Thread(target=task, daemon=True)
     thread_url_get.start()
 
 
-def url_post(url: str, header: dict = {}, body=None, callback=None, timeout: float = 0.5):
-    thread_url_post: threading.Thread = None
+def url_post(url: str, header: dict, body=None, callback=None, timeout: float = 0.5):
+    # 데몬 스레드로 비동기 POST 요청 실행
+    thread_url_post: threading.Thread
     context.log.debug(f"url_post() {url=} {header=} {body=} {callback=} {timeout=}")
 
     def task():
+        # body를 JSON 문자열로 인코딩하여 바이트로 변환
         data = json.dumps(body).encode() if body else None
         req = urllib.request.Request(url=url, data=data, headers=header, method="POST")
         try:
+            # URL 연결 후 응답 데이터 수신
             with urllib.request.urlopen(req, timeout=timeout) as response:
                 result = response.read()
+                # 응답 처리 콜백 실행
                 if callback:
                     callback(result)
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
             context.log.error(f"url_post() 에러: {e}")
 
+    # 백그라운드에서 실행되는 스레드 생성 및 시작
     thread_url_post = threading.Thread(target=task, daemon=True)
     thread_url_post.start()
 

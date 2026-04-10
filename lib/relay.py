@@ -15,6 +15,28 @@ def get_version():
 # ---------------------------------------------------------------------------- #
 class Relay:
     def __init__(self, devchan_list: list[tuple] | tuple[tuple], tp_list: list, port: int, pulse_time: float = 0.5):
+        """
+        릴레이 제어 객체를 초기화합니다.
+
+        Args:
+            devchan_list (list[tuple] | tuple[tuple]): 디바이스-채널 정보를 담은 튜플의 리스트 또는 튜플
+                각 요소는 (device_id, channel_id) 형태의 튜플
+            tp_list (list): 터치패널 관련 정보 리스트
+            port (int): 통신 포트 번호
+            pulse_time (float, optional): 릴레이 펄스 신호의 지속 시간(초). 기본값은 0.5초
+                - 릴레이를 순간적으로 활성화할 때 사용되는 시간 간격
+
+        Attributes:
+            devchan_list: 정규화된 디바이스-채널 리스트 (빈 입력값은 빈 리스트로 변환)
+            relay_state (list[dict]): 각 디바이스별 릴레이 상태를 저장하는 딕셔너리 리스트
+                - devchan_list 길이만큼 초기화되며, 각 요소는 비어있는 딕셔너리로 시작
+            tp_list: 터치패널 정보 리스트
+            pulse_time: 릴레이 펄스 신호 지속 시간
+            tp_port: 통신 포트 번호
+
+        Note:
+            초기화 완료 후 self.init() 메서드를 호출하여 릴레이 통신 초기화 수행
+        """
         self.devchan_list = devchan_list if devchan_list else []
         self.relay_state = [{} for _ in range(len(devchan_list))]
         self.tp_list = tp_list

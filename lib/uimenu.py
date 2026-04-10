@@ -10,7 +10,7 @@ from lib.lib_tp import (
 from lib.lib_yeoul import handle_exception
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.09.27"
+VERSION = "2026.04.10"
 
 
 def get_version():
@@ -26,26 +26,33 @@ class UIMenu:
 
     @handle_exception
     def init(self):
+        # 모든 팝업 닫기 버튼 (버튼 번호 100)
         add_button(self.tp, 1, 100, "push", self.hide_all_menu_popup, comment="모든 팝업 닫기 버튼")
-        for idx in range(1, 10):  # 1 ~ 9
-            add_button(self.tp, 1, idx, "push", lambda idx=idx: self.show_page(idx), comment=f"페이지 {idx+1} 번 전환 버튼")
-        for idx in range(1, 20):  # 11 ~ 39
+
+        # 페이지 1 ~ 9 전환 버튼 (버튼 번호 1 ~ 9)
+        for idx in range(1, 10):
+            add_button(self.tp, 1, idx, "push", lambda idx=idx: self.show_page(idx), comment=f"페이지 {idx} 번 전환 버튼")
+
+        # 팝업 1 ~ 19 전환 버튼 (버튼 번호 11 ~ 29)
+        for idx in range(1, 20):
             add_button(
                 self.tp,
                 1,
                 idx + 10,
                 "push",
                 lambda idx=idx: self.show_menu_popup(idx),
-                comment=f"팝업 {idx+1:02d} 번 전환 버튼",
+                comment=f"팝업 {idx:02d} 번 전환 버튼",
             )
         self.selected_menu = 0
         self.refresh_menu_popup_button()
 
     @handle_exception
     def show_page(self, index_page):
+        # 페이지 인덱스는 정수여야 함
         if not isinstance(index_page, int):
             context.log.error("UIMenu show_page() index_page 는 정수여야합니다.")
             raise ValueError
+        # 페이지 인덱스는 1 ~ 9 범위 내여야 함
         if not 1 <= index_page <= 9:
             context.log.error("UIMenu show_page() index_page 는 1 - 9 사이의 정수여야합니다.")
             raise ValueError
@@ -54,9 +61,11 @@ class UIMenu:
 
     @handle_exception
     def show_menu_popup(self, index_popup):
+        # 팝업 인덱스는 정수여야 함
         if not isinstance(index_popup, int):
             context.log.error("UIMenu show_page() index_popup 은 정수여야합니다.")
             raise ValueError
+        # 팝업 인덱스는 1 ~ 20 범위 내여야 함
         if not 1 <= index_popup <= 20:
             context.log.error("UIMenu show_page() index_popup 은 1 - 20 사이의 정수여야합니다.")
             raise ValueError
@@ -72,6 +81,7 @@ class UIMenu:
 
     @handle_exception
     def refresh_menu_popup_button(self):
+        # 팝업 버튼 범위(11 ~ 29)에서 선택된 메뉴 버튼만 활성화
         tp_set_button_in_range(self.tp, 1, 1 + 10, 20 + 10, self.selected_menu)
 
 
