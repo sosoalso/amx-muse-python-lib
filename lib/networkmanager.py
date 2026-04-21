@@ -606,9 +606,10 @@ class TcpClient(EventManager):
                     # 지정된 시간 대기 후 재연결 시도
                     def wait_and_reconnect():
                         time.sleep(self.reconnect_time)
-                        self.handle_reconnect()
+                        if self.reconnect:  # reconnect 플래그 확인 후 재연결 시도
+                            self.handle_reconnect()
 
-                    threading.Thread(target=wait_and_reconnect).start()
+                    threading.Thread(target=wait_and_reconnect, daemon=True).start()
         else:
             # 일회성 전송 모드: 매번 새로운 연결 생성
             def send_once():

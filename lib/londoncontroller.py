@@ -293,7 +293,7 @@ class LondonController:
 
     # ---------------------------------------------------------------------------- #
     def set_gain(self, node_addr: bytes | bytearray, index_device: int, index_input: int, index_output: int, _: int, value: int):
-        # 이득값은 4바이트 부호있는 정수로 설정
+        # 게인값은 4바이트 부호있는 정수로 설정
         event = b"\x88"
         get_event = b"\x89"
         s_v = self.get_sv(index_device, index_input, index_output, LondonParam.GAIN)
@@ -480,7 +480,7 @@ class LondonController:
             # SV 값을 2바이트 부호있는 정수로 변환
             return sv.to_bytes(2, "big", signed=True)
         except Exception as e:
-            self.log_error(f"get_sv exception: {e}")
+            self.log_error(f"get_sv() 에러 : {e}")
 
     # ---------------------------------------------------------------------------- #
     def check_special_char(self, data: int) -> bool:
@@ -507,48 +507,52 @@ class LondonController:
                 send = b"\x02" + send + bytes([CS]) + b"\x03"
             self.dv.send(send)
         except Exception as e:
-            self.log_error(f"checksum_then_send exception: {e}")
+            self.log_error(f"checksum_then_send() 에러 : {e}")
 
     def parse_buffer(self):
-        # 수신 버퍼 파싱: ACK, NAK, 메시지 처리
-        if self.buffer.startswith(b"\x06"):
-            # ACK(0x06) 처리
-            while self.buffer and self.buffer[0] == 0x06:
+        try:
+            # 수신 버퍼 파싱: ACK, NAK, 메시지 처리
+            if self.buffer.startswith(b"\x06"):
+                # ACK(0x06) 처리
+                while self.buffer and self.buffer[0] == 0x06:
+                    self.buffer.pop(0)
+            if self.buffer.startswith(b"\x15"):
+                # NAK(0x15) 처리
                 self.buffer.pop(0)
-        elif self.buffer.startswith(b"\x15"):
-            # NAK(0x15) 처리
-            self.buffer.pop(0)
-        elif self.buffer.startswith(b"\x02"):
-            # STX(0x02)로 시작하는 메시지 처리
-            end_index = self.buffer.find(b"\x03")
-            if end_index != -1:
-                # ETX(0x03) 발견: 완전한 메시지 추출
-                message = self.buffer[1:end_index]
-                self.buffer = self.buffer[end_index + 1 :]
-                self.log_debug(f"Message extracted: {message.hex()} Remaining buffer: {self.buffer.hex()}")
-                self.check_message_attemps = 0
-                # 이스케이프 시퀀스 복원: ESC + (문자+128) → 원본 문자
-                temp = bytearray(message)
-                i = 0
-                while i < len(temp):
-                    if temp[i] == 0x1B and i + 1 < len(temp):
-                        temp[i] = temp[i + 1] - 128
-                        temp.pop(i + 1)
-                    i += 1
-                # 체크섬 검증: 마지막 바이트 제외 모든 바이트 XOR
-                r_cs = 0
-                for b in temp[:-1]:
-                    r_cs = r_cs ^ b
-                # 체크섬 일치 시 메시지 처리
-                if r_cs == temp[-1]:
-                    self.process_feedback(temp[:-1])
-            else:
-                # ETX 미발견: 재시도 횟수 증가
-                self.check_message_attemps += 1
-                if self.check_message_attemps > 5:
-                    # 5회 이상 실패시 버퍼 초기화
-                    self.buffer.clear()
+            if self.buffer.startswith(b"\x02"):
+                # STX(0x02)로 시작하는 메시지 처리
+                end_index = self.buffer.find(b"\x03")
+                if end_index != -1:
+                    # ETX(0x03) 발견: 완전한 메시지 추출
+                    message = self.buffer[1:end_index]
+                    self.buffer = self.buffer[end_index + 1 :]
+                    self.log_debug(f"Message extracted: {message.hex()} Remaining buffer: {self.buffer.hex()}")
                     self.check_message_attemps = 0
+                    # 이스케이프 시퀀스 복원: ESC + (문자+128) → 원본 문자
+                    temp = bytearray(message)
+                    i = 0
+                    while i < len(temp):
+                        if temp[i] == 0x1B and i + 1 < len(temp):
+                            temp[i] = temp[i + 1] - 128
+                            temp.pop(i + 1)
+                        i += 1
+                    # 체크섬 검증: 마지막 바이트 제외 모든 바이트 XOR
+                    r_cs = 0
+                    for b in temp[:-1]:
+                        r_cs = r_cs ^ b
+                    # 체크섬 일치 시 메시지 처리
+                    if r_cs == temp[-1]:
+                        self.process_feedback(temp[:-1])
+                else:
+                    # ETX 미발견: 재시도 횟수 증가
+                    self.check_message_attemps += 1
+                    if self.check_message_attemps > 5:
+                        # 5회 이상 실패시 버퍼 초기화
+                        self.buffer.clear()
+                        self.check_message_attemps = 0
+        except Exception as e:
+            self.log_error(f"parse_buffer() 에러 : {e}")
+            self.buffer.clear()  # 예외 발생 시 클리어 추가
 
     def process_feedback(self, received_string: bytes | bytearray):
         # 수신한 피드백 메시지 처리 및 상태 업데이트
@@ -566,7 +570,7 @@ class LondonController:
             if bytes(node + vd + node_addr + s_v) in self.states.get_all_states_keys():
                 self.states.set_state(bytes(node + vd + node_addr + s_v), int.from_bytes(my_data, "big", signed=True))
         except Exception as e:
-            print(f"process_feedback() exception: {e}")
+            self.log_error(f"process_feedback() 에러 : {e}")
 
     # ---------------------------------------------------------------------------- #
     def check_vol_range(self, val: float) -> bool:
@@ -576,12 +580,32 @@ class LondonController:
     def val_add_unit(self, val: int) -> int:
         # 현재값에서 1 단위만큼 증가 (범위 내일 때)
         val_db = self.convert_value_to_db(val)
-        return self.convert_db_to_value(round(val_db + self.UNIT_VAL)) if self.check_vol_range(val_db) else val
+        if val_db is not None:
+            # 단위값만큼 증가 후 반올림
+            val_db = round(val_db + self.UNIT_VAL)
+            # 범위를 벗어난 값을 MIN/MAX 값으로 제한
+            if self.MIN_VAL <= val_db <= self.MAX_VAL:
+                return self.convert_db_to_value(val_db)
+            elif val_db > self.MAX_VAL:
+                return self.convert_db_to_value(self.MAX_VAL)
+            elif val_db < self.MIN_VAL:
+                return self.convert_db_to_value(self.MIN_VAL)
+        return val
 
     def val_sub_unit(self, val: int) -> int:
         # 현재값에서 1 단위만큼 감소 (범위 내일 때)
         val_db = self.convert_value_to_db(val)
-        return self.convert_db_to_value(round(val_db - self.UNIT_VAL)) if self.check_vol_range(val_db) else val
+        if val_db is not None:
+            # 단위값만큼 감소 후 반올림
+            val_db = round(val_db - self.UNIT_VAL)
+            # 범위를 벗어난 값을 MIN/MAX 값으로 제한
+            if self.MIN_VAL <= val_db <= self.MAX_VAL:
+                return self.convert_db_to_value(val_db)
+            elif val_db > self.MAX_VAL:
+                return self.convert_db_to_value(self.MAX_VAL)
+            elif val_db < self.MIN_VAL:
+                return self.convert_db_to_value(self.MIN_VAL)
+        return val
 
     def val_toggle(self, val: int) -> int:
         # 이진값 토글: 0 ↔ 1
@@ -596,7 +620,7 @@ class LondonController:
     # 사용자 편의 함수
 
     def set_gain_up(self, node_addr, index_device, index_input, index_output, index_param):
-        # 이득값 상향 조정 (1 단위)
+        # 게인값 상향 조정 (1 단위)
         self.set_gain(
             node_addr,
             index_device,
@@ -607,7 +631,7 @@ class LondonController:
         )
 
     def set_gain_down(self, node_addr, index_device, index_input, index_output, index_param):
-        # 이득값 하향 조정 (1 단위)
+        # 게인값 하향 조정 (1 단위)
         self.set_gain(
             node_addr,
             index_device,

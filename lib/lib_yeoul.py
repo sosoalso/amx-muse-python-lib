@@ -5,7 +5,7 @@ import threading
 from mojo import context
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2026.04.10"
+VERSION = "2026.04.19"
 
 
 def get_version():
@@ -19,7 +19,7 @@ get_service = context.services.get
 
 
 def get_timeline():
-    context.log.error("타임라인은 정상적인 동작을 확인하기 전까지 개인적으로 사용을 매우 매우 비권장...")
+    # context.log.error("타임라인은 정상적인 동작을 확인하기 전까지 개인적으로 사용을 매우 매우 비권장...")
     return context.services.get("timeline")
 
 
@@ -96,19 +96,16 @@ def atoi(s: str) -> int:
     s = s.strip()
     if not s:
         return 0
-
     # 부호 처리
     sign = 1
     if s[0] == "-":
         sign = -1
     elif s[0] == "+":
         sign = 1
-
     # 숫자만 추출
     digits = [ch for ch in s if ch.isdigit()]
     if not digits:
         return 0
-
     return sign * int("".join(digits))
 
 
