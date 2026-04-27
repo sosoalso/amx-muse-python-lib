@@ -1,10 +1,8 @@
 import math
 from enum import IntEnum
 
-from mojo import context
-
 # ---------------------------------------------------------------------------- #
-VERSION = "2026.04.10"
+VERSION = "2026.04.24"
 
 
 def get_version():
@@ -157,10 +155,16 @@ class LondonController:
 
     def log_debug(self, message):
         if self.debug:
-            context.log.debug(f"LondonController: {message}")
+            print(f"{__class__.__name__} (DEBUG) -- {message}")
 
     def log_error(self, message):
-        context.log.error(f"LondonController: {message}")
+        print(f"{__class__.__name__} (ERROR) -- {message}")
+
+    def log_warn(self, message):
+        print(f"{__class__.__name__} (WARN) -- {message}")
+
+    def log_info(self, message):
+        print(f"{__class__.__name__} (INFO) -- {message}")
 
     def online(self, callback):
         self.dv.online(callback)
@@ -315,7 +319,7 @@ class LondonController:
         event = b"\x89"
         s_v = self.get_sv(index_device, index_input, index_output, index_param)
         if s_v == -1:
-            print("subscribe error s_v == -1")
+            self.log_error("subscribe() -- s_v == -1")
             return
         index_param = self.meter_subscription_rate if index_param == LondonParam.METER else 0
         my_data = bytes([0x00, 0x00, 0x00, index_param])
@@ -337,7 +341,7 @@ class LondonController:
             self.checksum_then_send(bytes(event + node_addr + s_v + my_data))
 
     # ---------------------------------------------------------------------------- #
-    def get_sv(self, index_device, index_input, index_output, index_param) -> bytes:
+    def get_sv(self, index_device, index_input, index_output, index_param):
         # 기기, 입출력, 파라미터 인덱스를 장비 SV(Sub-Verb) 값으로 변환
         try:
             sv = -1
@@ -480,7 +484,7 @@ class LondonController:
             # SV 값을 2바이트 부호있는 정수로 변환
             return sv.to_bytes(2, "big", signed=True)
         except Exception as e:
-            self.log_error(f"get_sv() 에러 : {e}")
+            self.log_error(f"get_sv() {e=}")
 
     # ---------------------------------------------------------------------------- #
     def check_special_char(self, data: int) -> bool:
@@ -507,7 +511,7 @@ class LondonController:
                 send = b"\x02" + send + bytes([CS]) + b"\x03"
             self.dv.send(send)
         except Exception as e:
-            self.log_error(f"checksum_then_send() 에러 : {e}")
+            self.log_error(f"checksum_then_send() {e=}")
 
     def parse_buffer(self):
         try:
@@ -551,7 +555,7 @@ class LondonController:
                         self.buffer.clear()
                         self.check_message_attemps = 0
         except Exception as e:
-            self.log_error(f"parse_buffer() 에러 : {e}")
+            self.log_error(f"parse_buffer() {e=}")
             self.buffer.clear()  # 예외 발생 시 클리어 추가
 
     def process_feedback(self, received_string: bytes | bytearray):
@@ -570,7 +574,7 @@ class LondonController:
             if bytes(node + vd + node_addr + s_v) in self.states.get_all_states_keys():
                 self.states.set_state(bytes(node + vd + node_addr + s_v), int.from_bytes(my_data, "big", signed=True))
         except Exception as e:
-            self.log_error(f"process_feedback() 에러 : {e}")
+            self.log_error(f"process_feedback() {e=}")
 
     # ---------------------------------------------------------------------------- #
     def check_vol_range(self, val: float) -> bool:
@@ -663,7 +667,7 @@ class LondonController:
             y = (x - x_min) * (y_max - y_min) / (x_max - x_min) + y_min
             return y
         except Exception as e:
-            self.log_error(f"{self.__class__} db_to_tp() 에러 : {e}")
+            self.log_error(f"db_to_tp() {e=}")
             return 0
 
     def tp_to_db(self, x):

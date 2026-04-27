@@ -2,39 +2,12 @@ import functools
 import inspect
 import threading
 
-from mojo import context
-
 # ---------------------------------------------------------------------------- #
-VERSION = "2026.04.19"
+VERSION = "2026.04.24"
 
 
 def get_version():
     return VERSION
-
-
-# ---------------------------------------------------------------------------- #
-get_device = context.devices.get
-# ---------------------------------------------------------------------------- #
-get_service = context.services.get
-
-
-def get_timeline():
-    # context.log.error("타임라인은 정상적인 동작을 확인하기 전까지 개인적으로 사용을 매우 매우 비권장...")
-    return context.services.get("timeline")
-
-
-# ---------------------------------------------------------------------------- #
-log_info = context.log.info
-log_error = context.log.error
-log_warn = context.log.warn
-log_debug = context.log.debug
-
-
-def set_log_level(level):
-    valid_levels = ["DEBUG", "INFO", "WARN", "ERROR", "debug", "info", "warn", "error"]
-    if level not in valid_levels:
-        raise ValueError(f"잘못된 로그 레벨: {level}. 선택 가능한 로그 레벨: {valid_levels}")
-    context.log.level = level.upper()
 
 
 # ---------------------------------------------------------------------------- #
@@ -44,7 +17,7 @@ def handle_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            context.log.error(f"{func.__name__}() 에러: {e}")
+            print(f"(ERROR) -- {func.__name__}() {e=}")
             return None
 
     return wrapper
@@ -131,47 +104,46 @@ def _debug(max_depth=3):
         current_frame = current_frame.f_back
         depth += 1
     log_message = log_message.removesuffix("\n")
-    context.log.debug("_debug\n" + log_message)
+    print("_debug\n" + log_message)
 
 
-# ---------------------------------------------------------------------------- #
-@handle_exception
-def _hello(device):
-    # 객체의 모든 속성과 메서드를 탐색하여 상세 정보 출력
-    context.log.debug("=" * 79)
-    context.log.debug(device)
-    context.log.debug("type : ", type(device))
-    context.log.debug("-" * 34)
-    attributes = dir(device)
-    context.log.debug("-" * 34)
-    # 매직 메서드(__xxx__)를 제외한 속성만 필터링
-    filtered_attributes = [attr for attr in attributes if not attr.startswith("__") and not attr.endswith("__")]
-    for attr in filtered_attributes:
-        context.log.debug("-" * 34)
-        value = getattr(device, attr)
-        # ---------------------------------------------------------------------------- #
-        if callable(value):
-            # 호출 가능한 메서드인 경우
-            context.log.debug(f"함수() -- {attr}")
-            sig = inspect.signature(value)
-            context.log.debug(f"시그니처 -- {sig}")
-            context.log.debug(f"시그니처 파라메터 -- {sig.parameters}")
-            # 모든 파라미터가 기본값을 가지면 안전하게 호출 가능
-            if all(param.default != inspect.Parameter.empty for param in sig.parameters.values()):
-                if attr == "shutdown":
-                    context.log.debug("말그대로 SHUTDOWN 이라 안댐ㅋ")
-                else:
-                    context.log.debug(f"메소드 호출 () -- {attr}")
-                    context.log.debug(f"리턴 값 == {value()}")
-            else:
-                context.log.debug(f"{attr} 메소드는 인자가 필요해서 호출할 수 없음 {sig.parameters=}")
-        # ---------------------------------------------------------------------------- #
-        elif isinstance(value, property):
-            # 프로퍼티인 경우
-            context.log.debug(f"프로퍼티 -- {attr} : {value}")
-        # ---------------------------------------------------------------------------- #
-        else:
-            # 일반 속성인 경우
-            context.log.debug(f"어트리뷰트 -- {attr} : {value}")
-        # ---------------------------------------------------------------------------- #
-    context.log.debug("=" * 79)
+# @handle_exception
+# def _hello(device):
+#     # 객체의 모든 속성과 메서드를 탐색하여 상세 정보 출력
+#     context.log.debug("=" * 79)
+#     context.log.debug(device)
+#     context.log.debug("type : ", type(device))
+#     context.log.debug("-" * 34)
+#     attributes = dir(device)
+#     context.log.debug("-" * 34)
+#     # 매직 메서드(__xxx__)를 제외한 속성만 필터링
+#     filtered_attributes = [attr for attr in attributes if not attr.startswith("__") and not attr.endswith("__")]
+#     for attr in filtered_attributes:
+#         context.log.debug("-" * 34)
+#         value = getattr(device, attr)
+#         # ---------------------------------------------------------------------------- #
+#         if callable(value):
+#             # 호출 가능한 메서드인 경우
+#             context.log.debug(f"함수() -- {attr}")
+#             sig = inspect.signature(value)
+#             context.log.debug(f"시그니처 -- {sig}")
+#             context.log.debug(f"시그니처 파라메터 -- {sig.parameters}")
+#             # 모든 파라미터가 기본값을 가지면 안전하게 호출 가능
+#             if all(param.default != inspect.Parameter.empty for param in sig.parameters.values()):
+#                 if attr == "shutdown":
+#                     context.log.debug("말그대로 SHUTDOWN 이라 안댐ㅋ")
+#                 else:
+#                     context.log.debug(f"메소드 호출 () -- {attr}")
+#                     context.log.debug(f"리턴 값 == {value()}")
+#             else:
+#                 context.log.debug(f"{attr} 메소드는 인자가 필요해서 호출할 수 없음 {sig.parameters=}")
+#         # ---------------------------------------------------------------------------- #
+#         elif isinstance(value, property):
+#             # 프로퍼티인 경우
+#             context.log.debug(f"프로퍼티 -- {attr} : {value}")
+#         # ---------------------------------------------------------------------------- #
+#         else:
+#             # 일반 속성인 경우
+#             context.log.debug(f"어트리뷰트 -- {attr} : {value}")
+#         # ---------------------------------------------------------------------------- #
+#     context.log.debug("=" * 79)

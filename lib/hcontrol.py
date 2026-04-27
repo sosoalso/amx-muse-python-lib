@@ -1,13 +1,16 @@
 import json
 
-from mojo import context
-
 # ---------------------------------------------------------------------------- #
-VERSION = "2026.04.10"
+VERSION = "2026.04.23"
 
 
 def get_version():
     return VERSION
+
+
+# ---------------------------------------------------------------------------- #
+class HControlDebugFlags:
+    debug = False
 
 
 # ---------------------------------------------------------------------------- #
@@ -46,7 +49,8 @@ def parse_hc_response(evt):
             # 지원하는 응답 타입 확인
             if cmd in ("@get", "@set", "@subscribe", "publish", "@unsubscribe"):
                 json_data = json.loads(d)
-                context.log.debug(f"parse_hc_response() {json_data=}")
+                if HControlDebugFlags.debug:
+                    print(f"DEBUG -- parse_hc_response() {json_data=}")
                 return json_data
     except Exception as e:
-        context.log.error(f"parse_hc_response() 에러: {e}")
+        print(f"hc (ERROR) -- parse_hc_response() {e=}")

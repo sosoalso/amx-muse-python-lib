@@ -2,10 +2,8 @@
 import json
 import os
 
-from mojo import context
-
 # ---------------------------------------------------------------------------- #
-VERSION = "2026.04.10"
+VERSION = "2026.04.24"
 
 
 def get_version():
@@ -19,7 +17,7 @@ def handle_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            context.log.error(f"UserData 에러: {e}")
+            print(f"timeline (ERROR) -- {func.__name__=} {e=}")
             return None
 
     return wrapper
@@ -27,12 +25,17 @@ def handle_exception(func):
 
 # ---------------------------------------------------------------------------- #
 class Userdata:
-    def __init__(self, filename="user_data.json", foldername=None):
+    def __init__(self, filename="user_data.json", foldername=None, default_value=None):
         self.filename = filename
         self.foldername = foldername
         self.filepath = self.get_file_path()
         self.data = {}
-        self.init()
+        self.debug = False
+        self.init(default_value=default_value)
+
+    def log_debug(self, message):
+        if self.debug:
+            print(f"DEBUG -- {message}")
 
     @handle_exception
     def get_file_path(self):
@@ -40,18 +43,18 @@ class Userdata:
         return f"{self.foldername}/" + self.filename if self.foldername is not None else self.filename
 
     @handle_exception
-    def init(self):
+    def init(self, default_value=None):
         # 폴더가 없으면 생성
         if self.foldername:
             if not os.path.exists(self.foldername):
                 os.makedirs(self.foldername)
         # 파일이 없으면 새로 생성, 있으면 로드
         if not os.path.exists(self.filepath):
-            context.log.debug(f"init() :: 파일 {self.filepath} 없음, 새 파일 생성")
-            self.data = {}
+            self.log_debug(f"init() -- file {self.filepath} not found, creating new file")
+            self.data = default_value if default_value is not None else {}
             self.save_file()
         else:
-            context.log.debug(f"init() :: 파일 {self.filepath} 불러오기")
+            self.log_debug(f"init() -- load file {self.filepath}")
             self.load_file()
 
     @handle_exception
@@ -69,7 +72,7 @@ class Userdata:
     @handle_exception
     def set_value(self, key, value):
         self.data[key] = value
-        context.log.debug(f"set_value() {key=} {value=}")
+        self.log_debug(f"set_value() {key=} {value=}")
         self.save_file()
 
     @handle_exception
@@ -82,14 +85,14 @@ class Userdata:
         # 키가 존재하면 삭제하고 저장, 없으면 로그만 출력
         if key in self.data:
             del self.data[key]
-            context.log.debug(f"delete_value() {key=} 삭제")
+            self.log_debug(f"delete_value() {key=} deleted")
             self.save_file()
         else:
-            context.log.debug(f"delete_value() {key=} 없음")
+            self.log_debug(f"delete_value() {key=} not found")
 
 
 # 간소화 버전: 클래스 변수를 JSON으로 관리
-class var:
+class Var:
     @classmethod
     def as_dict(cls):
         # 클래스의 모든 공개 속성(메서드 제외)을 딕셔너리로 반환
@@ -108,7 +111,7 @@ class var:
             if hasattr(cls, key):
                 setattr(cls, key, value)
             else:
-                context.log.debug(f"{cls.__name__} 에서 키 {key} 를 찾을 수 없음.")
+                print(f"Key {key} not found in {cls.__name__}.")
 
     @classmethod
     def load_from_json(cls, filepath):

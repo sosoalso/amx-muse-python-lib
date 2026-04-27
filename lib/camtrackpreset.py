@@ -1,7 +1,7 @@
 from lib.userdata import Userdata
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2026.04.10"
+VERSION = "2026.04.23"
 
 
 def get_version():

@@ -1,5 +1,3 @@
-from mojo import context
-
 from lib.eventmanager import EventManager
 from lib.networkmanager import UdpClient
 from pythonosc.osc_message import OscMessage

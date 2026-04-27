@@ -1,5 +1,3 @@
-from mojo import context
-
 from lib.eventmanager import EventManager
 from lib.networkmanager import TcpClient
 from lib.scheduler import Scheduler
@@ -17,9 +15,17 @@ class PJLink(EventManager):
         self.mute = False
         self.source = "0"
         self.poll = Scheduler(max_workers=3, name=self.name + " poll")
+        self.debug = False
         self.dv.receive.listen(self.parse_response)
         self.dv.connect()
         self.start_poll()
+
+    def log_debug(self, message):
+        if self.debug:
+            print(f"{self.__class__.__name__} DEBUG -- {message}")
+
+    def log_error(self, message):
+        print(f"{self.__class__.__name__} ERROR -- {message}")
 
     def init(self):
         self.dv.receive.listen(self.parse_response)
@@ -41,7 +47,7 @@ class PJLink(EventManager):
 
     def parse_response(self, *args):
         if not args or not hasattr(args[0], "arguments") or "data" not in args[0].arguments:
-            context.log.error(f"수신 응답은 잘못된 형식입니다. {args=}")
+            self.log_error(f"수신 응답은 잘못된 형식입니다. {args=}")
         else:
             try:
                 data_text = args[0].arguments["data"].decode("utf-8")
@@ -61,7 +67,7 @@ class PJLink(EventManager):
                         self.mute = False
                     self.trigger_event("mute", value=self.mute, this=self)
             except (AttributeError, KeyError, UnicodeDecodeError) as e:
-                context.log.error(f"Pjlink {self.name=} Error decoding data: {e}")
+                self.log_error(f"Pjlink {self.name=} Error decoding data: {e}")
 
     def set_power(self, value):
         self.send("%1POWR 1\r" if value else "%1POWR 0\r")

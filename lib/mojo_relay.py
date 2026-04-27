@@ -1,11 +1,9 @@
-from mojo import context
-
 from lib.button import add_button_ss
-from lib.lib_tp import tp_set_button
-from lib.lib_yeoul import pulse
+from lib.mojo_tp import tp_set_button
+from lib.utility import pulse
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2025.08.14"
+VERSION = "2026.04.24"
 
 
 def get_version():
@@ -108,7 +106,6 @@ class Relay:
                 idx + 1,
                 "push",
                 lambda idx=idx: self.set_relay_on(idx),
-                comment=f"릴레이 {idx + 1}번 켜기",
             )
             add_button_ss(
                 self.tp_list,
@@ -116,7 +113,6 @@ class Relay:
                 idx + 101,
                 "push",
                 lambda idx=idx: self.set_relay_off(idx),
-                comment=f"릴레이 {idx + 1}번 끄기",
             )
             add_button_ss(
                 self.tp_list,
@@ -124,7 +120,6 @@ class Relay:
                 idx + 201,
                 "push",
                 lambda idx=idx: self.set_relay_pulse(idx),
-                comment=f"릴레이 {idx + 1}번 펄스",
             )
             add_button_ss(
                 self.tp_list,
@@ -132,7 +127,6 @@ class Relay:
                 idx + 301,
                 "push",
                 lambda idx=idx: self.set_relay_toggle(idx),
-                comment=f"릴레이 {idx + 1}번 토글",
             )
             relay_momentary_button = add_button_ss(
                 self.tp_list,
@@ -140,7 +134,6 @@ class Relay:
                 idx + 401,
                 "push",
                 lambda idx=idx: self.set_relay_on(idx),
-                comment=f"릴레이 {idx + 1}번 모멘터리",
             )
             relay_momentary_button.on("release", lambda idx=idx: self.set_relay_off(idx))
 
@@ -150,6 +143,6 @@ class Relay:
             tp_set_button(tp, self.tp_port, idx + 101, not self.get_relay_state(idx))
 
     def show_all_relay_state(self):
-        context.log.debug(f"show_all_relay_state() : {self.devchan_list=}")
+        print(f"show_all_relay_state() : {self.devchan_list=}")
         for idx in range(len(self.devchan_list)):
-            context.log.debug(f"{idx=} {self.relay_state[idx]['state']=} {self._get_relay_devchan_state(idx)=}")
+            print(f"{idx=} {self.relay_state[idx]['state']=} {self._get_relay_devchan_state(idx)=}")

@@ -1,16 +1,14 @@
-from mojo import context
-
 from lib.button import add_button
-from lib.lib_tp import (
+from lib.mojo_tp import (
     tp_hide_all_popup,
     tp_set_button_in_range,
     tp_set_page,
     tp_show_popup,
 )
-from lib.lib_yeoul import handle_exception
+from lib.utility import handle_exception
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2026.04.10"
+VERSION = "2026.04.24"
 
 
 def get_version():
@@ -22,27 +20,28 @@ class UIMenu:
     def __init__(self, tp):
         self.tp = tp
         self.selected_menu = 0
+        self.debug = False
         self.init()
+
+    def log_error(self, message):
+        print(f"mojo_uimenu(ERROR) -- {message}")
+
+    def log_debug(self, message):
+        if self.debug:
+            print(f"mojo_uimenu(DEBUG) -- {message}")
 
     @handle_exception
     def init(self):
         # 모든 팝업 닫기 버튼 (버튼 번호 100)
-        add_button(self.tp, 1, 100, "push", self.hide_all_menu_popup, comment="모든 팝업 닫기 버튼")
+        add_button(self.tp, 1, 100, "push", self.hide_all_menu_popup)
 
         # 페이지 1 ~ 9 전환 버튼 (버튼 번호 1 ~ 9)
         for idx in range(1, 10):
-            add_button(self.tp, 1, idx, "push", lambda idx=idx: self.show_page(idx), comment=f"페이지 {idx} 번 전환 버튼")
+            add_button(self.tp, 1, idx, "push", lambda idx=idx: self.show_page(idx))
 
         # 팝업 1 ~ 19 전환 버튼 (버튼 번호 11 ~ 29)
         for idx in range(1, 20):
-            add_button(
-                self.tp,
-                1,
-                idx + 10,
-                "push",
-                lambda idx=idx: self.show_menu_popup(idx),
-                comment=f"팝업 {idx:02d} 번 전환 버튼",
-            )
+            add_button(self.tp, 1, idx + 10, "push", lambda idx=idx: self.show_menu_popup(idx))
         self.selected_menu = 0
         self.refresh_menu_popup_button()
 
@@ -50,11 +49,11 @@ class UIMenu:
     def show_page(self, index_page):
         # 페이지 인덱스는 정수여야 함
         if not isinstance(index_page, int):
-            context.log.error("UIMenu show_page() index_page 는 정수여야합니다.")
+            self.log_error("show_page() -- index_page must be an integer.")
             raise ValueError
         # 페이지 인덱스는 1 ~ 9 범위 내여야 함
         if not 1 <= index_page <= 9:
-            context.log.error("UIMenu show_page() index_page 는 1 - 9 사이의 정수여야합니다.")
+            self.log_error("show_page() -- index_page must be an integer between 1 - 9.")
             raise ValueError
         self.hide_all_menu_popup()
         tp_set_page(self.tp, f"{index_page:02d}")
@@ -63,11 +62,11 @@ class UIMenu:
     def show_menu_popup(self, index_popup):
         # 팝업 인덱스는 정수여야 함
         if not isinstance(index_popup, int):
-            context.log.error("UIMenu show_page() index_popup 은 정수여야합니다.")
+            self.log_error("show_menu_popup() -- index_popup must be an integer.")
             raise ValueError
         # 팝업 인덱스는 1 ~ 20 범위 내여야 함
         if not 1 <= index_popup <= 20:
-            context.log.error("UIMenu show_page() index_popup 은 1 - 20 사이의 정수여야합니다.")
+            self.log_error("show_menu_popup() -- index_popup must be an integer between 1 - 20.")
             raise ValueError
         self.selected_menu = index_popup
         self.refresh_menu_popup_button()

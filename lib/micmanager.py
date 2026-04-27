@@ -1,9 +1,7 @@
-from mojo import context
-
 from lib.eventmanager import EventManager
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2026.04.10"
+VERSION = "2026.04.23"
 
 
 def get_version():
@@ -18,10 +16,24 @@ class MicManager(EventManager):
         self.last_mic_enabled = last_mic_enabled
         self.mics_on = [False] * self.max_mic_index
         self.last_on_mics = []
+        self.debug = False
         self.reset_mic_state()
 
+    def log_debug(self, message):
+        if self.debug:
+            print(f"{__class__.__name__} (DEBUG) -- {message}")
+
+    def log_error(self, message):
+        print(f"{__class__.__name__} (ERROR) -- {message}")
+
+    def log_warn(self, message):
+        print(f"{__class__.__name__} (WARN) -- {message}")
+
+    def log_info(self, message):
+        print(f"{__class__.__name__} (INFO) -- {message}")
+
     def reset_mic_state(self):
-        context.log.debug("MicManager -- reset_mic_state()")
+        self.log_debug("reset_mic_state()")
         self.mics_on = [False] * self.max_mic_index
         self.last_on_mics = []
 
@@ -40,53 +52,53 @@ class MicManager(EventManager):
 
     # ---------------------------------------------------------------------------- #
     def turn_mic_on(self, mic_index):
-        context.log.debug(f"MicManager -- turn_mic_on() {mic_index=}")
+        self.log_debug(f"turn_mic_on() {mic_index=}")
         self.handle_mic_on(mic_index)
 
     def turn_mic_off(self, mic_index):
-        context.log.debug(f"MicManager -- turn_mic_off() {mic_index=}")
+        self.log_debug(f"turn_mic_off() {mic_index=}")
         self.handle_mic_off(mic_index)
 
     def turn_all_mic_off(self):
-        context.log.debug("MicManager -- turn_all_mic_off()")
+        self.log_debug("turn_all_mic_off()")
         self.handle_all_mic_off()
 
     def turn_last_mic_on(self):
-        context.log.debug("MicManager -- turn_last_mic_on()")
+        self.log_debug("turn_last_mic_on()")
         self.handle_last_mic_on()
 
     # ---------------------------------------------------------------------------- #
     def mic_on(self, mic_index):
-        context.log.debug(f"MicManager -- mic_on() {mic_index=}")
+        self.log_debug(f"mic_on() {mic_index=}")
         self.handle_mic_on(mic_index)
 
     def mic_off(self, mic_index):
-        context.log.debug(f"MicManager -- mic_off() {mic_index=}")
+        self.log_debug(f"mic_off() {mic_index=}")
         self.handle_mic_off(mic_index)
 
     def all_mic_off(self):
-        context.log.debug("MicManager -- all_mic_off()")
+        self.log_debug("all_mic_off()")
         self.handle_all_mic_off()
 
     def last_mic_on(self):
-        context.log.debug("MicManager -- last_mic_on()")
+        self.log_debug("last_mic_on()")
         self.handle_last_mic_on()
 
     # ---------------------------------------------------------------------------- #
     def handle_all_mic_off(self):
-        context.log.debug("MicManager -- handle_all_mic_off()")
+        self.log_debug("handle_all_mic_off()")
         self.reset_mic_state()
         self.emit("mic_all_off")
 
     def handle_last_mic_on(self):
-        context.log.debug("MicManager -- handle_last_mic_on()")
+        self.log_debug("handle_last_mic_on()")
         # 이전에 켜진 마이크 목록이 있으면 마지막 마이크를 다시 켬
         if self.last_on_mics:
             last_mic = self.last_on_mics[-1]
             self.handle_mic_on(last_mic)
 
     def handle_mic_on(self, mic_index):
-        context.log.debug(f"MicManager -- handle_mic_on() {mic_index=}")
+        self.log_debug(f"handle_mic_on() {mic_index=}")
         mic_idx = self.index_to_idx(mic_index)
         if mic_idx is not None:
             self.mics_on[mic_idx] = True
@@ -97,7 +109,7 @@ class MicManager(EventManager):
             self.emit("mic_on", mic_index)
 
     def handle_mic_off(self, mic_index):
-        context.log.debug(f"MicManager -- handle_mic_off() {mic_index=}")
+        self.log_debug(f"handle_mic_off() {mic_index=}")
         mic_idx = self.index_to_idx(mic_index)
         if mic_idx is not None:
             self.mics_on[mic_idx] = False
@@ -121,7 +133,7 @@ class MicManager(EventManager):
         # 유효한 범위의 인덱스인지 검증
         if isinstance(mic_idx, int) and 0 <= mic_idx < self.max_mic_index:
             return self.mics_on[mic_idx]
-        context.log.error(f"MicManager -- get_mic_status() 잘못된 인덱스입니다. {mic_index=}")
+        self.log_error(f"get_mic_status() -- wrong index {mic_index=}")
         return None
 
     # 마지막으로 켜진 마이크의 사용자 인덱스 반환(내부 인덱스 + 1)

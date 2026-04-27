@@ -1,9 +1,7 @@
 from typing import Sequence, Union
 
-from mojo import context
-
 # ---------------------------------------------------------------------------- #
-VERSION = "2026.04.10"
+VERSION = "2026.04.24"
 
 
 def get_version():
@@ -81,13 +79,16 @@ class BssController:
 
     def log_debug(self, message):
         if self.debug:
-            context.log.debug(message)
+            print(f"{__class__.__name__} (DEBUG) -- {message}")
 
     def log_error(self, message):
-        context.log.error(message)
+        print(f"{__class__.__name__} (ERROR) -- {message}")
 
     def log_warn(self, message):
-        context.log.warn(message)
+        print(f"{__class__.__name__} (WARN) -- {message}")
+
+    def log_info(self, message):
+        print(f"{__class__.__name__} (INFO) -- {message}")
 
     def db_to_tp(self, x):
         # dB 값을 터치패널 0-255 범위로 선형 변환
@@ -100,7 +101,7 @@ class BssController:
             y = (x - x_min) * (y_max - y_min) / (x_max - x_min) + y_min
             return y
         except Exception as e:
-            self.log_error(f"{self.__class__}db_to_tp() 에러 : {e}")
+            self.log_error(f"db_to_tp() {e=}")
             return 0
 
     def tp_to_db(self, x):
@@ -117,11 +118,11 @@ class BssController:
         # 컴포넌트 초기화: 각 경로의 초기값을 상태에 저장하고 변경 감시 설정
         for path_list in path_lists:
             if not isinstance(path_list, (list, tuple)):
-                self.log_error(f"{self.__class__} init() 에러: path_lists 의 개별 요소는 path str 으로 구성된 list 나 tuple 이어야 함")
+                self.log_error("init() -- each element of path_lists must be a list or tuple composed of path strings")
                 raise TypeError
             for path in path_list:
                 if not isinstance(path, tuple):
-                    self.log_error(f"{self.__class__} init() 에러 : 각각의 path 는 path str 으로 구성된 tuple 이어야 함")
+                    self.log_error("init() -- each path must be a tuple composed of path strings")
                     raise TypeError
                 component = self.get_component(path)
                 if component is not None:
@@ -135,13 +136,13 @@ class BssController:
         self.states.subscribe(observer)
 
     def subscribe(self, observer):
-        self.log_warn("subscribe() 는 더 이상 사용되지 않음, add_path_event() 를 사용하세요.")
+        self.log_warn("subscribe() -- is deprecated, use add_path_event() instead.")
         self.add_path_event(observer)
 
     def get_component(self, path: tuple[str, ...]):
         # 튜플 형식의 경로를 통해 중첩된 컴포넌트 객체 가져오기
         if not isinstance(path, tuple):
-            self.log_error(f"{self.__class__} get_component() 에러 : path 의 개별 요소는 는 tuple 로 둘러쌓여진 str 으로 구성돼야 함")
+            self.log_error("get_component() -- path must be a tuple composed of strings")
             raise TypeError
         # dv 에서 시작하여 경로의 각 단계마다 인덱싱으로 중첩 컴포넌트 접근
         nested_component = self.dv
@@ -152,7 +153,7 @@ class BssController:
     def get_state(self, path: tuple[str, ...]):
         # 경로에 해당하는 상태값 조회#
         if not isinstance(path, tuple):
-            self.log_error(f"{self.__class__} get_state() 에러 : path 의 개별 요소는 는 tuple 로 둘러쌓여진 str 으로 구성돼야 함")
+            self.log_error("get_state() -- path must be composed of strings surrounded by tuple")
             raise TypeError
         return self.states.get_state(path)
 
@@ -172,7 +173,7 @@ class BssController:
 
     def vol_up(self, path):
         # 음량 증가: 현재값에 단위값을 더하고 범위 내 값으로 제한#
-        self.log_debug(f"{self.__class__} vol_up() {path=}")
+        self.log_debug(f"vol_up() -- {path=}")
         val_db = self.check_val_convert_float(self.states.get_state(path))
         if val_db is not None:
             # 단위값만큼 증가 후 반올림
@@ -187,7 +188,7 @@ class BssController:
 
     def vol_down(self, path):
         # 음량 감소: 현재값에서 단위값을 빼고 범위 내 값으로 제한#
-        self.log_debug(f"{self.__class__} vol_down() {path=}")
+        self.log_debug(f"vol_down() -- {path=}")
         val_db = self.check_val_convert_float(self.states.get_state(path))
         if val_db is not None:
             # 단위값만큼 감소 후 반올림
@@ -202,7 +203,7 @@ class BssController:
 
     def set_vol(self, path, val: float):
         # 음량을 특정값으로 설정: 범위를 벗어난 값은 MIN/MAX 값으로 제한#
-        self.log_debug(f"{self.__class__} set_vol() {path=} {val=}")
+        self.log_debug(f"set_vol() -- {path=} {val=}")
         if val is not None:
             val = round(val)
             # 범위를 벗어난 값을 MIN/MAX 값으로 제한
@@ -215,7 +216,7 @@ class BssController:
 
     def toggle_on_off(self, path, *args):
         # On/Off 상태 토글
-        self.log_debug(f"{self.__class__} toggle_on_off() {path=}")
+        self.log_debug(f"toggle_on_off() -- {path=}")
         val = self.states.get_state(path)
         if val == "On":
             val_str = "Off"
@@ -227,17 +228,17 @@ class BssController:
 
     def set_on(self, path):
         # 상태를 'On' 으로 설정
-        self.log_debug(f"{self.__class__} set_on() {path=}")
+        self.log_debug(f"set_on() {path=}")
         self.set_state(path, "On")
 
     def set_off(self, path):
         # 상태를 'Off' 로 설정
-        self.log_debug(f"{self.__class__} set_off() {path=}")
+        self.log_debug(f"set_off() {path=}")
         self.set_state(path, "Off")
 
     def toggle_muted_unmuted(self, path):
         # Muted/Unmuted 상태 토글
-        self.log_debug(f"{self.__class__} toggle_muted_unmuted() {path=}")
+        self.log_debug(f"toggle_muted_unmuted() {path=}")
         val = self.states.get_state(path)
         if val == "Unmuted":
             val_str = "Muted"
@@ -249,16 +250,16 @@ class BssController:
 
     def set_muted(self, path):
         # 상태를 'Muted' 로 설정
-        self.log_debug(f"{self.__class__} set_muted() {path=}")
+        self.log_debug(f"set_muted() {path=}")
         self.set_state(path, "Muted")
 
     def set_unmuted(self, path):
         # 상태를 'Unmuted' 로 설정
-        self.log_debug(f"{self.__class__}set_unmuted() {path=}")
+        self.log_debug(f"set_unmuted() {path=}")
         self.set_state(path, "Unmuted")
 
     # ---------------------------------------------------------------------------- #
     def set_val(self, path, val):
         # 지정된 경로의 상태값을 설정
-        self.log_debug(f"{self.__class__} set_val() {path=} {val=}")
+        self.log_debug(f"set_val() {path=} {val=}")
         self.set_state(path, val)

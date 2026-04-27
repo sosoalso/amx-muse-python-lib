@@ -2,10 +2,8 @@ import atexit
 import concurrent.futures
 import time
 
-from mojo import context
-
 # ---------------------------------------------------------------------------- #
-VERSION = "2026.04.10"
+VERSION = "2026.04.24"
 
 
 def get_version():
@@ -27,8 +25,23 @@ class Scheduler:
         self.scheduled_tasks = []
         # 사용자가 제공한 실제 함수를 실행할 스레드 풀 (무제한)
         self.task_executor = concurrent.futures.ThreadPoolExecutor()
+        self.debug = False
+
         # 프로그램 종료 시 자동으로 shutdown() 호출
         atexit.register(self.shutdown)
+
+    def log_debug(self, message):
+        if self.debug:
+            print(f"{__class__.__name__} DEBUG -- {message}")
+
+    def log_error(self, message):
+        print(f"{__class__.__name__} ERROR -- {message}")
+
+    def log_warn(self, message):
+        print(f"{__class__.__name__} WARN -- {message}")
+
+    def log_info(self, message):
+        print(f"{__class__.__name__} INFO -- {message}")
 
     def set_interval(self, func, interval):
         """
@@ -47,7 +60,7 @@ class Scheduler:
             future = self.executor.submit(wrapper)
             self.scheduled_tasks.append(future)
         except Exception as e:
-            context.log.error(f"{self.name} set_interval() 에러: {e}")
+            self.log_error(f"{self.name} set_interval() {e=}")
         finally:
             self.clean()
 
@@ -67,7 +80,7 @@ class Scheduler:
             future = self.executor.submit(wrapper)
             self.scheduled_tasks.append(future)
         except Exception as e:
-            context.log.error(f"{self.name} set_timeout() 에러: {e}")
+            self.log_error(f"{self.name} set_timeout() {e=}")
         finally:
             self.clean()
 
@@ -81,7 +94,7 @@ class Scheduler:
                 if future.done():
                     self.scheduled_tasks.remove(future)
         except Exception as e:
-            context.log.error(f"{self.name} clean() 에러: {e}")
+            self.log_error(f"{self.name} clean() {e=}")
 
     def shutdown(self):
         """
@@ -96,7 +109,7 @@ class Scheduler:
             # 실제 작업 실행 스레드 풀 종료
             self.task_executor.shutdown()
         except Exception as e:
-            context.log.error(f"{self.name} shutdown() 에러: {e}")
+            self.log_error(f"{self.name} shutdown() {e=}")
 
 
 # ---------------------------------------------------------------------------- #

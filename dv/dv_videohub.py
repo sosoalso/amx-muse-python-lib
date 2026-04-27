@@ -1,8 +1,6 @@
 import json
 import re
 
-from mojo import context
-
 from lib.eventmanager import EventManager
 
 
@@ -15,7 +13,15 @@ class Videohub(EventManager):
         self.dv = dv
         self.routes = {key: 0 for key in range(1, 20 + 1)}
         self.name = name
+        self.debug = False
         self.init()
+
+    def log_debug(self, message):
+        if self.debug:
+            print(f"{__class__.__name__} DEBUG -- {message}")
+
+    def log_error(self, message):
+        print(f"{__class__.__name__} ERROR -- {message}")
 
     def init(self):
         self.dv.receive.listen(self.parse_response)
@@ -32,7 +38,7 @@ class Videohub(EventManager):
                     if hasattr(self.routes, key):
                         setattr(self.routes, key, value)
         except FileNotFoundError:
-            context.log.debug(f"{self.name}_routes.json 로드 에러 : 파일이 없습니다. 새로 생성합니다.")
+            self.log_debug(f"{self.name}_routes.json 로드 에러 : 파일이 없습니다. 새로 생성합니다.")
             self.save_json()
 
     def save_json(self):
@@ -40,12 +46,12 @@ class Videohub(EventManager):
             with open(f"{self.name}_routes.json", "w", encoding="UTF-8") as f:
                 json.dump(self.routes, f, ensure_ascii=False, indent=4)
         except Exception as e:
-            context.log.error(f"{self.name}_routes.json 저장 에러 : {e}")
+            self.log_error(f"{self.name}_routes.json 저장 에러 : {e}")
 
     def parse_response(self, *args):
         try:
             data_text = args[0].arguments["data"].decode("utf-8")
-            context.log.debug(data_text)
+            self.log_debug(data_text)
             parsed_data_text_chunks = data_text.split("\n\n")
             for parsed_data_text in parsed_data_text_chunks:
                 splitted_message = parsed_data_text.split("\n")
@@ -56,22 +62,22 @@ class Videohub(EventManager):
                             line = match.group(0)
                             idx_out, idx_in = map(int, line.split())
                             self.routes[idx_out + 1] = idx_in + 1
-                            self.trigger_event("route", idx_in=idx_in, idx_out=idx_out, this=self)
+                            self.emit("route", idx_in=idx_in, idx_out=idx_out, this=self)
             self.save_json()
         except (AttributeError, KeyError, UnicodeDecodeError, ValueError) as e:
-            context.log.error(f"Error decoding data: {e}")
+            self.log_error(f"Error decoding data: {e=}")
             return
 
     def set_route(self, idx_in, idx_out):
         self.send(f"VIDEO OUTPUT ROUTING:\n{idx_out} {idx_in}\n\n")
         self.routes[idx_out + 1] = idx_in + 1
-        self.trigger_event("route", idx_in=idx_in, idx_out=idx_out, routes=self.routes, this=self)
+        self.emit("route", idx_in=idx_in, idx_out=idx_out, routes=self.routes, this=self)
 
     def set_routes(self, route_dict):
         route_str = "\n".join(f"{idx_in} {idx_out}" for idx_in, idx_out in route_dict.items())
         self.send(f"VIDEO OUTPUT ROUTING:\n{route_str}\n")
         for idx_in, idx_out in route_dict.items():
-            self.trigger_event("route", idx_in=idx_in, idx_out=idx_out, routes=self.routes, this=self)
+            self.emit("route", idx_in=idx_in, idx_out=idx_out, routes=self.routes, this=self)
 
 
 # videohub_instance = Videohub(VIDEOHUB)  # INFO : 제어 장비 인스턴스

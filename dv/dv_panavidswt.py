@@ -1,24 +1,6 @@
-from typing import Any, Protocol
-
-from mojo import context
-
 from lib.eventmanager import EventManager
-from lib.lib_yeoul import handle_exception
 from lib.networkmanager import TcpClient
-
-
-class _iReceive(Protocol):
-    def listen(self, listener): ...
-
-
-class _iVidswtClient(Protocol):
-    ip: str
-    port: int
-    receive: _iReceive
-
-    def connect(self): ...
-    def disconnect(self): ...
-    def send(self, data: bytes | bytearray): ...
+from lib.utility import handle_exception
 
 
 # ---------------------------------------------------------------------------- #
@@ -89,20 +71,20 @@ class PanaVidSwt(EventManager):
     CMD_REPLY_BUS_STATUS = "ABUS"
 
     # ---------------------------------------------------------------------------- #
-    def __init__(
-        self,
-        ip_address: str,
-        port: int = DEFAULT_PORT,
-    ):
-        super().__init__("connected", "disconnected", "received", "route", "online", "offline")
+    def __init__(self, ip_address: str, port: int = DEFAULT_PORT):
+        super().__init__()
         self.ip = ip_address
         self.port = port
-        self.dv: _iVidswtClient = TcpClient(self.ip, self.port)
+        self.dv = TcpClient(self.ip, self.port)
         self.routes = [0] * (len(self.DEST_NAME) + 1)
-        self.selected_input: dict[Any, int] = {}
         self.params: dict[str, str] = {}
+        self.debug = False
 
-    def set_client(self, client: _iVidswtClient):
+    def log_debug(self, message):
+        if self.debug:
+            print(f"{self.__class__.__name__} DEBUG -- {message}")
+
+    def set_client(self, client):
         self.dv = client
         self.ip = getattr(client, "ip", self.ip)
         self.port = getattr(client, "port", self.port)
@@ -111,31 +93,10 @@ class PanaVidSwt(EventManager):
     def init(self):
         self.dv.receive.listen(self.parse_response)
 
-    def _require_client(self) -> _iVidswtClient:
-        if self.dv is None:
-            raise RuntimeError("Network client is not set. Inject _iVidswtClient first.")
-        return self.dv
-
-    def _on_online(self):
-        self.emit("connected")
-        self.emit("online")
-
-    def _on_offline(self):
-        self.emit("disconnected")
-        self.emit("offline")
-
-    @handle_exception
-    def connect(self):
-        self._require_client().connect()
-
-    @handle_exception
-    def disconnect(self):
-        self._require_client().disconnect()
-
     def _send_cmd(self, cmd: str):
         payload = f"\x02{cmd}\x03".encode("utf-8")
         self.dv.send(payload)
-        context.log.debug(f"{self.__class__.__name__} send ip={self.ip} cmd={cmd}")
+        self.log_debug(f"send ip={self.ip} cmd={cmd}")
 
     def _source_name(self, src_name) -> str:
         if not src_name in self.SRC_NAME:
@@ -213,7 +174,7 @@ class PanaVidSwt(EventManager):
     def parse_response(self, *args):
         raw_data = self._receive_response(*args)
         if raw_data is None:
-            context.log.error(f"{self.__class__.__name__} parse_response invalid payload: {args=}")
+            self.log_debug(f"{self.__class__.__name__} parse_response invalid payload: {args=}")
             return
         if isinstance(raw_data, bytes):
             text = raw_data.decode("utf-8", errors="ignore")

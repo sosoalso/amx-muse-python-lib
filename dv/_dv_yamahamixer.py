@@ -123,8 +123,6 @@ YAMAHA_CMD_INPUT = "InCh/Fader/"
 YAMAHA_CMD_MIX = "Mix/Fader/"
 
 
-
-
 class YamahaMixer:
 
     def __init__(self, ip):

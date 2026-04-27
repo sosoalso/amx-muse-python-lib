@@ -1,14 +1,13 @@
 import re
 
-# from config import SCUIMXER, TP_LIST, TP_PORT_SCUI
-from mojo import context
-
 # from lib.button import add_btn_ss
 from lib.eventmanager import EventManager
 
 # from lib.lib_tp import tp_send_lvl_ss, tp_set_btn_ss, tp_set_btn_txt_ss
 # from lib.networkmanager import TcpClient
 from lib.scheduler import Scheduler
+
+# from config import SCUIMXER, TP_LIST, TP_PORT_SCUI
 
 
 # "MEDIA_PLAY\n"
@@ -29,7 +28,12 @@ class SCUiMxer(EventManager):
         self.media_status = "STOP"
         self.media_file_name = ""
         self.heartbeat: Scheduler | None = None
+        self.debug = False
         self.init()
+
+    def log_debug(self, message):
+        if self.debug:
+            print(f"{self.__class__.__name__} DEBUG -- {message}")
 
     def init(self):
         self.dv.receive.listen(self.parse_response)
@@ -98,7 +102,7 @@ class SCUiMxer(EventManager):
         if v < 0 or v > 100:
             return
         f = float(v) / 100.0
-        context.log.debug(f"set_volume {address=} {v=} {f=}")
+        self.log_debug(f"set_volume {address=} {v=} {f=}")
         self.state[address + ".mix"] = v
         self.send_params(address + ".mix", f)
         self.emit(f"{address}.mix", value=v)
@@ -181,7 +185,7 @@ class SCUiMxer(EventManager):
                 if address.endswith(".mix"):
                     try:
                         value = int(float(value) * 100)
-                        context.log.debug(f"address find value * 100 ! {address=}, {value=}")
+                        self.log_debug(f"address find value * 100 ! {address=}, {value=}")
                     except ValueError:
                         continue
                 elif address.endswith(".mute"):
@@ -194,7 +198,7 @@ class SCUiMxer(EventManager):
                 self.state[address] = value
                 self.emit(f"{address}", value=self.state[address])
 
-                context.log.debug(f"parse_response {address=}, Value: {self.state[address]=}")
+                self.log_debug(f"parse_response {address=}, Value: {self.state[address]=}")
 
     # ---------------------------------------------------------------------------- #
 

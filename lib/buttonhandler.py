@@ -1,16 +1,18 @@
 import threading
 
-from mojo import context
-
 from lib.eventmanager import EventManager
-from lib.lib_yeoul import debounce
+from lib.utility import debounce
 
 # ---------------------------------------------------------------------------- #
-VERSION = "2026.04.10"
+VERSION = "2026.04.24"
 
 
 def get_version():
     return VERSION
+
+
+def log_error(message):
+    print(f"buttonhandler (ERROR) -- {message}")
 
 
 # ---------------------------------------------------------------------------- #
@@ -66,7 +68,7 @@ class ButtonHandler(EventManager):
                 hold_time = float(action.split("_")[1])
                 # 홀드 시간 범위 검증 (0.5 < hold_time <= 30)
                 if not 0.5 <= hold_time <= 30:
-                    raise ValueError("0.5 < hold_time <= 30 범위어야 함")
+                    raise ValueError("must be in the range 0.5 <= hold_time <= 30")
                 self.hold_time = hold_time
             # ---------------------------------------------------------------------------- #
             elif action.startswith("hold="):
@@ -74,7 +76,7 @@ class ButtonHandler(EventManager):
                 a = "hold"
                 hold_time = float(action.split("=")[1])
                 if not 0.5 <= hold_time <= 30:
-                    raise ValueError("0.5 < hold_time <= 30 범위어야 함")
+                    raise ValueError("must be in the range 0.5 <= hold_time <= 30")
                 self.hold_time = hold_time
             # ---------------------------------------------------------------------------- #
             elif action.startswith("repeat_"):
@@ -83,7 +85,7 @@ class ButtonHandler(EventManager):
                 repeat_interval = float(action.split("_")[1])
                 # 반복 간격 범위 검증 (0.1 <= repeat_interval <= 3.0)
                 if not 0.1 <= repeat_interval <= 3.0:
-                    raise ValueError("0.1 <= repeat_interval <= 3.0 범위어야 함")
+                    raise ValueError("must be in the range 0.1 <= repeat_interval <= 3.0")
                 self.repeat_interval = repeat_interval
             # ---------------------------------------------------------------------------- #
             elif action.startswith("repeat="):
@@ -91,20 +93,17 @@ class ButtonHandler(EventManager):
                 a = "repeat"
                 repeat_interval = float(action.split("=")[1])
                 if not 0.1 <= repeat_interval <= 3.0:
-                    raise ValueError("0.1 <= repeat_interval <= 3.0 범위어야 함")
+                    raise ValueError("must be in the range 0.1 <= repeat_interval <= 3.0")
                 self.repeat_interval = repeat_interval
             # ---------------------------------------------------------------------------- #
             else:
-                context.log.error(f"on() {action=} 에러 : 알 수 없는 액션")
-                raise ValueError
+                log_error(f"on() unknown {action=}")
             # ---------------------------------------------------------------------------- #
             super().on(a, handler)
-        except ValueError as exc:
-            context.log.error(f"on() {action=} : {exc}")
-            raise
-        except Exception as exc:
-            context.log.error(f"on() {action=} 에러 : 처리 중 오류 발생")
-            raise ValueError from exc
+        except ValueError as e:
+            log_error(f"on() {action=} : {e=}")
+        except Exception as e:
+            log_error(f"on() {action=} {e=}")
 
     def handle_event(self, evt):
         # ---------------------------------------------------------------------------- #
@@ -140,10 +139,10 @@ class ButtonHandler(EventManager):
 # ---------------------------------------------------------------------------- #
 class LevelHandler(EventManager):
 
+    # 경고 -- debounce_ms는 초기화 중에 설정되며 이후에는 변경사항이 적용되지 않습니다
     def __init__(self, init_handler=None, debounce_ms=100):
         super().__init__("level")
         self.debounce_ms = debounce_ms
-        context.log.warn("debounce_ms 는 초기화 시 설정되며 이후 변경이 적용되지 않음")
 
         # 과도한 이벤트 발생을 방지하기 위해 debounce 적용
         # debounce_ms 시간 동안 동일한 신호가 계속 들어오면 마지막 신호만 발생

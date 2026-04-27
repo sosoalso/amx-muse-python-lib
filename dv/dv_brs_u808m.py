@@ -1,6 +1,6 @@
 from lib.eventmanager import EventManager
-from lib.lib_yeoul import handle_exception, log_info
 from lib.userdata import Userdata
+from lib.utility import handle_exception
 
 
 # ---------------------------------------------------------------------------- #
@@ -13,6 +13,10 @@ class Vidmtx(EventManager):
         self.name = name
         self.vidmtx_routes = Userdata(f"{self.name}_routes.json", default_value={key: 0 for key in range(1, 8)})
         self.dv.receive.listen(self.parse_response)
+        self.debug = False
+
+    def log_info(self, message):
+        print(f"{__class__.__name__} INFO --  {message}")
 
     @handle_exception
     def vidmtx_send(self, cmd: int, body: bytearray):
@@ -25,7 +29,7 @@ class Vidmtx(EventManager):
 
     @handle_exception
     def set_route(self, idx_in, idx_out):
-        log_info(f"vidmtx_set_route {idx_in=} {idx_out=}")
+        self.log_info(f"set_route() {idx_in=} {idx_out=}")
         if idx_in < 1 or idx_in > 8 or idx_out < 1 or idx_out > 8:
             return
         if self.vidmtx_routes.get_value(idx_out, 0) == idx_in:
@@ -38,7 +42,7 @@ class Vidmtx(EventManager):
 
     @handle_exception
     def set_routes(self, idx_in, idx_outs):
-        log_info(f"vidmtx_set_routes {idx_in=} {idx_outs=}")
+        self.log_info(f"set_routes()     {idx_in=} {idx_outs=}")
         if idx_in < 1 or idx_in > 8 or not all(1 <= idx_out <= 8 for idx_out in idx_outs):
             return
         flag_in = idx_in - 1
