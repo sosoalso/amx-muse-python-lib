@@ -1,17 +1,10 @@
+# 마지막 수정일 : 20260505
 import json
 import threading
 import urllib.error
 import urllib.request
 
-# ---------------------------------------------------------------------------- #
-VERSION = "2026.04.23"
 
-
-def get_version():
-    return VERSION
-
-
-# ---------------------------------------------------------------------------- #
 class SimpleUrlRequestsDebugFlag:
     debug = False
 
@@ -25,10 +18,9 @@ def log_debug(message):
         print(f"simpleurlrequests (DEBUG) -- {message}")
 
 
-# ---------------------------------------------------------------------------- #
 def url_get(url: str, header: dict, callback=None, timeout: float = 0.5):
     # 데몬 스레드로 비동기 GET 요청 실행
-    thread_url_get: threading.Thread
+    _thread_url_get: threading.Thread
     log_debug(f"url_get() {url=} {header=} {callback=} {timeout=}")
 
     def task():
@@ -44,13 +36,13 @@ def url_get(url: str, header: dict, callback=None, timeout: float = 0.5):
             log_error(f"url_get() {e=}")
 
     # 백그라운드에서 실행되는 스레드 생성 및 시작
-    thread_url_get = threading.Thread(target=task, daemon=True)
-    thread_url_get.start()
+    _thread_url_get = threading.Thread(target=task, daemon=True)
+    _thread_url_get.start()
 
 
 def url_post(url: str, header: dict, body=None, callback=None, timeout: float = 0.5):
     # 데몬 스레드로 비동기 POST 요청 실행
-    thread_url_post: threading.Thread
+    _thread_url_post: threading.Thread
     log_debug(f"url_post() {url=} {header=} {body=} {callback=} {timeout=}")
 
     def task():
@@ -68,11 +60,10 @@ def url_post(url: str, header: dict, body=None, callback=None, timeout: float = 
             log_error(f"url_post() {e=}")
 
     # 백그라운드에서 실행되는 스레드 생성 및 시작
-    thread_url_post = threading.Thread(target=task, daemon=True)
-    thread_url_post.start()
+    _thread_url_post = threading.Thread(target=task, daemon=True)
+    _thread_url_post.start()
 
 
-# ---------------------------------------------------------------------------- #
 # 사용 예시
 # GET_URL = "https://jsonplaceholder.typicode.com/posts/1"
 # header_get = {"Content-type": "application/json; charset=UTF-8"}
@@ -81,4 +72,3 @@ def url_post(url: str, header: dict, body=None, callback=None, timeout: float = 
 # header_post = {"Content-type": "application/json; charset=UTF-8"}
 # body_post = {"title": "foo", "body": "bar", "userId": 1}
 # url_post(POST_URL, header_post, body_post, result_callback)
-# ---------------------------------------------------------------------------- #

@@ -3,10 +3,9 @@ from lib.networkmanager import TcpClient
 from lib.utility import handle_exception
 
 
-# ---------------------------------------------------------------------------- #
 class PanaVidSwt(EventManager):
     DEFAULT_PORT = 62000
-    # ---------------------------------------------------------------------------- #
+
     # AXI active mapping (1-based index)
     SRC_NAME_IN_01 = "01"
     SRC_NAME_IN_02 = "02"
@@ -22,7 +21,7 @@ class PanaVidSwt(EventManager):
     SRC_NAME_AUX_04 = "230"
     SRC_NAME_PVW = "02"
     SRC_NAME_PGM = "01"
-    # ---------------------------------------------------------------------------- #
+
     SRC_NAME = {
         "IN_01": SRC_NAME_IN_01,
         "IN_02": SRC_NAME_IN_02,
@@ -39,14 +38,14 @@ class PanaVidSwt(EventManager):
         "PVW": SRC_NAME_PVW,
         "PGM": SRC_NAME_PGM,
     }
-    # ---------------------------------------------------------------------------- #
+
     DEST_NAME_AUX1 = "113"
     DEST_NAME_AUX2 = "114"
     DEST_NAME_AUX3 = "115"
     DEST_NAME_AUX4 = "116"
     DEST_NAME_ME1PVW = "03"
     DEST_NAME_ME1PGM = "01"
-    # ---------------------------------------------------------------------------- #
+
     DEST_NAME = {
         "AUX1": DEST_NAME_AUX1,
         "AUX2": DEST_NAME_AUX2,
@@ -55,7 +54,7 @@ class PanaVidSwt(EventManager):
         "PVW": DEST_NAME_ME1PVW,
         "PGM": DEST_NAME_ME1PGM,
     }
-    # ---------------------------------------------------------------------------- #
+
     CMD_SELECTBUS = "SBUS"
     CMD_CUT = "SCUT"
     CMD_AUTO_TRS = "SAUT"
@@ -65,12 +64,11 @@ class PanaVidSwt(EventManager):
     CMD_TRS_SRC_FTB = "06"
     CMD_TRS_SRC_DSK_1 = "07"
     CMD_TRS_SRC_DSK_2 = "08"
-    # ---------------------------------------------------------------------------- #
+
     CMD_SETAUTOTRANSITION = "SAUT"
     CMD_AUTOTR_PARAM_BKGD = "00"
     CMD_REPLY_BUS_STATUS = "ABUS"
 
-    # ---------------------------------------------------------------------------- #
     def __init__(self, ip_address: str, port: int = DEFAULT_PORT):
         super().__init__()
         self.ip = ip_address

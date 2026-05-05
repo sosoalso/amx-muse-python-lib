@@ -1,16 +1,7 @@
+# 마지막 수정일 : 20260505
 from mojo import context
 
-# ---------------------------------------------------------------------------- #
-VERSION = "2026.04.24"
-
-
-def get_version():
-    return VERSION
-
-
-# ---------------------------------------------------------------------------- #
 get_device = context.devices.get
-# ---------------------------------------------------------------------------- #
 muse_log_info = context.log.info
 muse_log_error = context.log.error
 muse_log_warn = context.log.warn
@@ -24,7 +15,6 @@ def set_log_level(level):
     context.log.level = level.upper()
 
 
-# ---------------------------------------------------------------------------- #
 get_service = context.services.get
 
 

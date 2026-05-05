@@ -2,7 +2,6 @@ from lib.eventmanager import EventManager
 from lib.networkmanager import UdpClient
 
 
-# ---------------------------------------------------------------------------- #
 class ATEMSwitcher(EventManager):
     ATEM_PORT = 9910
     HEADERCMD_ACKREQUEST = 0x01
@@ -18,14 +17,14 @@ class ATEMSwitcher(EventManager):
         self.debug = False
         self.ip = ip
         self.dv = UdpClient(self.ip, self.ATEM_PORT, buffer_size=2048, connection_timeout=10)
-        # ---------------------------------------------------------------------------- #
+
         self.program_input = 0
         self.preview_input = 0
         self.aux_inputs = [0] * 8
-        # ---------------------------------------------------------------------------- #
+
         self.packet_buffer = bytearray(96)
         self.initial_buffer = bytearray(96)
-        # ---------------------------------------------------------------------------- #
+
         self.input_count = 0
         self.local_packet_id_counter = 0
         self.init_payload_sent = False
@@ -34,9 +33,9 @@ class ATEMSwitcher(EventManager):
         self.missed_initialization_packages = [0xFF] * 6
         self.init_payload_sent_at_packet_id = self.MAX_INIT_PACKAGE_COUNT
         self.last_remote_packet_id = 0
-        # ---------------------------------------------------------------------------- #
+
         self.return_package_length = 0
-        # ---------------------------------------------------------------------------- #
+
         self.connected = False
         self.initialized = False
         self.waiting_for_incoming = False
@@ -50,7 +49,7 @@ class ATEMSwitcher(EventManager):
     def init(self):
         self.packet_buffer = bytearray(96)
         self.initial_buffer = bytearray(96)
-        # ---------------------------------------------------------------------------- #
+
         self.input_count = 0
         self.local_packet_id_counter = 0
         self.init_payload_sent = False
@@ -58,11 +57,10 @@ class ATEMSwitcher(EventManager):
         self.session_id = 0x53AB
         self.missed_initialization_packages = [0xFF] * 6
         self.init_payload_sent_at_packet_id = self.MAX_INIT_PACKAGE_COUNT
-        # ---------------------------------------------------------------------------- #
+
         self.connected = False
         self.initialized = False
         self.waiting_for_incoming = False
-        # ---------------------------------------------------------------------------- #
 
     def add_event(self):
         def on_dv_receive(data):
@@ -98,7 +96,7 @@ class ATEMSwitcher(EventManager):
         header = data[0] >> 3
         self.last_remote_packet_id = data[10] << 8 | data[11]
         self.log_debug(f"parse_data() {packet_size=} {packet_length=} {self.session_id=:04x} {self.last_remote_packet_id=:04x}")
-        # ---------------------------------------------------------------------------- #
+
         # note 1
         if self.last_remote_packet_id < self.MAX_INIT_PACKAGE_COUNT:
             self.missed_initialization_packages[self.last_remote_packet_id >> 3] = self.missed_initialization_packages[
@@ -107,7 +105,7 @@ class ATEMSwitcher(EventManager):
         # note 2
         if header & self.HEADERCMD_RESEND:
             self.log_debug(f"resent packet")
-        # ---------------------------------------------------------------------------- #
+
         # note 3
         if header & self.HEADERCMD_HELLOPACKET:
             self.log_debug(f"parse_data() hello packet received")
@@ -120,16 +118,16 @@ class ATEMSwitcher(EventManager):
                 self.create_command_header(self.HEADERCMD_ACK, 12)
                 self.packet_buffer[9] = 0x03
                 self.send_packet_buffer(12)
-        # ---------------------------------------------------------------------------- #
+
         # note 4
         if not self.init_payload_sent and packet_size == 12 and self.last_remote_packet_id > 1:
             self.init_payload_sent = True
             self.init_payload_sent_at_packet_id = self.last_remote_packet_id
-        # ---------------------------------------------------------------------------- #
+
         # note 5
         if not self.init_payload_sent and not (header & self.HEADERCMD_HELLOPACKET) and not (header & self.HEADERCMD_RESEND) and packet_size > 12:
             self.initial_buffer.extend(data[12:packet_size])
-        # ---------------------------------------------------------------------------- #
+
         # note 6
         if self.init_payload_sent and (header & self.HEADERCMD_ACKREQUEST) and (self.initialized or not (header & self.HEADERCMD_RESEND)):
             self.clear_packet_buffer()
@@ -138,11 +136,11 @@ class ATEMSwitcher(EventManager):
             if header & self.HEADERCMD_RESEND:
                 self.debug_print("resend ack: ", self.packet_buffer)
             self.send_packet_buffer(12)
-        # ---------------------------------------------------------------------------- #
+
         # note 7
         if self.initialized and not (header & self.HEADERCMD_HELLOPACKET) and not (header & self.HEADERCMD_RESEND) and packet_length > 12:
             self.parse_packet(data[12:packet_size])
-        # ---------------------------------------------------------------------------- #
+
         # note 8
         if not self.initialized and self.init_payload_sent and not self.waiting_for_incoming:
             for packet_id in range(self.init_payload_sent_at_packet_id):
@@ -269,7 +267,6 @@ class ATEMSwitcher(EventManager):
         self.debug_print("send_packet_buffer()", self.packet_buffer[:return_package_length])
         self.dv.send(self.packet_buffer[:return_package_length])
 
-    # ---------------------------------------------------------------------------- #
     def debug_print(self, str_message, bytes_message):
         if not self.debug:
             return
@@ -278,7 +275,6 @@ class ATEMSwitcher(EventManager):
         self.log_debug(f"Hex: {' '.join(f'{b:02x}' for b in bytes_message)}")
         # self.log_debug(f"ASCII:", "".join(chr(b) if 32 <= b <= 126 else "." for b in bytes_message))
 
-    # ---------------------------------------------------------------------------- #
     def set_program_input(self, input_id):
         self.program_input = input_id
         self.prepare_command_packet("CPgI")
@@ -315,7 +311,6 @@ class ATEMSwitcher(EventManager):
         self.finish_command_packet()
 
 
-# ---------------------------------------------------------------------------- #
 # 사용 예시
 # if __name__ == "__main__":
 #     atem_switcher = ATEMSwitcher("10.20.0.88")

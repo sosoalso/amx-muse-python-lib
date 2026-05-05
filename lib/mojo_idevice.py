@@ -1,41 +1,44 @@
-# ---------------------------------------------------------------------------- #
-VERSION = "2026.04.23"
+# 마지막 수정일 : 20260505
+from lib.utility import handle_exception
 
 
-def get_version():
-    return VERSION
-
-
-# ---------------------------------------------------------------------------- #
+@handle_exception
 def serial_disable_fault_detection(dv):
     dv.disableFaultDetection()
 
 
+@handle_exception
 def serial_enable_fault_detection(dv):
     dv.enableFaultDetection()
 
 
+@handle_exception
 def get_fault(dv):
     return dv.getFault()
 
 
+@handle_exception
 def serial_flush_receive_buffer(dv):
     # 수신 버퍼에 남아있는 데이터를 모두 제거
     dv.flushReceiveBuffer()
 
 
+@handle_exception
 def serial_disable_receive(dv):
     dv.disableReceive()
 
 
+@handle_exception
 def serial_enable_receive(dv):
     dv.enableReceive()
 
 
+@handle_exception
 def serial_clear_fault(dv):
     dv.clearFault()
 
 
+@handle_exception
 def serial_get_status(dv):
     return dv.status.value
 
@@ -44,6 +47,7 @@ def log_error(message):
     print(f"mojo_idevice (ERROR) -- {message}")
 
 
+@handle_exception
 def init_serial(dv, baudrate="9600", bit="8", stop="1", parity="NONE", mode="232"):
     try:
         # 시리얼 통신 매개변수의 유효한 값들을 정의
@@ -70,6 +74,7 @@ def init_serial(dv, baudrate="9600", bit="8", stop="1", parity="NONE", mode="232
         log_error(f"init_serial() {e=}")
 
 
+@handle_exception
 def init_io(dv, io="INPUT", input_mode="ANALOG"):
     try:
         # IO 포트의 유효한 동작 모드 정의
@@ -89,7 +94,7 @@ def init_io(dv, io="INPUT", input_mode="ANALOG"):
         log_error(f"init_io() {e=}")
 
 
-# ---------------------------------------------------------------------------- #
+@handle_exception
 def init_ir(dv, mode="IR"):
     try:
         # IR 포트의 유효한 동작 모드 정의

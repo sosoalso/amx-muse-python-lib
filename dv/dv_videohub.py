@@ -3,10 +3,9 @@ import re
 
 from lib.eventmanager import EventManager
 
-
-# ---------------------------------------------------------------------------- #
 # SECTION : 제어 장비
-# ---------------------------------------------------------------------------- #
+
+
 class Videohub(EventManager):
     def __init__(self, dv, name="videohub"):
         super().__init__("route")
@@ -81,9 +80,9 @@ class Videohub(EventManager):
 
 
 # videohub_instance = Videohub(VIDEOHUB)  # INFO : 제어 장비 인스턴스
-# # ---------------------------------------------------------------------------- #
+#
 # # SECTION : TP
-# # ---------------------------------------------------------------------------- #
+#
 # TP_PORT_VIDEOHUB = 3
 # NUM_VIDEOHUB_IN = 20
 # NUM_VIDEOHUB_OUT = 20
@@ -203,7 +202,7 @@ class Videohub(EventManager):
 #         dv_tp.online(lambda evt, idx_tp=idx_tp: refresh_output_button_name(idx_tp))
 #         dv_tp.online(lambda evt: refresh_output_route_name_all())
 #     context.log.info("add_evt_videohub 등록 완료")
-# ---------------------------------------------------------------------------- #
+
 # import unittest
 # class TestVideohub(unittest.TestCase):
 #     def setUp(self):

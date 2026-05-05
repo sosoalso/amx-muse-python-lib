@@ -42,13 +42,13 @@ class PanaCam:
         url_get(url=f"http://{self.ip_address}/cgi-bin/aw_ptz?cmd=%23PTS5050&res=1", header={})
 
     def zoom_in(self):
-        url_get(url=f"http://{self.ip_address}/cgi-bin/aw_ptz?cmd=%23Z&res=1", header={})
-
-    def zoom_out(self):
         url_get(url=f"http://{self.ip_address}/cgi-bin/aw_ptz?cmd=%23Z{50+self.get_zoom_speed():02d}&res=1", header={})
 
-    def zoom_stop(self):
+    def zoom_out(self):
         url_get(url=f"http://{self.ip_address}/cgi-bin/aw_ptz?cmd=%23Z{50-self.get_zoom_speed():02d}&res=1", header={})
+
+    def zoom_stop(self):
+        url_get(url=f"http://{self.ip_address}/cgi-bin/aw_ptz?cmd=%23Z&res=1", header={})
 
     def recall_preset(self, preset_no):
         url_get(url=f"http://{self.ip_address}/cgi-bin/aw_ptz?cmd=%23R{preset_no:02d}&res=1", header={})

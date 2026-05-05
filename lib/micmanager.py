@@ -1,14 +1,7 @@
+# 마지막 수정일 : 20260505
 from lib.eventmanager import EventManager
 
-# ---------------------------------------------------------------------------- #
-VERSION = "2026.04.23"
 
-
-def get_version():
-    return VERSION
-
-
-# ---------------------------------------------------------------------------- #
 class MicManager(EventManager):
     def __init__(self, max_mic_index=40, last_mic_enabled=True):
         super().__init__("mic_on", "mic_off", "mic_all_off")
@@ -27,10 +20,10 @@ class MicManager(EventManager):
         print(f"{__class__.__name__} (ERROR) -- {message}")
 
     def log_warn(self, message):
-        print(f"{__class__.__name__} (WARN) -- {message}")
+        print(f"{__class__.__name__} ( WARN) -- {message}")
 
     def log_info(self, message):
-        print(f"{__class__.__name__} (INFO) -- {message}")
+        print(f"{__class__.__name__} ( INFO) -- {message}")
 
     def reset_mic_state(self):
         self.log_debug("reset_mic_state()")
@@ -50,7 +43,6 @@ class MicManager(EventManager):
         self.last_mic_enabled = is_enabled
         return self.get_last_mic_enabled()
 
-    # ---------------------------------------------------------------------------- #
     def turn_mic_on(self, mic_index):
         self.log_debug(f"turn_mic_on() {mic_index=}")
         self.handle_mic_on(mic_index)
@@ -67,7 +59,6 @@ class MicManager(EventManager):
         self.log_debug("turn_last_mic_on()")
         self.handle_last_mic_on()
 
-    # ---------------------------------------------------------------------------- #
     def mic_on(self, mic_index):
         self.log_debug(f"mic_on() {mic_index=}")
         self.handle_mic_on(mic_index)
@@ -84,7 +75,6 @@ class MicManager(EventManager):
         self.log_debug("last_mic_on()")
         self.handle_last_mic_on()
 
-    # ---------------------------------------------------------------------------- #
     def handle_all_mic_off(self):
         self.log_debug("handle_all_mic_off()")
         self.reset_mic_state()
@@ -115,7 +105,6 @@ class MicManager(EventManager):
             self.mics_on[mic_idx] = False
             if mic_idx in self.last_on_mics:
                 self.last_on_mics.remove(mic_idx)
-
             # 모든 마이크가 꺼진 경우와 켜진 마이크가 남은 경우 처리
             if self.last_on_mics:
                 self.emit("mic_off", mic_index)

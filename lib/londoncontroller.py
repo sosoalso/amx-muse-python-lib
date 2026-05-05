@@ -1,18 +1,10 @@
+# 마지막 수정일 : 20260505
 import math
 from enum import IntEnum
 
-# ---------------------------------------------------------------------------- #
-VERSION = "2026.04.24"
-
-
-def get_version():
-    return VERSION
-
-
-# ---------------------------------------------------------------------------- #
 MIN_VAL = -60  # 최소 값
 MAX_VAL = 10  # 최대 값
-UNIT_VAL = 1  # 단위 값
+UNIT_VAL = 1  # 단위 값2
 
 
 class LondonObserver:
@@ -59,7 +51,6 @@ class LondonState:
         self._event.unsubscribe(observer)
 
 
-# ---------------------------------------------------------------------------- #
 class LondonDev(IntEnum):
     AUTOMIXER = 1
     MIXER = 2
@@ -132,24 +123,22 @@ class LondonParam(IntEnum):
     R = 3
 
 
-# ---------------------------------------------------------------------------- #
 BLU_IP_PORT = 1023
 
 
-# ---------------------------------------------------------------------------- #
 class LondonController:
     def __init__(self, dv, min_val=MIN_VAL, max_val=MAX_VAL, unit_val=UNIT_VAL, debug=False):
         self.dv = dv
         self.buffer = bytearray()
         self.states = LondonState()
-        # ---------------------------------------------------------------------------- #
+
         self.meter_subscription_rate = 250
         self.check_message_attemps = 0
-        # ---------------------------------------------------------------------------- #
+
         self.MAX_VAL = max_val
         self.MIN_VAL = min_val
         self.UNIT_VAL = unit_val
-        # ---------------------------------------------------------------------------- #
+
         self.debug = debug
         self._init()
 
@@ -161,15 +150,14 @@ class LondonController:
         print(f"{__class__.__name__} (ERROR) -- {message}")
 
     def log_warn(self, message):
-        print(f"{__class__.__name__} (WARN) -- {message}")
+        print(f"{__class__.__name__} ( WARN) -- {message}")
 
     def log_info(self, message):
-        print(f"{__class__.__name__} (INFO) -- {message}")
+        print(f"{__class__.__name__} ( INFO) -- {message}")
 
     def online(self, callback):
         self.dv.online(callback)
 
-    # ---------------------------------------------------------------------------- #
     def parse(self, data: bytes | bytearray):
         # 수신 데이터를 버퍼에 추가하고 파싱
         self.buffer.extend(data)
@@ -180,22 +168,18 @@ class LondonController:
         # 디바이스 수신 이벤트 리스너 등록
         self.dv.receive.listen(lambda event: self.parse(event.arguments["data"]))
 
-    # ---------------------------------------------------------------------------- #
     def add_path_event(self, observer):
         # 상태 변경 옵저버 등록
         self.states.subscribe(observer)
 
-    # ---------------------------------------------------------------------------- #
     def set_meter_subscription_rate(self, rate: int):
         # 메터 구독 주기 설정 (ms 단위)
         self.meter_subscription_rate = rate
 
-    # ---------------------------------------------------------------------------- #
     def get_key(self, node_addr, index_device, index_input, index_output, index_param) -> bytes:
         # 상태 저장소의 키 생성
         return bytes(node_addr + self.get_sv(index_device, index_input, index_output, index_param))
 
-    # ---------------------------------------------------------------------------- #
     def get_val(self, key: bytes | bytearray) -> int:
         # 키에 해당하는 상태값 조회 (없으면 0 반환)
         return self.states.get_state(key) or 0
@@ -213,7 +197,6 @@ class LondonController:
         # 장비 컨트롤 값을 dB 값으로 변환
         return float(int_value / 10000) if int_value >= -100000 else float(-10 * (10 ** ((-int_value - 100000) / 200000)))
 
-    # ---------------------------------------------------------------------------- #
     def bump_up_on(self, node_addr: bytes | bytearray):
         # 상승 범프 온
         self.checksum_then_send(bytes(b"\x88" + node_addr + b"\x00\x03" + b"\x00\x00\x00\x01"))
@@ -295,7 +278,6 @@ class LondonController:
             self.checksum_then_send(bytes(event + node_addr + s_v + my_data))
             self.checksum_then_send(bytes(get_event + node_addr + s_v + bytes([0x00, 0x00, 0x00, 0x00])))
 
-    # ---------------------------------------------------------------------------- #
     def set_gain(self, node_addr: bytes | bytearray, index_device: int, index_input: int, index_output: int, _: int, value: int):
         # 게인값은 4바이트 부호있는 정수로 설정
         event = b"\x88"
@@ -306,7 +288,6 @@ class LondonController:
             self.checksum_then_send(bytes(event + node_addr + s_v + my_data))
             self.checksum_then_send(bytes(get_event + node_addr + s_v + bytes([0x00, 0x00, 0x00, 0x00])))
 
-    # ---------------------------------------------------------------------------- #
     def set_preset(self, preset_type: int, preset_number: int):
         # 프리셋 타입에 따라 파라미터 또는 디바이스 프리셋 설정
         if preset_type == LondonParam.PARAMETER_PRESET:
@@ -340,7 +321,6 @@ class LondonController:
         if s_v != -1:
             self.checksum_then_send(bytes(event + node_addr + s_v + my_data))
 
-    # ---------------------------------------------------------------------------- #
     def get_sv(self, index_device, index_input, index_output, index_param):
         # 기기, 입출력, 파라미터 인덱스를 장비 SV(Sub-Verb) 값으로 변환
         try:
@@ -486,7 +466,6 @@ class LondonController:
         except Exception as e:
             self.log_error(f"get_sv() {e=}")
 
-    # ---------------------------------------------------------------------------- #
     def check_special_char(self, data: int) -> bool:
         # STX(0x02), ETX(0x03), ACK(0x06), NAK(0x15), ESC(0x1B) 특수문자 검사
         return data in (0x02, 0x03, 0x06, 0x15, 0x1B)
@@ -576,7 +555,6 @@ class LondonController:
         except Exception as e:
             self.log_error(f"process_feedback() {e=}")
 
-    # ---------------------------------------------------------------------------- #
     def check_vol_range(self, val: float) -> bool:
         # 음량값이 설정된 범위 내인지 확인
         return val is not None and self.MIN_VAL <= val <= self.MAX_VAL
@@ -620,7 +598,6 @@ class LondonController:
         else:
             return val
 
-    # ---------------------------------------------------------------------------- #
     # 사용자 편의 함수
 
     def set_gain_up(self, node_addr, index_device, index_input, index_output, index_param):
@@ -645,7 +622,7 @@ class LondonController:
             self.val_sub_unit(self.get_val_by_node_sv(node_addr, index_device, index_input, index_output, index_param)),
         )
 
-    def set_val_toggle(self, node_addr, index_device, index_input, index_output, index_param):
+    def set_value_toggle(self, node_addr, index_device, index_input, index_output, index_param):
         # 토글 타입 파라미터 반전 (0 ↔ 1)
         self.set_val(
             node_addr,
@@ -656,7 +633,13 @@ class LondonController:
             self.val_toggle(self.get_val_by_node_sv(node_addr, index_device, index_input, index_output, index_param)),
         )
 
-    # ---------------------------------------------------------------------------- #
+    def set_val_toggle(self, node_addr, index_device, index_input, index_output, index_param):
+        self.set_value_toggle(node_addr, index_device, index_input, index_output, index_param)
+
+    def set_value(self, node_addr, index_device, index_input, index_output, index_param, value=None):
+        if value is not None:
+            self.set_val(node_addr, index_device, index_input, index_output, index_param, value)
+
     def db_to_tp(self, x):
         # dB 값을 터치패널 0-255 범위로 선형 변환
         try:

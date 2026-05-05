@@ -1,14 +1,7 @@
+# 마지막 수정일 : 20260505
 from lib.userdata import Userdata
 
-# ---------------------------------------------------------------------------- #
-VERSION = "2026.04.23"
 
-
-def get_version():
-    return VERSION
-
-
-# ---------------------------------------------------------------------------- #
 class CamtrackPreset:
     """
     self.camtrack_preset 구조:

@@ -23,7 +23,6 @@ class Visca:
         print(msg)
         self.dv.send(msg)
 
-    # ---------------------------------------------------------------------------- #
     def move_up(self):
         self.send(bytearray([self.cam_id + 0x80, 0x01] + [0x06, 0x01] + self.get_move_speed() + [0x03, 0x01]))
 

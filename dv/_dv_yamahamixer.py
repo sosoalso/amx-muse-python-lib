@@ -2,7 +2,6 @@ from mojo import context
 
 from lib.networkmanager import TcpClient
 
-# ---------------------------------------------------------------------------- #
 YAMAHA_GAIN_LUT = [
     -6000,
     -5950,
@@ -130,7 +129,7 @@ class YamahaMixer:
         # self.yamahaGain = [0] * (self.NUM_CH + 1)
         # self.yamahaMute = [False] * (self.NUM_CH + 1)
         self.ip = ip
-        # ---------------------------------------------------------------------------- #
+
         self.buffer = ""
         self.dv = TcpClient(name="mixer", ip=self.ip, port=YAMAHA_PORT)
         self.dv.on("received", self.parse_response)

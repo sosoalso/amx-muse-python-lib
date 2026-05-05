@@ -2,10 +2,10 @@ from lib.eventmanager import EventManager
 from lib.networkmanager import TcpClient
 from lib.scheduler import Scheduler
 
-
-# ---------------------------------------------------------------------------- #
 # SECTION : 제어 장비
-# ---------------------------------------------------------------------------- #
+
+
+# todo 기능 더 추가해야 됨
 class PJLink(EventManager):
     def __init__(self, ip_address, name="PJLink"):
         super().__init__("power", "poweron", "poweroff", "mute", "muted", "unmuted", "poll")
@@ -14,7 +14,7 @@ class PJLink(EventManager):
         self.power = False
         self.mute = False
         self.source = "0"
-        self.poll = Scheduler(max_workers=3, name=self.name + " poll")
+        self.poll = Scheduler(name=self.name + " poll")
         self.debug = False
         self.dv.receive.listen(self.parse_response)
         self.dv.connect()
@@ -33,14 +33,15 @@ class PJLink(EventManager):
         self.start_poll()
 
     def send(self, msg):
-        self.dv.send(msg.encode("utf-8"))
+        if self.dv.connected:
+            self.dv.send(msg + "\r")
 
     def start_poll(self, *args):
         def query_power():
-            self.send("%1POWR ?\r")
+            self.send("%1POWR ?")
 
         def query_mute():
-            self.send("%1AVMT ?\r")
+            self.send("%1AVMT ?")
 
         self.poll.set_timeout(lambda: self.poll.set_interval(query_power, 10.0), 1.0)
         self.poll.set_timeout(lambda: self.poll.set_interval(query_mute, 10.0), 2.0)
@@ -70,7 +71,7 @@ class PJLink(EventManager):
                 self.log_error(f"Pjlink {self.name=} Error decoding data: {e}")
 
     def set_power(self, value):
-        self.send("%1POWR 1\r" if value else "%1POWR 0\r")
+        self.send("%1POWR 1" if value else "%1POWR 0")
         self.power = value
         self.trigger_event("power", value=value, this=self)
 
@@ -81,7 +82,7 @@ class PJLink(EventManager):
         self.set_power(False)
 
     def set_mute(self, value):
-        self.send("%1AVMT 31\r" if value else "%1AVMT 30\r")
+        self.send("%1AVMT 31" if value else "%1AVMT 30")
         self.mute = value
         self.trigger_event("mute", value=value, this=self)
 

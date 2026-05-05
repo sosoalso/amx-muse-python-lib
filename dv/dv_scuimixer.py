@@ -78,14 +78,13 @@ class SCUiMxer(EventManager):
         self.send(f"MEDIA_SWITCH_TRACK^~all~^{filename}")
         self.media_file_name = filename
 
-    # ---------------------------------------------------------------------------- #
     # i.0
     # a.0
     # p.0
     # m 마스터
     # SETD^i.0.mix^1.0 // 0~100 /100 float
     # SETD^i.0.mute^1
-    # ---------------------------------------------------------------------------- #
+
     def set_mute(self, address, v: int):
         if v not in (0, 1):
             return
@@ -134,7 +133,6 @@ class SCUiMxer(EventManager):
     def set_master_volume(self, v: int):
         self.set_volume("m", v)
 
-    # ---------------------------------------------------------------------------- #
     def get_input_mute(self, idx: int) -> int:
         return int(self.state.get(f"i.{idx}.mute", -1))
 
@@ -154,7 +152,6 @@ class SCUiMxer(EventManager):
     def get_master_volume(self) -> int:
         return int(self.state.get("m.mix", -1))
 
-    # ---------------------------------------------------------------------------- #
     def parse_response(self, evt):
         data_text = evt.arguments["data"].decode()
 
@@ -176,12 +173,12 @@ class SCUiMxer(EventManager):
             if match:
                 address = match.group(1)
                 value = match.group(2)
-                # ---------------------------------------------------------------------------- #
+
                 if address.startswith("RTA^") or address.startswith("VU2^"):
                     continue
                 if not address.startswith(("i.")) and not address.startswith(("a.")) and not address.startswith(("m")):
                     continue
-                # ---------------------------------------------------------------------------- #
+
                 if address.endswith(".mix"):
                     try:
                         value = int(float(value) * 100)
@@ -199,8 +196,6 @@ class SCUiMxer(EventManager):
                 self.emit(f"{address}", value=self.state[address])
 
                 self.log_debug(f"parse_response {address=}, Value: {self.state[address]=}")
-
-    # ---------------------------------------------------------------------------- #
 
 
 ENUM_SCUI_INT_DB = {
@@ -307,18 +302,18 @@ ENUM_SCUI_INT_DB = {
     100: 10.0,
 }
 
-# ---------------------------------------------------------------------------- #
+
 # scuimixer_instance = SCUiMxer(dv=SCUIMXER, ip="192.168.0.99")
 
 
 # scuimixer_instance.dv.debug = True
-# # ---------------------------------------------------------------------------- #
+#
 # def add_tp_scuimixer():
 #     def vol_up_input(idx):
 #         try:
 #             cur_value = int(scuimixer_instance.get_input_volume(idx))
 #             new_value = 76 if cur_value == -1 else min(100, cur_value + 1)
-#             # ---------------------------------------------------------------------------- #
+#
 #             scuimixer_instance.set_input_volume(idx, new_value)
 #             if idx == 6:
 #                 scuimixer_instance.set_input_volume(7, new_value)
@@ -326,7 +321,7 @@ ENUM_SCUI_INT_DB = {
 #                 scuimixer_instance.set_input_volume(9, new_value)
 #             elif idx == 10:
 #                 scuimixer_instance.set_input_volume(11, new_value)
-#             # ---------------------------------------------------------------------------- #
+#
 #         except Exception as e:
 #             print(f"add_tp_scui vol_up_input {idx=} {e=}")
 
@@ -334,7 +329,7 @@ ENUM_SCUI_INT_DB = {
 #         try:
 #             cur_value = scuimixer_instance.get_input_volume(idx)
 #             new_value = 76 if cur_value == -1 else max(0, cur_value - 1)
-#             # ---------------------------------------------------------------------------- #
+#
 #             scuimixer_instance.set_input_volume(idx, new_value)
 #             if idx == 6:
 #                 scuimixer_instance.set_input_volume(7, new_value)
@@ -365,7 +360,7 @@ ENUM_SCUI_INT_DB = {
 #         add_btn_ss(TP_LIST, TP_PORT_SCUI, btn, "repeat_0.2", lambda idx=idx: vol_down_input(idx))
 
 
-# # ---------------------------------------------------------------------------- #
+#
 # def add_evt_scuimixer():
 #     def refresh_tp_vol_by_input_idx(idx, *args, **kwargs):
 #         try:

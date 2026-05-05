@@ -3,8 +3,6 @@ from lib.networkmanager import UdpClient
 from pythonosc.osc_message import OscMessage
 from pythonosc.osc_message_builder import OscMessageBuilder
 
-# ---------------------------------------------------------------------------- #
-
 
 class OSCClient(EventManager):
     def __init__(self, address, port, bound_port=None):

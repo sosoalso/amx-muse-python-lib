@@ -1,16 +1,9 @@
+# 마지막 수정일 : 20260505
 from lib.button import add_button_ss
 from lib.mojo_tp import tp_set_button
 from lib.utility import pulse
 
-# ---------------------------------------------------------------------------- #
-VERSION = "2026.04.24"
 
-
-def get_version():
-    return VERSION
-
-
-# ---------------------------------------------------------------------------- #
 class Relay:
     def __init__(self, devchan_list: list[tuple] | tuple[tuple], tp_list: list, port: int, pulse_time: float = 0.5):
         """
@@ -50,7 +43,6 @@ class Relay:
                 "state": self._get_relay_devchan_state(idx) or False,
             }
 
-    # ---------------------------------------------------------------------------- #
     def _get_relay_devchan(self, idx):
         dv, ch = self.devchan_list[idx]
         return dv[ch]
@@ -61,7 +53,6 @@ class Relay:
     def _set_relay_devchan_state(self, idx, state):
         self._get_relay_devchan(idx).state.value = state
 
-    # ---------------------------------------------------------------------------- #
     def get_relay_state(self, idx):
         return self.relay_state[idx]["state"]
 
@@ -93,11 +84,9 @@ class Relay:
 
         inner()
 
-    # ---------------------------------------------------------------------------- #
     def update_relay_state(self, idx):
         self.relay_state[idx]["state"] = self._get_relay_devchan_state(idx)
 
-    # ---------------------------------------------------------------------------- #
     def add_relay_button(self):
         for idx in range(len(self.devchan_list)):
             add_button_ss(

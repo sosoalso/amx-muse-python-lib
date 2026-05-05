@@ -22,7 +22,6 @@ class CanonCam:
     def get_pan_speed(self):
         return "5000" if self.is_fast else "2500"
 
-    # ---------------------------------------------------------------------------- #
     def move_up(self):
         url_get(
             f"http://{self.ip_address}/-wvhttp-01-/control.cgi?tilt=up&tilt.speed={self.get_speed()}",

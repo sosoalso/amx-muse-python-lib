@@ -1,29 +1,9 @@
-# ---------------------------------------------------------------------------- #
+# 마지막 수정일 : 20260505
 import json
 import os
-
-# ---------------------------------------------------------------------------- #
-VERSION = "2026.04.24"
+from lib.utility import handle_exception
 
 
-def get_version():
-    return VERSION
-
-
-# ---------------------------------------------------------------------------- #
-def handle_exception(func):
-    # 함수 실행 중 예외 발생 시 로깅하고 None 반환하는 데코레이터
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            print(f"timeline (ERROR) -- {func.__name__=} {e=}")
-            return None
-
-    return wrapper
-
-
-# ---------------------------------------------------------------------------- #
 class Userdata:
     def __init__(self, filename="user_data.json", foldername=None, default_value=None):
         self.filename = filename
@@ -119,6 +99,3 @@ class Var:
         with open(filepath, "r", encoding="UTF-8") as f:
             data = json.load(f)
         cls.from_dict(data)
-
-
-# ---------------------------------------------------------------------------- #

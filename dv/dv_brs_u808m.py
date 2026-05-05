@@ -2,10 +2,9 @@ from lib.eventmanager import EventManager
 from lib.userdata import Userdata
 from lib.utility import handle_exception
 
-
-# ---------------------------------------------------------------------------- #
 # SECTION - 제어 장비
-# ---------------------------------------------------------------------------- #
+
+
 class Vidmtx(EventManager):
     def __init__(self, dv, name):
         super().__init__("route", "routes")
@@ -153,7 +152,6 @@ class Vidmtx(EventManager):
 #     context.log.info("add_evt_vidmtx 등록 완료")
 
 
-# ---------------------------------------------------------------------------- #
 # import unittest
 # class TestVidmtx(unittest.TestCase):
 #     def setUp(self):

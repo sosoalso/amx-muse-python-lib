@@ -1,3 +1,4 @@
+# 마지막 수정일 : 20260505
 from lib.button import add_button
 from lib.mojo_tp import (
     tp_hide_all_popup,
@@ -7,15 +8,7 @@ from lib.mojo_tp import (
 )
 from lib.utility import handle_exception
 
-# ---------------------------------------------------------------------------- #
-VERSION = "2026.04.24"
 
-
-def get_version():
-    return VERSION
-
-
-# ---------------------------------------------------------------------------- #
 class UIMenu:
     def __init__(self, tp):
         self.tp = tp
