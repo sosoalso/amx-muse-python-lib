@@ -1,29 +1,16 @@
 # 마지막 수정일 : 20260505
 from lib.eventmanager import EventManager
+from lib.utility import CommonLogger
 
 
-class MicManager(EventManager):
+class MicManager(CommonLogger, EventManager):
     def __init__(self, max_mic_index=40, last_mic_enabled=True):
         super().__init__("mic_on", "mic_off", "mic_all_off")
         self.max_mic_index = max_mic_index
         self.last_mic_enabled = last_mic_enabled
         self.mics_on = [False] * self.max_mic_index
         self.last_on_mics = []
-        self.debug = False
         self.reset_mic_state()
-
-    def log_debug(self, message):
-        if self.debug:
-            print(f"{__class__.__name__} (DEBUG) -- {message}")
-
-    def log_error(self, message):
-        print(f"{__class__.__name__} (ERROR) -- {message}")
-
-    def log_warn(self, message):
-        print(f"{__class__.__name__} ( WARN) -- {message}")
-
-    def log_info(self, message):
-        print(f"{__class__.__name__} ( INFO) -- {message}")
 
     def reset_mic_state(self):
         self.log_debug("reset_mic_state()")

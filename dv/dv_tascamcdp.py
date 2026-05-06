@@ -37,7 +37,7 @@ class TascamCdp(CommonLogger, EventManager):
         self.log_debug(f"send() {msg=}")
 
     def start_poll(self):
-        self.poll.set_timeout(lambda: self.poll.set_interval(self.query_status, self.poll_interval), 1.0)
+        self.poll.set_timeout(1.0, lambda: self.poll.set_interval(self.poll_interval, self.query_status))
 
     def stop_poll(self):
         self.poll.shutdown()

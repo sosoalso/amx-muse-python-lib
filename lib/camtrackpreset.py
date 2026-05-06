@@ -20,7 +20,7 @@ class CamtrackPreset:
 
     def __init__(self, max_preset_index=40, filename="camtrack_preset.json"):
         self.max_preset_index = max_preset_index
-        self.userdata = Userdata(filename=filename)
+        self.userdata = Userdata(filename)
         # JSON 파일에서 camtrack_preset 데이터를 로드하거나, 없으면 더미 데이터로 초기화
         self.camtrack_preset = self.userdata.get_value("camtrack_preset", self.make_dummy_presets())
 

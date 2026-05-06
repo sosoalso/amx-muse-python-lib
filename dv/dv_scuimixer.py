@@ -40,7 +40,7 @@ class SCUiMxer(EventManager):
 
         def delayed_init():
             sch = Scheduler()
-            sch.set_timeout(lambda: self.send("GET /raw HTTP1.1\r\n"), 1.0)
+            sch.set_timeout(1.0, lambda: self.send("GET /raw HTTP1.1\r\n"))
 
         self.dv.online(delayed_init)
         self.heartbeat = Scheduler(name=f"SCUiMxer-{self.ip}-Heartbeat")

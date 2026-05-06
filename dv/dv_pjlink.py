@@ -43,8 +43,8 @@ class PJLink(EventManager):
         def query_mute():
             self.send("%1AVMT ?")
 
-        self.poll.set_timeout(lambda: self.poll.set_interval(query_power, 10.0), 1.0)
-        self.poll.set_timeout(lambda: self.poll.set_interval(query_mute, 10.0), 2.0)
+        self.poll.set_timeout(1.0, lambda: self.poll.set_interval(10.0, query_power, 10.0))
+        self.poll.set_timeout(2.0, lambda: self.poll.set_interval(10.0, query_mute, 10.0))
 
     def parse_response(self, *args):
         if not args or not hasattr(args[0], "arguments") or "data" not in args[0].arguments:

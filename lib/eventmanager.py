@@ -10,16 +10,16 @@ class EventManager:
 
     def evt_log_debug(self, message):
         if EventManagerDebugFlags.debug:
-            print(f"{__class__.__name__} (DEBUG) -- {message}")
+            print(f"(DEBUG) - {__class__.__name__} : {message}")
 
     def evt_log_error(self, message):
-        print(f"{__class__.__name__} (ERROR) -- {message}")
+        print(f"(ERROR) - {__class__.__name__} : {message}")
 
     def evt_log_warn(self, message):
-        print(f"{__class__.__name__} ( WARN) -- {message}")
+        print(f"( WARN) - {__class__.__name__} : {message}")
 
     def evt_log_info(self, message):
-        print(f"{__class__.__name__} ( INFO) -- {message}")
+        print(f"( INFO) - {__class__.__name__} : {message}")
 
     def add_event_action(self, action):
         try:

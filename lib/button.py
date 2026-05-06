@@ -22,7 +22,7 @@ def add_button_set_debug_flag(
     ButtonDebugFlags.debug_add_level = debug_add_level
 
 
-def log_debug(message):
+def button_log_debug(message):
     print(f"(DEBUG) - button : {message}")
 
 
@@ -31,7 +31,7 @@ def add_button(tp, port, button, action, callback):
     new_button = ButtonHandler(init_action=action, init_handler=callback)
     tp_add_watcher(tp, port, button, new_button.handle_event)
     if ButtonDebugFlags.debug_add_button:
-        log_debug(f"add_button() {tp.id} {port=} {button=} {action=}")
+        button_log_debug(f"add_button() {tp.id} {port=} {button=} {action=}")
     return new_button
 
 
@@ -46,7 +46,7 @@ def add_button_ss(tp_list, port, button, action, callback):
     new_button = ButtonHandler(init_action=action, init_handler=callback)
     tp_add_watcher_ss(tp_list, port, button, new_button.handle_event)
     if ButtonDebugFlags.debug_add_button:
-        log_debug(f"add_button_ss() {[tp.id for tp in tp_list]} {port=} {button=} {action=}")
+        button_log_debug(f"add_button_ss() {[tp.id for tp in tp_list]} {port=} {button=} {action=}")
     return new_button
 
 
@@ -61,7 +61,7 @@ def add_level(tp, port, level, callback, debounce_ms):
     level_handler = LevelHandler(init_handler=callback, debounce_ms=debounce_ms)
     tp_add_watcher_level(tp, port, level, level_handler.handle_event)
     if ButtonDebugFlags.debug_add_level:
-        log_debug(f"add_level() {tp.id} {port=} {level=}")
+        button_log_debug(f"add_level() {tp.id} {port=} {level=}")
     return level_handler
 
 
@@ -76,7 +76,7 @@ def add_level_ss(tp_list, port, level, callback, debounce_ms):
     level_handler = LevelHandler(init_handler=callback, debounce_ms=debounce_ms)
     tp_add_watcher_level_ss(tp_list, port, level, level_handler.handle_event)
     if ButtonDebugFlags.debug_add_level:
-        log_debug(f"add_level_ss() {[tp.id for tp in tp_list]} {port=} {level=}")
+        button_log_debug(f"add_level_ss() {[tp.id for tp in tp_list]} {port=} {level=}")
     return level_handler
 
 

@@ -61,8 +61,10 @@ class HyperDeckStudio(CommonLogger, EventManager):
             if not args or not hasattr(args[0], "arguments") or "data" not in args[0].arguments:
                 return
             data_text = args[0].arguments["data"].decode("utf-8")
+            self.log_debug(data_text)
             while "\r\n" in data_text:
                 response = data_text.split("\r\n", 1)[0]
+                data_text = data_text.split("\r\n", 1)[1]  # 처리한 줄 제거
                 # ---------------------------------------------------------------------------- #
                 if response.startswith("status: "):
                     if "record" in response[7:]:

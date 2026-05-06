@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260505
+# 마지막 수정일 : 20260506
 import atexit
 import threading
 from lib.utility import CommonLogger
@@ -177,12 +177,17 @@ class Scheduler(CommonLogger):
         except Exception as e:
             self.log_error(f"cancel() {e=}")
 
-    def set_interval(self, func, interval):
+    def set_interval(self, interval, func):
         """
         주어진 함수를 지정된 시간 간격으로 반복 실행
         interval: 실행 간격(초)
         """
         try:
+            if not isinstance(interval, (int, float)) or interval <= 0:
+                raise ValueError(f"interval must be a positive number, got {interval}")
+            if not callable(func):
+                raise ValueError(f"func must be callable, got {type(func)}")
+
             self.log_debug(f"set_interval() interval={interval}")
             stop_event = threading.Event()
             # 스케줄 중단 신호를 전달할 Event 객체 생성
@@ -216,7 +221,7 @@ class Scheduler(CommonLogger):
             self.log_error(f"set_interval() {e=}")
             return None
 
-    def set_timeout(self, func, delay):
+    def set_timeout(self, delay, func):
         """
         주어진 함수를 지정된 시간 후에 한 번 실행
         delay: 지연 시간(초)

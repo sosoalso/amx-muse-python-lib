@@ -9,11 +9,11 @@ class SimpleUrlRequestsDebugFlag:
     debug = False
 
 
-def log_error(message):
+def simple_url_requests_log_error(message):
     print(f"simpleurlrequests (ERROR) -- {message}")
 
 
-def log_debug(message):
+def simple_url_requests_log_debug(message):
     if SimpleUrlRequestsDebugFlag.debug:
         print(f"simpleurlrequests (DEBUG) -- {message}")
 
@@ -21,7 +21,7 @@ def log_debug(message):
 def url_get(url: str, header: dict, callback=None, timeout: float = 0.5):
     # 데몬 스레드로 비동기 GET 요청 실행
     _thread_url_get: threading.Thread
-    log_debug(f"url_get() {url=} {header=} {callback=} {timeout=}")
+    simple_url_requests_log_debug(f"url_get() {url=} {header=} {callback=} {timeout=}")
 
     def task():
         req = urllib.request.Request(url=url, headers=header, method="GET")
@@ -33,7 +33,7 @@ def url_get(url: str, header: dict, callback=None, timeout: float = 0.5):
                 if callback:
                     callback(result)
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
-            log_error(f"url_get() {e=}")
+            simple_url_requests_log_error(f"url_get() {e=}")
 
     # 백그라운드에서 실행되는 스레드 생성 및 시작
     _thread_url_get = threading.Thread(target=task, daemon=True)
@@ -43,7 +43,7 @@ def url_get(url: str, header: dict, callback=None, timeout: float = 0.5):
 def url_post(url: str, header: dict, body=None, callback=None, timeout: float = 0.5):
     # 데몬 스레드로 비동기 POST 요청 실행
     _thread_url_post: threading.Thread
-    log_debug(f"url_post() {url=} {header=} {body=} {callback=} {timeout=}")
+    simple_url_requests_log_debug(f"url_post() {url=} {header=} {body=} {callback=} {timeout=}")
 
     def task():
         # body를 JSON 문자열로 인코딩하여 바이트로 변환
@@ -57,7 +57,7 @@ def url_post(url: str, header: dict, body=None, callback=None, timeout: float = 
                 if callback:
                     callback(result)
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
-            log_error(f"url_post() {e=}")
+            simple_url_requests_log_error(f"url_post() {e=}")
 
     # 백그라운드에서 실행되는 스레드 생성 및 시작
     _thread_url_post = threading.Thread(target=task, daemon=True)

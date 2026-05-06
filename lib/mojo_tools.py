@@ -1,7 +1,6 @@
 # 마지막 수정일 : 20260505
 from mojo import context
 
-get_device = context.devices.get
 muse_log_info = context.log.info
 muse_log_error = context.log.error
 muse_log_warn = context.log.warn
@@ -15,9 +14,9 @@ def set_log_level(level):
     context.log.level = level.upper()
 
 
+get_device = context.devices.get
 get_service = context.services.get
 
 
 def get_timeline():
-    # context.log.error("타임라인은 정상적인 동작을 확인하기 전까지 개인적으로 사용을 매우 매우 비권장...")
     return context.services.get("timeline")

@@ -33,8 +33,8 @@ class DigitalProjectionVidprj(CommonLogger, EventManager):
         def query_mute():
             self.send("*mute ?")
 
-        self.poll.set_timeout(lambda: self.poll.set_interval(query_power, 10.0), 1.0)
-        self.poll.set_timeout(lambda: self.poll.set_interval(query_mute, 10.0), 3.0)
+        self.poll.set_timeout(1.0, lambda: self.poll.set_interval(10.0, query_power))
+        self.poll.set_timeout(3.0, lambda: self.poll.set_interval(10.0, query_mute))
 
     def parse_response(self, *args):
         if not args or not hasattr(args[0], "arguments") or "data" not in args[0].arguments:

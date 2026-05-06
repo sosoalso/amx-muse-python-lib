@@ -154,7 +154,7 @@ class TcpServer(CommonLogger, EventManager):
                         self.clients[address] = {"socket": client, "last_seen": time.time()}  # 새로운 클라이언트 정보 저장 (소켓, 마지막 수신 시간)
                     self.emit("connected", address=address)
                     self.emit("online", address=address)
-                    self._thread_receive_loop = run_thread(self._receive_loop, client, address)
+                    self._thread_receive_loop = run_thread(self._thread_receive_loop, self._receive_loop, (client, address))
                 except OSError:  # 소켓이 닫혀 있을 경우 발생할 수 있음
                     self.running = False
                     break

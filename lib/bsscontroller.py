@@ -64,7 +64,7 @@ class BssState:
 
 
 class BssController(CommonLogger):
-    def __init__(self, dv, states=None, min_val=MIN_VAL, max_val=MAX_VAL, unit_val=UNIT_VAL, debug=False):
+    def __init__(self, dv, states=None, min_val=MIN_VAL, max_val=MAX_VAL, unit_val=UNIT_VAL):
         # 장치 설정
         self.dv = dv
         # 컴포넌트 상태 설정
@@ -75,7 +75,6 @@ class BssController(CommonLogger):
         self.MAX_VAL = max_val
         # 볼륨 조절 단위 값 설정
         self.UNIT_VAL = unit_val
-        self.debug = debug
 
     def db_to_tp(self, x):
         """dB 값을 터치패널 0-255 범위로 선형 변환"""

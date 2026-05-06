@@ -1,21 +1,16 @@
 # 마지막 수정일 : 20260505
 import json
 import os
-from lib.utility import handle_exception
+from lib.utility import CommonLogger, handle_exception
 
 
-class Userdata:
+class Userdata(CommonLogger):
     def __init__(self, filename="user_data.json", foldername=None, default_value=None):
         self.filename = filename
         self.foldername = foldername
         self.filepath = self.get_file_path()
         self.data = {}
-        self.debug = False
         self.init(default_value=default_value)
-
-    def log_debug(self, message):
-        if self.debug:
-            print(f"DEBUG -- {message}")
 
     @handle_exception
     def get_file_path(self):

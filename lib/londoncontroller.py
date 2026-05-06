@@ -2,6 +2,8 @@
 import math
 from enum import IntEnum
 
+from lib.utility import CommonLogger
+
 MIN_VAL = -60  # 최소 값
 MAX_VAL = 10  # 최대 값
 UNIT_VAL = 1  # 단위 값2
@@ -126,8 +128,8 @@ class LondonParam(IntEnum):
 BLU_IP_PORT = 1023
 
 
-class LondonController:
-    def __init__(self, dv, min_val=MIN_VAL, max_val=MAX_VAL, unit_val=UNIT_VAL, debug=False):
+class LondonController(CommonLogger):
+    def __init__(self, dv, min_val=MIN_VAL, max_val=MAX_VAL, unit_val=UNIT_VAL):
         self.dv = dv
         self.buffer = bytearray()
         self.states = LondonState()
@@ -139,21 +141,7 @@ class LondonController:
         self.MIN_VAL = min_val
         self.UNIT_VAL = unit_val
 
-        self.debug = debug
         self._init()
-
-    def log_debug(self, message):
-        if self.debug:
-            print(f"{__class__.__name__} (DEBUG) -- {message}")
-
-    def log_error(self, message):
-        print(f"{__class__.__name__} (ERROR) -- {message}")
-
-    def log_warn(self, message):
-        print(f"{__class__.__name__} ( WARN) -- {message}")
-
-    def log_info(self, message):
-        print(f"{__class__.__name__} ( INFO) -- {message}")
 
     def online(self, callback):
         self.dv.online(callback)

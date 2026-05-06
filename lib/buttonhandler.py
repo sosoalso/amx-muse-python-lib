@@ -53,6 +53,7 @@ class ButtonHandler(EventManager):
 
     def on(self, action, handler):
         try:
+            a = None
             if action in ("push", "release", "hold", "repeat"):
                 a = action
             elif action.startswith("hold_"):
@@ -87,7 +88,9 @@ class ButtonHandler(EventManager):
                 self.repeat_interval = repeat_interval
             else:
                 log_error(f"on() unknown {action=}")
-            super().on(a, handler)
+                return
+            if a is not None:
+                super().on(a, handler)
         except ValueError as e:
             log_error(f"on() {action=} : {e=}")
         except Exception as e:

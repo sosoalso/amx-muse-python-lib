@@ -29,7 +29,7 @@ class EikiVidprj(CommonLogger, EventManager):
         def query_power():
             self.send("CR0")
 
-        self.poll.set_interval(query_power, 10.0)
+        self.poll.set_interval(10.0, query_power)
 
     def parse_response(self, *args):
         if not args or not hasattr(args[0], "arguments") or "data" not in args[0].arguments:
