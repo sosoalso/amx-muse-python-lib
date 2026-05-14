@@ -11,3 +11,4 @@
 /.site_packages
 **/.site_packages/
 /pythonosc
+/old
