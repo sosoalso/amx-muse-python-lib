@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260514
+# 마지막 수정일 : 20260505
 class DebugFlags:
     debug_tp_add_watcher = False
     debug_tp_add_watcher_level = False
@@ -41,11 +41,11 @@ def tp_handle_exception(func):
 
 
 def tp_log_debug(message):
-    print(f"(DEBUG) - mojo_tp : {message}")
+    print(f"mojo_tp (DEBUG) -- {message}")
 
 
 def tp_log_error(message):
-    print(f"(ERROR) - mojo_tp : {message}")
+    print(f"mojo_tp (ERROR) -- {message}")
 
 
 def _notify(evt):

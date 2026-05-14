@@ -1,31 +1,32 @@
 # 마지막 수정일 : 20260511
 from lib.event_manager import EventManager
-from lib.network_manager import TcpClient
+from lib.network_manager import DEFAULT_TCP_CLIENT_RECONNECT_TIME, TcpClient
+from lib.scheduler import Scheduler
 from lib.utility import CommonLogger, handle_exception
 
 
 # note : 프로토타입
-# 어차피 파라메터에 때려놓고 필요한거 가져가면 됨 그 정도 속도 안나는 놈 아님
-class Svsi(CommonLogger, EventManager):
+class SvsiN2600(CommonLogger, EventManager):
     DEFAULT_PORT = 50002
 
-    def __init__(self, ip, port=DEFAULT_PORT):
+    def __init__(self, ip, port=DEFAULT_PORT, reconnect_time=DEFAULT_TCP_CLIENT_RECONNECT_TIME):
         super().__init__("connected", "disconnected", "received")
-        self.dv = TcpClient(ip, port)
+        self.dv = TcpClient(ip, port, reconnect_time=reconnect_time)
         self.name = f"{__class__.__name__.lower()}_{self.dv.name if self.dv.name else ''}"
         self.states = {}
+        self.poll = Scheduler()
 
     @handle_exception
     def init(self):
         self.dv.receive.listen(self.parse_response)
+        self.dv.online(lambda *_args, **_kwargs: self.poll.set_interval(10.0, self.get_status))
+        self.dv.offline(lambda *_args, **_kwargs: self.poll.shutdown())
         self.dv.connect()
 
-    @handle_exception
     def send(self, msg):
-        self.dv.send(msg + "\r")
+        self.dv.send(msg + "\n")
         self.log_debug(f"send() : ip={self.dv.ip} {msg=}")
 
-    @handle_exception
     def set_live(self):
         self.send("live")
 
@@ -37,17 +38,27 @@ class Svsi(CommonLogger, EventManager):
             self.send(f"local:{idx_ch}")
 
     @handle_exception
+    # 인코더 용
     def set_stream(self, idx_ch):
-        self.send(f"stream:{idx_ch}")
+        self.send(f"setSettings:stream:{idx_ch}")
 
     @handle_exception
+    # 디코더 용
+    def set(self, idx_ch):
+        self.send(f"set:{idx_ch}")
+
+    # 디코더 용
+    @handle_exception
+    def seta(self, idx_ch):
+        self.send(f"seta:{idx_ch}")
+
     def get_status(self):
-        self.send("get")
+        self.send("getStatus")
 
     @handle_exception
     def parse_response(self, *args):
         if not args or not hasattr(args[0], "arguments") or "data" not in args[0].arguments:
-            self.log_error(f"parse_response() : ip={self.dv.ip} {args=}")
+            self.log_error(f"parse_response() ip={self.dv.ip} {args=}")
         else:
             responses = args[0].arguments["data"]
             responses = responses.decode("utf-8")
@@ -56,5 +67,5 @@ class Svsi(CommonLogger, EventManager):
                     key, value = response.split(":", 1)
                     self.states[key.strip()] = value.strip()
             self.log_debug(f"parse_response() : ip={self.dv.ip}")
-            self.log_debug(f"{responses.splitlines()=}")
+            self.log_debug(f"{self.states=}")
             self.emit("received")

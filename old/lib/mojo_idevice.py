@@ -1,35 +1,44 @@
-# 마지막 수정일 : 20260514
+# 마지막 수정일 : 20260507
+from lib.utility import handle_exception
 
 
+@handle_exception
 def serial_disable_fault_detection(dv):
     dv.disableFaultDetection()
 
 
+@handle_exception
 def serial_enable_fault_detection(dv):
     dv.enableFaultDetection()
 
 
+@handle_exception
 def get_fault(dv):
     return dv.getFault()
 
 
+@handle_exception
 def serial_flush_receive_buffer(dv):
     # 수신 버퍼에 남아있는 데이터를 모두 제거
     dv.flushReceiveBuffer()
 
 
+@handle_exception
 def serial_disable_receive(dv):
     dv.disableReceive()
 
 
+@handle_exception
 def serial_enable_receive(dv):
     dv.enableReceive()
 
 
+@handle_exception
 def serial_clear_fault(dv):
     dv.clearFault()
 
 
+@handle_exception
 def serial_get_status(dv):
     return dv.status.value
 
@@ -38,32 +47,34 @@ def log_error(message):
     print(f"mojo_idevice (ERROR) -- {message}")
 
 
-def init_serial(dv, baudrate="9600", bit=8, stop=1, parity="NONE", mode="232"):
+@handle_exception
+def init_serial(dv, baudrate="9600", bit="8", stop="1", parity="NONE", mode="232"):
     try:
         # 시리얼 통신 매개변수의 유효한 값들을 정의
         valid_baudrates = {"1200", "4800", "9600", "19200", "38400", "57600", "115200"}
-        valid_bits = {7, 8}
-        valid_stops = {1, 2}
+        valid_bits = {"7", "8"}
+        valid_stops = {"1", "2"}
         valid_parities = {"NONE", "EVEN", "ODD", "MARK", "SPACE"}
         valid_modes = {"232", "422", "485"}
         # 입력된 매개변수 값이 유효한 범위에 있는지 검증
         if baudrate not in valid_baudrates:
-            raise ValueError(f"Wrong baudrate: {baudrate}")
+            raise ValueError(f"잘못된 baudrate: {baudrate}")
         if bit not in valid_bits:
-            raise ValueError(f"Wrong data bits: {bit}")
+            raise ValueError(f"잘못된 data bits: {bit}")
         if stop not in valid_stops:
-            raise ValueError(f"Wrong stop bits: {stop}")
+            raise ValueError(f"잘못된 stop bits: {stop}")
         if parity not in valid_parities:
-            raise ValueError(f"Wrong parity: {parity}")
+            raise ValueError(f"잘못된 parity: {parity}")
         if mode not in valid_modes:
-            raise ValueError(f"Wrong mode: {mode}")
+            raise ValueError(f"잘못된 mode: {mode}")
         # 검증 완료된 매개변수를 기기에 적용
         dv.setCommParams(baudrate, bit, stop, parity, mode)
         serial_enable_receive(dv)
     except Exception as e:
-        log_error(f"init_serial() : {e=}")
+        log_error(f"init_serial() {e=}")
 
 
+@handle_exception
 def init_io(dv, io="INPUT", input_mode="ANALOG"):
     try:
         # IO 포트의 유효한 동작 모드 정의
@@ -80,22 +91,23 @@ def init_io(dv, io="INPUT", input_mode="ANALOG"):
         if io == "INPUT":
             dv.InputMode.value = input_mode
     except Exception as e:
-        log_error(f"init_io() : {e=}")
+        log_error(f"init_io() {e=}")
 
 
+@handle_exception
 def init_ir(dv, mode="IR"):
     try:
         # IR 포트의 유효한 동작 모드 정의
         valid_modes = {"IR", "SERIAL"}
         # 입력된 IR 모드 유효성 검증
         if mode not in valid_modes:
-            raise ValueError(f"Wrong IR mode: {mode}")
+            raise ValueError(f"잘못된 IR mode: {mode}")
         # IR 모드 설정 및 IR 모드일 경우 캐리어 활성화
         dv.mode.value = mode
         if mode == "IR":
             dv.carrier.value = True
     except Exception as e:
-        log_error(f"init_ir() : {e=}")
+        log_error(f"init_ir() {e=}")
 
 
 def ir_set_on_time(dv, milliseconds):

@@ -1,25 +1,16 @@
-# 마지막 수정일 : 20260514
-from lib.button_handler import ButtonHandler, LevelHandler
+# 마지막 수정일 : 20260505
+from lib.buttonhandler import ButtonHandler, LevelHandler
 from lib.mojo_tp import (
     tp_add_watcher,
     tp_add_watcher_level,
     tp_add_watcher_level_ss,
+    tp_add_watcher_ss,
 )
 
 
 class ButtonDebugFlags:
     debug_add_button = False
     debug_add_level = False
-
-
-_button_handlers = {}
-
-
-class ButtonGroup(list):
-    def on(self, action, callback):
-        for handler in self:
-            handler.on(action, callback)
-        return self
 
 
 def add_button_set_debug_flag(
@@ -35,33 +26,13 @@ def button_log_debug(message):
     print(f"(DEBUG) - button : {message}")
 
 
-def _button_key(tp, port, button):
-    return (id(tp), port, button)
-
-
-def get_button(tp, port, button):
-    """같은 물리 버튼은 하나의 ButtonHandler를 재사용."""
-    key = _button_key(tp, port, button)
-    handler = _button_handlers.get(key)
-    if handler:
-        return handler
-
-    handler = ButtonHandler()
-    _button_handlers[key] = handler
-    tp_add_watcher(tp, port, button, handler.handle_event)
-
-    if ButtonDebugFlags.debug_add_button:
-        button_log_debug(f"get_button() {tp.id} {port=} {button=}")
-    return handler
-
-
 def add_button(tp, port, button, action, callback):
-    """ButtonHandler 이벤트 핸들러 등록"""
-    handler = get_button(tp, port, button)
-    handler.on(action, callback)
+    """ButtonHandler 인스턴스 생성 및 이벤트 핸들러 등록"""
+    new_button = ButtonHandler(init_action=action, init_handler=callback)
+    tp_add_watcher(tp, port, button, new_button.handle_event)
     if ButtonDebugFlags.debug_add_button:
         button_log_debug(f"add_button() {tp.id} {port=} {button=} {action=}")
-    return handler
+    return new_button
 
 
 # 별칭 함수
@@ -71,11 +42,12 @@ def add_btn(tp, port, button, action, callback):
 
 
 def add_button_ss(tp_list, port, button, action, callback):
-    """여러 터치패널(tp_list)에 동일한 버튼 핸들러 등록"""
-    handlers = ButtonGroup(add_button(tp, port, button, action, callback) for tp in tp_list)
+    """여러 터치패널(tp_list)에 동시에 동일한 버튼 핸들러 등록"""
+    new_button = ButtonHandler(init_action=action, init_handler=callback)
+    tp_add_watcher_ss(tp_list, port, button, new_button.handle_event)
     if ButtonDebugFlags.debug_add_button:
         button_log_debug(f"add_button_ss() {[tp.id for tp in tp_list]} {port=} {button=} {action=}")
-    return handlers
+    return new_button
 
 
 # 별칭 함수

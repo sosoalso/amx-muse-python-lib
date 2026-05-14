@@ -1,6 +1,7 @@
-# 마지막 수정일 : 20260514
+# 마지막 수정일 : 20260505
 import threading
 import functools
+import inspect
 import threading
 from typing import Callable
 
@@ -12,7 +13,7 @@ def start_thread(target, *args, **kwargs):
         thread.start()
         return thread
     except Exception as e:
-        print(f"(ERROR) : start_thread() {e=}", end="\n", flush=True)
+        print(f"(ERROR) : start_thread() {e=}")
         return None
 
 
@@ -24,6 +25,15 @@ def run_thread(thread: threading.Thread | None, target: Callable, *args, **kwarg
     return thread
 
 
+def join_thread(thread: threading.Thread | None):
+    """주어진 스레드의 완료를 대기 (데드락 방지: 현재 스레드가 자신을 기다리지 않도록 확인)"""
+    if thread and thread.is_alive() and threading.current_thread() != thread:
+        try:
+            thread.join(timeout=1.0)
+        except RuntimeError as e:
+            print(f"(ERROR) : join_thread() {thread.name} failed {e=}")
+
+
 class CommonLogger:
     debug: bool = False
     name: str = ""
@@ -31,9 +41,9 @@ class CommonLogger:
     def _log_message(self, level: str, message):
         prefix = f"({level}) - {self.__class__.__name__}"
         if getattr(self, "name", None):
-            print(f"{prefix} - {self.name} : {message}", end="\n", flush=True)
+            print(f"{prefix} - {self.name} : {message}")
             return
-        print(f"{prefix} : {message}", end="\n", flush=True)
+        print(f"{prefix} : {message}")
 
     def log_debug(self, message):
         if self.debug:
@@ -56,12 +66,13 @@ def handle_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            print(f"(ERROR) : {func.__name__}() {e=}", end="\n", flush=True)
+            print(f"(ERROR) - {func.__name__}() {e=}")
             return None
 
     return wrapper
 
 
+@handle_exception
 def pulse(duration_seconds, off_method, *off_args, **off_kwargs):
     """함수 실행 후 지정된 시간 후에 off_method를 자동으로 호출하는 데코레이터"""
 
@@ -78,6 +89,7 @@ def pulse(duration_seconds, off_method, *off_args, **off_kwargs):
     return decorator
 
 
+@handle_exception
 def debounce(timeout_ms: float):
     """마지막 호출로부터 지정된 시간 동안 동일한 함수 호출을 무시하는 데코레이터"""
 
@@ -117,3 +129,27 @@ def atoi(s: str) -> int:
     if not digits:
         return 0
     return sign * int("".join(digits))
+
+
+@handle_exception
+def _debug(max_depth=3):
+    """호출 스택을 깊이별로 출력하여 함수 체인과 파라미터 확인"""
+    log_message = ""
+    current_frame = inspect.currentframe()
+    depth = 0
+    while current_frame and (depth < max_depth + 2):
+        if depth > 1:
+            func_name = current_frame.f_code.co_name if current_frame else "Unknown"
+            # getargvalues를 사용하여 함수의 모든 지역 변수 추출
+            args, _, _, values = inspect.getargvalues(current_frame)
+            args_str = "*args: " + ", ".join(f"{arg}={values[arg]}" for arg in args) if args else ""
+            # kwargs라는 이름의 딕셔너리 변수가 있으면 출력
+            kwargs_str = ", ".join(f"{key}={value}" for key, value in values.get("kwargs", {}).items())
+            if kwargs_str:
+                args_str += f" **kwargs: {kwargs_str}"
+            log_message += f"  $c{depth}f: {func_name}({args_str})\n"
+        # 이전 프레임(호출한 함수)으로 이동
+        current_frame = current_frame.f_back
+        depth += 1
+    log_message = log_message.removesuffix("\n")
+    print("_debug\n" + log_message)

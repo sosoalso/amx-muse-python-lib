@@ -1,10 +1,21 @@
-# 마지막 수정일 : 20260505
+# 마지막 수정일 : 20260514
 from mojo import context
 
-muse_log_info = context.log.info
-muse_log_error = context.log.error
-muse_log_warn = context.log.warn
-muse_log_debug = context.log.debug
+
+def muse_log_info(msg):
+    context.log.info(msg)
+
+
+def muse_log_error(msg):
+    context.log.error(msg)
+
+
+def muse_log_warn(msg):
+    context.log.warn(msg)
+
+
+def muse_log_debug(msg):
+    context.log.debug(msg)
 
 
 def set_log_level(level):
@@ -14,9 +25,13 @@ def set_log_level(level):
     context.log.level = level.upper()
 
 
-get_device = context.devices.get
-get_service = context.services.get
+def get_device(device_name):
+    return context.devices.get(device_name)
+
+
+def get_service(service_name):
+    return context.services.get(service_name)
 
 
 def get_timeline():
-    return context.services.get("timeline")
+    return get_service("timeline")

@@ -3,10 +3,12 @@ from lib.networkmanager import UdpClient
 from pythonosc.osc_message import OscMessage
 from pythonosc.osc_message_builder import OscMessageBuilder
 
+from lib.utility import CommonLogger
 
-class OSCClient(EventManager):
+
+class OSCClient(CommonLogger, EventManager):
     def __init__(self, address, port, bound_port=None):
-        super().__init__()
+        EventManager.__init__(self)
         self.debug = False
         self.address = address
         self.port = port
@@ -22,7 +24,7 @@ class OSCClient(EventManager):
             datagram = evt.arguments["data"]
             parsed_osc_message = OscMessage(datagram)
             if self.debug:
-                context.log.debug(f"{parsed_osc_message.address=}, {parsed_osc_message.params=}")
+                self.log_debug(f"{parsed_osc_message.address=}, {parsed_osc_message.params=}")
             self.emit(parsed_osc_message.address, params=parsed_osc_message.params)
 
         self.dv.receive.listen(handle_receive)
@@ -33,4 +35,4 @@ class OSCClient(EventManager):
         message = builder.build()
         self.dv.send(message.dgram)
         if self.debug:
-            context.log.debug(f"{__class__.__name__} {message.dgram=}")
+            self.log_debug(f"{message.dgram=}")
