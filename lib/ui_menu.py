@@ -1,6 +1,6 @@
 # 마지막 수정일 : 20260505
 from lib.button import add_button
-from lib.mojo_tp import (
+from lib.tp import (
     tp_hide_all_popup,
     tp_set_button_in_range,
     tp_set_page,
@@ -9,7 +9,7 @@ from lib.mojo_tp import (
 from lib.utility import handle_exception
 
 
-class UIMenu:
+class UiMenu:
     def __init__(self, tp):
         self.tp = tp
         self.selected_menu = 0
@@ -17,11 +17,11 @@ class UIMenu:
         self.init()
 
     def log_error(self, message):
-        print(f"mojo_uimenu(ERROR) -- {message}")
+        print(f"ui_menu(ERROR) -- {message}")
 
     def log_debug(self, message):
         if self.debug:
-            print(f"mojo_uimenu(DEBUG) -- {message}")
+            print(f"ui_menu(DEBUG) -- {message}")
 
     @handle_exception
     def init(self):
@@ -75,17 +75,3 @@ class UIMenu:
     def refresh_menu_popup_button(self):
         # 팝업 버튼 범위(11 ~ 29)에서 선택된 메뉴 버튼만 활성화
         tp_set_button_in_range(self.tp, 1, 1 + 10, 20 + 10, self.selected_menu)
-
-
-# def create_loading_bar_closure():
-#     s = Scheduler()
-#     count = 0
-#     def loading_bar():
-#         nonlocal count
-#         if count > 100:
-#             s.shutdown()
-#             return
-#         tp_send_lvl_ss(TP_LIST, 1, 1, count)
-#         count += 1
-#     s.set_interval(0.1, loading_bar)
-#     return loading_bar()

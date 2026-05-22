@@ -1,6 +1,6 @@
 # 마지막 수정일 : 20260505
 from lib.button import add_button_ss
-from lib.mojo_tp import tp_set_button
+from lib.tp import tp_set_button
 from lib.utility import pulse
 
 

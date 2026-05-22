@@ -1,6 +1,6 @@
 # 마지막 수정일 : 20260514
 from lib.button_handler import ButtonHandler, LevelHandler
-from lib.mojo_tp import (
+from lib.tp import (
     tp_add_watcher,
     tp_add_watcher_level,
     tp_add_watcher_level_ss,
