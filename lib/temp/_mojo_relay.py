@@ -132,6 +132,6 @@ class Relay:
             tp_set_button(tp, self.tp_port, idx + 101, not self.get_relay_state(idx))
 
     def show_all_relay_state(self):
-        print(f"show_all_relay_state() : {self.devchan_list=}", end="\r\n", flush=True)
+        print(f"show_all_relay_state() : {self.devchan_list=}")
         for idx in range(len(self.devchan_list)):
-            print(f"{idx=} {self.relay_state[idx]['state']=} {self._get_relay_devchan_state(idx)=}", end="\r\n", flush=True)
+            print(f"{idx=} {self.relay_state[idx]['state']=} {self._get_relay_devchan_state(idx)=}")

@@ -117,3 +117,10 @@ def atoi(s: str) -> int:
     if not digits:
         return 0
     return sign * int("".join(digits))
+
+
+def safe_index(lst, value, default=-1):
+    try:
+        return lst.index(value)
+    except ValueError:
+        return default
