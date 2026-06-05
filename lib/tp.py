@@ -34,18 +34,18 @@ def tp_handle_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            print(f"mojo_tp (ERROR) -- {func.__name__} {e=}")
+            print(f"(ERROR) - tp : {func.__name__} {e=}")
             return None
 
     return wrapper
 
 
 def tp_log_debug(message):
-    print(f"(DEBUG) - mojo_tp : {message}")
+    print(f"(DEBUG) - tp : {message}")
 
 
 def tp_log_error(message):
-    print(f"(ERROR) - mojo_tp : {message}")
+    print(f"(ERROR) - tp : {message}")
 
 
 def _notify(evt):
