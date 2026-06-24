@@ -143,7 +143,7 @@ BLU_IP_PORT = 1023
 
 
 class LondonController(CommonLogger):
-    DEFAULT_PORT = 1023
+    DEFAULT_PORT = BLU_IP_PORT
 
     def __init__(self, dv, min_val=MIN_VAL, max_val=MAX_VAL, unit_val=UNIT_VAL):
         self.dv = dv
