@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260514
+# 마지막 수정일 : 20260625
 import math
 import threading
 from enum import IntEnum
@@ -540,6 +540,8 @@ class LondonController(CommonLogger):
                     # 체크섬 일치 시 메시지 처리
                     if r_cs == temp[-1]:
                         self.process_feedback(temp[:-1])
+                    else:
+                        self.log_warn(f"parse_buffer() : checksum mismatch {r_cs=} expected={temp[-1]}")
                 else:
                     # ETX 미발견: 재시도 횟수 증가
                     self.check_message_attempts += 1
@@ -581,33 +583,23 @@ class LondonController(CommonLogger):
 
     def val_add_unit(self, val: int) -> int:
         # 현재값에서 1 단위만큼 증가 (범위 내일 때)
-        val_db = self.convert_value_to_db(val)
-        if val_db is not None:
-            # 단위값만큼 증가 후 반올림
-            val_db = round(val_db + self.UNIT_VAL)
-            # 범위를 벗어난 값을 MIN/MAX 값으로 제한
-            if self.MIN_VAL <= val_db <= self.MAX_VAL:
-                return self.convert_db_to_value(val_db)
-            elif val_db > self.MAX_VAL:
-                return self.convert_db_to_value(self.MAX_VAL)
-            elif val_db < self.MIN_VAL:
-                return self.convert_db_to_value(self.MIN_VAL)
-        return val
+        val_db = round(self.convert_value_to_db(val) + self.UNIT_VAL)
+        if self.MIN_VAL <= val_db <= self.MAX_VAL:
+            return self.convert_db_to_value(val_db)
+        elif val_db > self.MAX_VAL:
+            return self.convert_db_to_value(self.MAX_VAL)
+        else:
+            return self.convert_db_to_value(self.MIN_VAL)
 
     def val_sub_unit(self, val: int) -> int:
         # 현재값에서 1 단위만큼 감소 (범위 내일 때)
-        val_db = self.convert_value_to_db(val)
-        if val_db is not None:
-            # 단위값만큼 감소 후 반올림
-            val_db = round(val_db - self.UNIT_VAL)
-            # 범위를 벗어난 값을 MIN/MAX 값으로 제한
-            if self.MIN_VAL <= val_db <= self.MAX_VAL:
-                return self.convert_db_to_value(val_db)
-            elif val_db > self.MAX_VAL:
-                return self.convert_db_to_value(self.MAX_VAL)
-            elif val_db < self.MIN_VAL:
-                return self.convert_db_to_value(self.MIN_VAL)
-        return val
+        val_db = round(self.convert_value_to_db(val) - self.UNIT_VAL)
+        if self.MIN_VAL <= val_db <= self.MAX_VAL:
+            return self.convert_db_to_value(val_db)
+        elif val_db > self.MAX_VAL:
+            return self.convert_db_to_value(self.MAX_VAL)
+        else:
+            return self.convert_db_to_value(self.MIN_VAL)
 
     def val_toggle(self, val: int) -> int:
         # 이진값 토글: 0 ↔ 1

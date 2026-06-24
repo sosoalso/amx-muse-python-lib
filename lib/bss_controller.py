@@ -1,5 +1,6 @@
-# 마지막 수정일 : 20260529
+# 마지막 수정일 : 20260625
 from typing import Sequence, Union
+
 from lib.utility import CommonLogger
 
 # 최소 값
@@ -23,14 +24,20 @@ class BssObserver:
 
     # 옵저버 제거
     def unsubscribe(self, observer):
-        self._observers.remove(observer)
-        self.owner.log_debug(f"BssObserver unsubscribe {observer=}")
+        try:
+            self._observers.remove(observer)
+            self.owner.log_debug(f"BssObserver unsubscribe {observer=}")
+        except ValueError:
+            self.owner.log_warn(f"BssObserver unsubscribe : observer not found {observer=}")
 
     # 모든 옵저버에게 알림
     def notify(self, *args, **kwargs):
         self.owner.log_debug(f"BssObserver notify {args=} {kwargs=}")
-        for observer in self._observers:
-            observer(*args, **kwargs)
+        for observer in list(self._observers):
+            try:
+                observer(*args, **kwargs)
+            except Exception as e:
+                self.owner.log_error(f"BssObserver notify : observer error {observer=} {e=}")
 
 
 class BssState:
@@ -55,8 +62,7 @@ class BssState:
 
     def remove_state(self, key):
         self.owner.log_debug(f"BssState remove_state() {key=}")
-        self._event.unsubscribe(key)
-        self._states.pop(key)
+        self._states.pop(key, None)
 
     # 상태 변경 강제 알림
     def override_notify(self, key):
@@ -189,6 +195,15 @@ class BssController(CommonLogger):
                 component.value = new_value
                 self.log_debug(f"set_state() {component=} {new_value=}")
 
+    def _clamp_and_set(self, path, val: float):
+        """값을 MIN/MAX 범위로 클램프한 뒤 상태 설정"""
+        if val >= self.MAX_VAL:
+            self.set_state(path, self.MAX_VAL)
+        elif val <= self.MIN_VAL:
+            self.set_state(path, self.MIN_VAL)
+        else:
+            self.set_state(path, val)
+
     def check_val_convert_float(self, val):
         """값을 float 로 변환 시도, 실패 시 None 반환"""
         try:
@@ -202,15 +217,8 @@ class BssController(CommonLogger):
         val_db = self.check_val_convert_float(self.states.get_state(path))
         if val_db is not None:
             self.log_debug(f"vol_up() : {path=} old {val_db=}")
-            # 단위값만큼 증가 후 반올림
             val_db = float(round(val_db + self.UNIT_VAL))
-            # 범위를 벗어난 값을 MIN/MAX 값으로 제한
-            if self.MIN_VAL < val_db < self.MAX_VAL:
-                self.set_state(path, val_db)
-            elif val_db >= self.MAX_VAL:
-                self.set_state(path, self.MAX_VAL)
-            elif val_db <= self.MIN_VAL:
-                self.set_state(path, self.MIN_VAL)
+            self._clamp_and_set(path, val_db)
 
     def vol_down(self, path):
         """음량 감소: 현재값에서 단위값을 빼고 범위 내 값으로 제한"""
@@ -218,28 +226,15 @@ class BssController(CommonLogger):
         val_db = self.check_val_convert_float(self.states.get_state(path))
         if val_db is not None:
             self.log_debug(f"vol_down() : {path=} old {val_db=}")
-            # 단위값만큼 감소 후 반올림
             val_db = float(round(val_db - self.UNIT_VAL))
-            # 범위를 벗어난 값을 MIN/MAX 값으로 제한
-            if self.MIN_VAL < val_db < self.MAX_VAL:
-                self.set_state(path, val_db)
-            elif val_db >= self.MAX_VAL:
-                self.set_state(path, self.MAX_VAL)
-            elif val_db <= self.MIN_VAL:
-                self.set_state(path, self.MIN_VAL)
+            self._clamp_and_set(path, val_db)
 
     def set_vol(self, path, val: float):
         """음량을 특정값으로 설정: 범위를 벗어난 값은 MIN/MAX 값으로 제한"""
         self.log_debug(f"set_vol() : {path=} {val=}")
         if val is not None:
             val = float(round(val))
-            # 범위를 벗어난 값을 MIN/MAX 값으로 제한
-            if self.MIN_VAL < val < self.MAX_VAL:
-                self.set_state(path, val)
-            elif val >= self.MAX_VAL:
-                self.set_state(path, self.MAX_VAL)
-            elif val <= self.MIN_VAL:
-                self.set_state(path, self.MIN_VAL)
+            self._clamp_and_set(path, val)
 
     def toggle_on_off(self, path, *args):
         """On/Off 상태 토글"""

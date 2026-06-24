@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260514
+# 마지막 수정일 : 20260625
 import atexit
 import socket
 import threading
@@ -6,7 +6,14 @@ import time
 from typing import Dict, Tuple
 
 from lib.event_manager import EventManager
-from lib.network_manager.common import DEFAULT_BUFFER_SIZE, DEFAULT_UDP_SERVER_CLIENT_TIMEOUT, ReceiveListener, close_socket, make_received_event, to_bytes
+from lib.network_manager.common import (
+    DEFAULT_BUFFER_SIZE,
+    DEFAULT_UDP_SERVER_CLIENT_TIMEOUT,
+    ReceiveListener,
+    close_socket,
+    make_received_event,
+    to_bytes,
+)
 from lib.utility import CommonLogger, start_thread
 
 
@@ -137,8 +144,7 @@ class UdpServer(CommonLogger, EventManager):
                 break
             now = time.time()
             with self._client_lock:
-                stale = [addr for addr, last_seen in self.clients.items()
-                         if now - last_seen >= self.client_timeout]
+                stale = [addr for addr, last_seen in self.clients.items() if now - last_seen >= self.client_timeout]
             for addr in stale:
                 with self._client_lock:
                     self.clients.pop(addr, None)

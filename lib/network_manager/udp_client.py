@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260514
+# 마지막 수정일 : 20260625
 import atexit
 import socket
 import threading
