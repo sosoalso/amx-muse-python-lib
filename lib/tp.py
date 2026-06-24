@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260514
+# 마지막 수정일 : 20260625
 class DebugFlags:
     debug_tp_add_watcher = False
     debug_tp_add_watcher_level = False
@@ -51,9 +51,11 @@ def tp_log_error(message):
 def _notify(evt):
     # 버튼 상태 변화 이벤트를 디버그 로깅
     if DebugFlags.debug_tp_add_notification:
-        # 이벤트 경로를 '/'로 분할하여 포트와 버튼 번호 추출
-        _, port, _, button = (int(x) if x.isdigit() else x for x in evt.path.split("/"))
-        tp_log_debug(f"BUTTON {'    PUSH' if evt.value else ' RELEASE'} > {evt.device} {port=} {button=}")
+        try:
+            _, port, _, button = (int(x) if x.isdigit() else x for x in evt.path.split("/"))
+            tp_log_debug(f"BUTTON {'    PUSH' if evt.value else ' RELEASE'} > {evt.device} {port=} {button=}")
+        except Exception as e:
+            tp_log_error(f"_notify() : path parse error {evt.path=} {e=}")
 
 
 @tp_handle_exception
@@ -106,7 +108,8 @@ def tp_add_notification_level_ss(tp_list, port, level):
 @tp_handle_exception
 def tp_get_device_state(tp):
     # 터치패널 온라인 상태 확인 (isOnline이 메서드인 경우와 프로퍼티인 경우 모두 처리)
-    return tp.isOnline() if tp.isOnline else False
+    result = tp.isOnline
+    return result() if callable(result) else bool(result)
 
 
 @tp_handle_exception
@@ -114,10 +117,9 @@ def tp_add_watcher(tp, port, button, handler):
     # 버튼에 사용자 정의 핸들러 함수 등록 (중복 등록 방지 로직이 있으나 항상 등록함)
     if DebugFlags.debug_tp_add_watcher:
         tp_log_debug(f"tp_add_watcher() : {tp.id} {port=} {button=}")
-    if not tp.port[port].button[button].pythonWatchers or not handler in tp.port[port].button[button].pythonWatchers:
-        tp.port[port].button[button].watch(handler)
+    if tp.port[port].button[button].pythonWatchers and handler in tp.port[port].button[button].pythonWatchers:
+        tp_log_debug(f"tp_add_watcher() : duplicate skipped {tp.id=} {port=} {button=}")
     else:
-        tp_log_debug(f"tp_add_watcher() Duplicate registered but added {tp.id=} {port=} {button=}")
         tp.port[port].button[button].watch(handler)
     tp_add_notification(tp, port, button)
 
@@ -144,10 +146,9 @@ def tp_add_watcher_level(tp, port, level, handler):
     # 레벨에 사용자 정의 핸들러 함수 등록 (중복 등록 방지 로직이 있으나 항상 등록함)
     if DebugFlags.debug_tp_add_watcher_level:
         tp_log_debug(f"tp_add_watcher_level() : {tp.id} {port=} {level=}")
-    if not tp.port[port].level[level].pythonWatchers or not handler in tp.port[port].level[level].pythonWatchers:
-        tp.port[port].level[level].watch(handler)
+    if tp.port[port].level[level].pythonWatchers and handler in tp.port[port].level[level].pythonWatchers:
+        tp_log_debug(f"tp_add_watcher_level() : duplicate skipped {tp.id=} {port=} {level=}")
     else:
-        tp_log_debug(f"tp_add_watcher() -- Duplicate registered but added {tp.id=} {port=} {level=}")
         tp.port[port].level[level].watch(handler)
     tp_add_notification_level(tp, port, level)
 
@@ -452,13 +453,13 @@ def tp_set_btn_txt_unicode(tp, port, index_addr, text):
     tp_set_button_text_unicode(tp, port, index_addr, text)
 
 
-# 별칭 함수
+@tp_handle_exception
 def tp_set_button_text_unicode_ss(tp_list: list | tuple, port, index_addr, text):
     # 여러 터치패널의 버튼 텍스트를 유니코드로 설정
     tp_send_command_ss(tp_list, port, f"^UNI-{index_addr},0,{convert_text_to_unicode(text)}")
 
 
-@tp_handle_exception
+# 별칭 함수
 def tp_set_btn_txt_unicode_ss(tp_list: list | tuple, port, index_addr, text):
     tp_set_button_text_unicode_ss(tp_list, port, index_addr, text)
 
