@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260514
+# 마지막 수정일 : 20260624
 import threading
 
 
@@ -46,15 +46,15 @@ class EventManager:
 
     def on(self, action, handler):
         try:
+            if not callable(handler):
+                self.evt_log_error(f"on() : handler is not callable {action=} {handler=}")
+                return
             # 이벤트가 없으면 알림
             with self._event_lock:
                 if action not in self.actions:
                     self.evt_log_debug(f"on() : Event does not exist, adding event action {action=}")
                     self.actions[action] = []
-                if handler not in self.actions[action]:
-                    self.actions[action].append(handler)
-                else:
-                    self.evt_log_debug(f"on() : handler already registered {action=}")
+                self.actions[action].append(handler)
         except Exception as e:
             self.evt_log_error(f"on() {action=} {e=}")
 
@@ -77,12 +77,10 @@ class EventManager:
                 return
             self.evt_log_debug(f"emit() : {action=} {handlers=} {args=} {kwargs=}")
             for handler in handlers:
-                try:
-                    handler(*args, **kwargs)
-                except Exception as e:
-                    self.evt_log_error(f"emit() : handler error {action=} {handler=} {e=}")
+                handler(*args, **kwargs)
         except Exception as e:
             self.evt_log_error(f"emit() : {action=} {e=}")
+            raise
 
     def add_event_handler(self, action, handler):
         """on의 예전 메서드 이름"""
