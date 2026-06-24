@@ -33,13 +33,20 @@ class ButtonHandler(EventManager):
         if not self._event_hold.wait(self.hold_time):
             if self._is_pushed and not self._is_hold:
                 self._is_hold = True
-                self.emit("hold")
+                try:
+                    self.emit("hold")
+                except Exception as e:
+                    log_error(f"start_hold() : emit error {e=}")
 
     def start_repeat(self):
         """버튼 누름 상태에서 repeat_interval 간격으로 반복 이벤트 발생"""
         # is_pushed 상태가 유지되고 종료 신호(repeat_event)가 없을 때까지 반복
         while self._is_pushed and not self._event_repeat.is_set():
-            self.emit("repeat")
+            try:
+                self.emit("repeat")
+            except Exception as e:
+                log_error(f"start_repeat() : emit error {e=}")
+                break
             # repeat_interval 시간 동안 repeat_event 신호를 기다림
             # 신호 수신 시 루프 탈출
             if self._event_repeat.wait(self.repeat_interval):

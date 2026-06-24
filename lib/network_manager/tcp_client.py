@@ -127,8 +127,11 @@ class TcpClient(CommonLogger, EventManager):
         if not was_connected:
             self.log_info("connected to server")
             self.log_debug("_set_state_connected() : connected to server")
-            self.emit("connected")
-            self.emit("online")
+            try:
+                self.emit("connected")
+                self.emit("online")
+            except Exception as e:
+                self.log_error(f"_set_state_connected() : emit error {e=}")
 
     def _set_state_disconnected(self):
         with self._state_lock:
@@ -137,8 +140,11 @@ class TcpClient(CommonLogger, EventManager):
         if was_connected:
             self.log_info("disconnected from server")
             self.log_debug("_set_state_disconnected() : disconnected from server")
-            self.emit("offline")
-            self.emit("disconnected")
+            try:
+                self.emit("offline")
+                self.emit("disconnected")
+            except Exception as e:
+                self.log_error(f"_set_state_disconnected() : emit error {e=}")
         return was_connected
 
     def _receive_loop(self, recv_sock: socket.socket):
@@ -155,7 +161,10 @@ class TcpClient(CommonLogger, EventManager):
                     break
 
                 self.log_debug(f"_receive_loop() received {data=}")
-                self._emit_received(data, address=(self.ip, self.port))
+                try:
+                    self._emit_received(data, address=(self.ip, self.port))
+                except Exception as e:
+                    self.log_error(f"_receive_loop() : emit error {e=}")
             except socket.timeout:
                 continue
             except Exception as e:

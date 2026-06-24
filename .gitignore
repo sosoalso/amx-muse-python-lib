@@ -2,8 +2,8 @@
 **/__pycache__/
 *.json
 .DS_Store
-.venv
-.vscode
+/.venv
+/.vscode
 /.claude
 /.codex
 /.site_packages

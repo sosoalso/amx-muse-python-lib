@@ -1,5 +1,7 @@
 # 마지막 수정일 : 20260514
+import atexit
 import socket
+import threading
 from typing import Tuple
 
 from lib.event_manager import EventManager
@@ -33,6 +35,8 @@ class MulticastGroup(CommonLogger, EventManager):
         self.receive = ReceiveListener(lambda listener: self.on("received", listener))
         self.membership = None
         self._thread_receive_loop = None
+        self._state_lock = threading.Lock()
+        atexit.register(self.disconnect)
 
     def online(self, handler):
         self.on("online", handler)
@@ -45,52 +49,72 @@ class MulticastGroup(CommonLogger, EventManager):
 
     def connect(self):
         self.log_info("connect() starting")
-        try:
+        with self._state_lock:
             if self.connected:
                 return
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            try:
-                self.socket.bind(("", self.bind_port))
-            except OSError:
-                self.socket.close()
-                self.socket = None
-                raise
+
+        sock = None
+        membership = None
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.bind(("", self.bind_port))
 
             group_bin = socket.inet_aton(self.group_ip)
             interface_bin = socket.inet_aton(self.interface_ip)
-            self.membership = group_bin + interface_bin
-            self.socket.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, self.membership)
-            self.socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, self.ttl)
-            self.socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1 if self.loopback else 0)
+            membership = group_bin + interface_bin
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, membership)
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, self.ttl)
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1 if self.loopback else 0)
             if self.interface_ip != "0.0.0.0":
-                self.socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, interface_bin)
-            self.socket.settimeout(1.0)
-            self.connected = True
-            self.emit("connected")
-            self.emit("online")
+                sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, interface_bin)
+            sock.settimeout(1.0)
+
+            with self._state_lock:
+                self.socket = sock
+                self.membership = membership
+                self.connected = True
+
+            try:
+                self.emit("connected")
+                self.emit("online")
+            except Exception as e:
+                self.log_error(f"connect() : emit error {e=}")
             self._thread_receive_loop = run_thread(self._thread_receive_loop, self._receive_loop)
         except Exception as e:
-            self.connected = False
+            if sock:
+                self._close_socket(sock)
+            with self._state_lock:
+                self.connected = False
+                self.socket = None
+                self.membership = None
             self.log_error(f"connect() : failed {e=}")
 
     def leave(self):
         self.disconnect()
 
     def disconnect(self):
-        was_connected = self.connected
-        self.connected = False
-        if self.socket:
+        with self._state_lock:
+            was_connected = self.connected
+            self.connected = False
+            sock = self.socket
+            self.socket = None
+            membership = self.membership
+            self.membership = None
+
+        if sock:
             try:
-                if self.membership:
-                    self.socket.setsockopt(socket.IPPROTO_IP, socket.IP_DROP_MEMBERSHIP, self.membership)
+                if membership:
+                    sock.setsockopt(socket.IPPROTO_IP, socket.IP_DROP_MEMBERSHIP, membership)
             except Exception as e:
                 self.log_error(f"disconnect() : failed to leave group {e=}")
-            self._close_socket(self.socket)
-            self.socket = None
-            self.membership = None
+            self._close_socket(sock)
+
         if was_connected:
-            self.emit("offline")
+            try:
+                self.emit("offline")
+            except Exception as e:
+                self.log_error(f"disconnect() : emit error {e=}")
         self.log_info("disconnect() : disconnect signal sent")
 
     def send(self, msg: bytes | bytearray | str):
@@ -110,7 +134,10 @@ class MulticastGroup(CommonLogger, EventManager):
                 if not self.socket:
                     break
                 data, addr = self.socket.recvfrom(self.buffer_size)
-                self._emit_received(data, addr)
+                try:
+                    self._emit_received(data, addr)
+                except Exception as e:
+                    self.log_error(f"_receive_loop() : emit error {e=}")
                 self.log_debug(f"_receive_loop() : received {data=} {addr=}")
             except socket.timeout:
                 continue

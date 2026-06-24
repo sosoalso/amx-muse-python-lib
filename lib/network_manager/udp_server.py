@@ -6,22 +6,24 @@ import time
 from typing import Dict, Tuple
 
 from lib.event_manager import EventManager
-from lib.network_manager.common import DEFAULT_BUFFER_SIZE, ReceiveListener, close_socket, make_received_event, to_bytes
+from lib.network_manager.common import DEFAULT_BUFFER_SIZE, DEFAULT_UDP_SERVER_CLIENT_TIMEOUT, ReceiveListener, close_socket, make_received_event, to_bytes
 from lib.utility import CommonLogger, start_thread
 
 
 class UdpServer(CommonLogger, EventManager):
-    def __init__(self, port, buffer_size=DEFAULT_BUFFER_SIZE, name=None):
+    def __init__(self, port, buffer_size=DEFAULT_BUFFER_SIZE, client_timeout=DEFAULT_UDP_SERVER_CLIENT_TIMEOUT, name=None):
         super().__init__("received", "online", "offline")
         self.name = name or f"udpserver_{port}"
         self.port = port
         self.buffer_size = buffer_size
+        self.client_timeout = client_timeout
         self.socket: socket.socket | None = None
         self.receive = ReceiveListener(lambda listener: self.on("received", listener))
         self.running = False
         self.clients: Dict[Tuple[str, int], float] = {}
         self.echo = False
         self._thread_receive_loop: threading.Thread | None = None
+        self._thread_cleanup: threading.Thread | None = None
         self._client_lock = threading.Lock()
         atexit.register(self.stop)
 
@@ -46,6 +48,8 @@ class UdpServer(CommonLogger, EventManager):
             self.log_info("start() : server starting")
             self.emit("online")
             self._thread_receive_loop = start_thread(self._receive_loop)
+            if self.client_timeout > 0:
+                self._thread_cleanup = start_thread(self._cleanup_loop)
         except Exception as e:
             self.running = False
             self._close_server_socket()
@@ -87,30 +91,59 @@ class UdpServer(CommonLogger, EventManager):
 
     def _receive_loop(self):
         self.log_debug("_receive_loop() : thread started")
-        while self.running:
-            try:
-                if not self.socket:
-                    break
-                data, addr = self.socket.recvfrom(self.buffer_size)
-                if not data:
+        try:
+            while self.running:
+                try:
+                    if not self.socket:
+                        break
+                    data, addr = self.socket.recvfrom(self.buffer_size)
+                    if not data:
+                        continue
+                    with self._client_lock:
+                        self.clients[addr] = time.time()
+                    self.log_debug(f"_receive_loop() : received {data=} {addr=}")
+                    try:
+                        self._emit_received(data, addr)
+                    except Exception as e:
+                        self.log_error(f"_receive_loop() : emit error {e=}")
+                    if self.echo:
+                        self.socket.sendto(data, addr)
+                except socket.timeout:
                     continue
+                except OSError as e:
+                    if self.running:
+                        self.log_error(f"_receive_loop() : socket {e=}")
+                    break
+                except Exception as e:
+                    if self.running:
+                        self.log_error(f"_receive_loop() : message receive {e=}")
+                    break
+        finally:
+            was_running = self.running
+            self.running = False
+            self._close_server_socket()
+            if was_running:
+                try:
+                    self.emit("offline")
+                except Exception as e:
+                    self.log_error(f"_receive_loop() : emit error {e=}")
+            self.log_debug("_receive_loop() : thread ended")
+
+    def _cleanup_loop(self):
+        self.log_debug("_cleanup_loop() : thread started")
+        while self.running:
+            time.sleep(min(self.client_timeout / 2, 5.0))
+            if not self.running:
+                break
+            now = time.time()
+            with self._client_lock:
+                stale = [addr for addr, last_seen in self.clients.items()
+                         if now - last_seen >= self.client_timeout]
+            for addr in stale:
                 with self._client_lock:
-                    self.clients[addr] = time.time()
-                self.log_debug(f"_receive_loop() : received {data=} {addr=}")
-                self._emit_received(data, addr)
-                if self.echo:
-                    self.socket.sendto(data, addr)
-            except socket.timeout:
-                continue
-            except OSError as e:
-                if self.running:
-                    self.log_error(f"_receive_loop() : socket {e=}")
-                break
-            except Exception as e:
-                if self.running:
-                    self.log_error(f"_receive_loop() : message receive {e=}")
-                break
-        self.log_debug("_receive_loop() : thread ended")
+                    self.clients.pop(addr, None)
+                self.log_info(f"_cleanup_loop() : client timed out {addr=}")
+        self.log_debug("_cleanup_loop() : thread ended")
 
     def _close_server_socket(self):
         if self.socket:

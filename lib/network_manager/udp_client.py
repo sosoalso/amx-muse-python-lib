@@ -105,8 +105,11 @@ class UdpClient(CommonLogger, EventManager):
             self._last_received_at = time.time()
 
         if not was_connected:
-            self.emit("connected")
-            self.emit("online")
+            try:
+                self.emit("connected")
+                self.emit("online")
+            except Exception as e:
+                self.log_error(f"_connect_socket() : emit error {e=}")
         self._thread_receive_loop = start_thread(self._receive_loop, sock)
         return True
 
@@ -123,8 +126,11 @@ class UdpClient(CommonLogger, EventManager):
             was_connected = self.connected
             self.connected = False
         if was_connected:
-            self.emit("offline")
-            self.emit("disconnected")
+            try:
+                self.emit("offline")
+                self.emit("disconnected")
+            except Exception as e:
+                self.log_error(f"_set_state_disconnected() : emit error {e=}")
         return was_connected
 
     def _open_socket(self) -> socket.socket | None:
@@ -174,7 +180,10 @@ class UdpClient(CommonLogger, EventManager):
                 with self._state_lock:
                     self._last_received_at = time.time()
                 self.log_debug(f"_receive_loop() : received - {data=} {addr=}")
-                self._emit_received(data, addr)
+                try:
+                    self._emit_received(data, addr)
+                except Exception as e:
+                    self.log_error(f"_receive_loop() : emit error {e=}")
             except socket.timeout:
                 continue
             except OSError as e:

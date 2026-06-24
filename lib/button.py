@@ -36,7 +36,7 @@ def button_log_debug(message):
 
 
 def _button_key(tp, port, button):
-    return (id(tp), port, button)
+    return (tp, port, button)
 
 
 def get_button(tp, port, button):
@@ -84,7 +84,7 @@ def add_btn_ss(tp_list, port, button, action, callback):
     return add_button_ss(tp_list, port, button, action, callback)
 
 
-def add_level(tp, port, level, callback, debounce_ms):
+def add_level(tp, port, level, callback, debounce_ms=100):
     """LevelHandler 생성 및 레벨 변화 감지 등록 (debounce_ms로 불필요한 동작 필터링)"""
     level_handler = LevelHandler(init_handler=callback, debounce_ms=debounce_ms)
     tp_add_watcher_level(tp, port, level, level_handler.handle_event)
@@ -94,12 +94,12 @@ def add_level(tp, port, level, callback, debounce_ms):
 
 
 # 별칭 함수
-def add_lvl(tp, port, level, callback, debounce_ms):
+def add_lvl(tp, port, level, callback, debounce_ms=100):
     """LevelHandler 생성 및 레벨 변화 감지 등록 (debounce_ms로 불필요한 동작 필터링)"""
     return add_level(tp, port, level, callback, debounce_ms)
 
 
-def add_level_ss(tp_list, port, level, callback, debounce_ms):
+def add_level_ss(tp_list, port, level, callback, debounce_ms=100):
     """여러 터치패널(tp_list)에 동시에 동일한 레벨 핸들러 등록"""
     level_handler = LevelHandler(init_handler=callback, debounce_ms=debounce_ms)
     tp_add_watcher_level_ss(tp_list, port, level, level_handler.handle_event)
@@ -109,5 +109,5 @@ def add_level_ss(tp_list, port, level, callback, debounce_ms):
 
 
 # 별칭 함수
-def add_lvl_ss(tp_list, port, level, callback, debounce_ms):
+def add_lvl_ss(tp_list, port, level, callback, debounce_ms=100):
     return add_level_ss(tp_list, port, level, callback, debounce_ms)
