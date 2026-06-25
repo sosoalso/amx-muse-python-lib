@@ -1,8 +1,12 @@
-# 마지막 수정일 : 20260514
-import threading
+# 마지막 수정일 : 20260626
 import functools
 import threading
 from typing import Callable
+
+try:
+    from mojo import context as _mojo_context
+except ImportError:
+    _mojo_context = None
 
 
 def start_thread(target, *args, **kwargs):
@@ -31,9 +35,15 @@ class CommonLogger:
     def _log_message(self, level: str, message):
         prefix = f"({level}) - {self.__class__.__name__}"
         if getattr(self, "name", None):
-            print(f"{prefix} - {self.name} : {message}", end="\n", flush=True)
-            return
-        print(f"{prefix} : {message}", end="\n", flush=True)
+            full_msg = f"{prefix} - {self.name} : {message}"
+        else:
+            full_msg = f"{prefix} : {message}"
+        if _mojo_context is not None:
+            log_fn = getattr(_mojo_context.log, level.strip().lower(), None)
+            if log_fn:
+                log_fn(full_msg)
+                return
+        print(full_msg, end="\n", flush=True)
 
     def log_debug(self, message):
         if self.debug:

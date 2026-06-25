@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260514
+# 마지막 수정일 : 20260626
 import threading
 
 from lib.event_manager import EventManager
@@ -34,50 +34,48 @@ class MicManager(CommonLogger, EventManager):
         self.last_mic_enabled = is_enabled
         return self.get_last_mic_enabled()
 
+    # ---------------------------------------------------------------------------- #
+    # handle_mic_on 별칭 함수
     def turn_mic_on(self, mic_index):
         self.log_debug(f"turn_mic_on() {mic_index=}")
         self.handle_mic_on(mic_index)
 
-    def turn_mic_off(self, mic_index):
-        self.log_debug(f"turn_mic_off() {mic_index=}")
-        self.handle_mic_off(mic_index)
-
-    def turn_all_mic_off(self):
-        self.log_debug("turn_all_mic_off()")
-        self.handle_all_mic_off()
-
-    def turn_last_mic_on(self):
-        self.log_debug("turn_last_mic_on()")
-        self.handle_last_mic_on()
-
+    # handle_mic_on 별칭 함수
     def mic_on(self, mic_index):
         self.log_debug(f"mic_on() {mic_index=}")
         self.handle_mic_on(mic_index)
 
+    # handle_mic_off 별칭 함수
+    def turn_mic_off(self, mic_index):
+        self.log_debug(f"turn_mic_off() {mic_index=}")
+        self.handle_mic_off(mic_index)
+
+    # handle_mic_off 별칭 함수
     def mic_off(self, mic_index):
         self.log_debug(f"mic_off() {mic_index=}")
         self.handle_mic_off(mic_index)
 
+    # handle_all_mic_off 별칭 함수
+    def turn_all_mic_off(self):
+        self.log_debug("turn_all_mic_off()")
+        self.handle_all_mic_off()
+
+    # handle_all_mic_off 별칭 함수
     def all_mic_off(self):
         self.log_debug("all_mic_off()")
         self.handle_all_mic_off()
 
+    # handle_last_mic_on 별칭 함수
+    def turn_last_mic_on(self):
+        self.log_debug("turn_last_mic_on()")
+        self.handle_last_mic_on()
+
+    # handle_last_mic_on 별칭 함수
     def last_mic_on(self):
         self.log_debug("last_mic_on()")
         self.handle_last_mic_on()
 
-    def handle_all_mic_off(self):
-        self.log_debug("handle_all_mic_off()")
-        self.reset_mic_state()
-        self.emit("mic_all_off")
-
-    def handle_last_mic_on(self):
-        self.log_debug("handle_last_mic_on()")
-        # 이전에 켜진 마이크 목록이 있으면 마지막 마이크를 다시 켬
-        last_mic_index = self.get_last_on_mic()
-        if last_mic_index:
-            self.emit("mic_on", last_mic_index)
-
+    # ---------------------------------------------------------------------------- #
     def handle_mic_on(self, mic_index):
         self.log_debug(f"handle_mic_on() {mic_index=}")
         mic_idx = self.index_to_idx(mic_index)
@@ -92,6 +90,7 @@ class MicManager(CommonLogger, EventManager):
                 self.last_on_mics.remove(mic_idx)
             self.last_on_mics.append(mic_idx)
         if not was_on:
+            # note : mic_on 이벤트 발생
             self.emit("mic_on", mic_index)
 
     def handle_mic_off(self, mic_index):
@@ -109,14 +108,30 @@ class MicManager(CommonLogger, EventManager):
             last_mic_index = self.last_on_mics[-1] + 1 if self.last_on_mics else None
         # 모든 마이크가 꺼진 경우와 켜진 마이크가 남은 경우 처리
         if last_mic_index:
+            # note : mic_off 이벤트 발생
             self.emit("mic_off", mic_index)
             # 자동 마이크 전환 설정이 활성화되면 마지막 켜진 마이크로 자동 전환
             if self.last_mic_enabled:
+                # note : mic_on 이벤트 발생
                 self.emit("mic_on", last_mic_index)
         else:
             # 켜진 마이크가 없으면 모든 마이크 꺼짐 이벤트 발생
+            # note : mic_all_off 이벤트 발생
             self.emit("mic_all_off")
 
+    def handle_last_mic_on(self):
+        self.log_debug("handle_last_mic_on()")
+        # 이전에 켜진 마이크 목록이 있으면 마지막 마이크를 다시 켬
+        last_mic_index = self.get_last_on_mic()
+        if last_mic_index:
+            self.emit("mic_on", last_mic_index)
+
+    def handle_all_mic_off(self):
+        self.log_debug("handle_all_mic_off()")
+        self.reset_mic_state()
+        self.emit("mic_all_off")
+
+    # ---------------------------------------------------------------------------- #
     def get_mic_status(self, mic_index):
         mic_idx = self.index_to_idx(mic_index)
         # 유효한 범위의 인덱스인지 검증
