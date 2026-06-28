@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260626
+# 마지막 수정일 : 20260629
 # Polycom Group 500 - 텍스트 API (RS-232 Serial 19200baud/8N1 또는 Telnet 포트 23)
 # 참고: Login Mode를 none으로 설정하면 인증 없이 제어 가능
 from lib.event_manager import EventManager
@@ -8,8 +8,7 @@ from lib.utility import CommonLogger, handle_exception
 class PolycomGroup500(CommonLogger, EventManager):
 
     def __init__(self, dv):
-        super().__init__("call_connected", "call_disconnected", "call_incoming",
-                         "mute_changed", "videomute_changed", "volume_changed")
+        super().__init__("call_connected", "call_disconnected", "call_incoming", "mute_changed", "videomute_changed", "volume_changed")
         self.dv = dv
         self.dial = ""
         self.is_in_call = False

@@ -1,5 +1,5 @@
-# 마지막 수정일 : 20260508
-from lib.simpleurlrequests import url_get
+# 마지막 수정일 : 20260629
+from lib.simple_url_requests import url_get
 from lib.utility import handle_exception
 
 

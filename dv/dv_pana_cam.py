@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260508
+# 마지막 수정일 : 20260514
 from lib.simple_url_requests import url_get
 from lib.utility import handle_exception
 

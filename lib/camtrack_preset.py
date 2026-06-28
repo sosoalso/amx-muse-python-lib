@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260627
+# 마지막 수정일 : 20260629
 from lib.userdata import Userdata
 
 

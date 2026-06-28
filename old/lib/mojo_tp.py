@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260505
+# 마지막 수정일 : 20260514
 class DebugFlags:
     debug_tp_add_watcher = False
     debug_tp_add_watcher_level = False

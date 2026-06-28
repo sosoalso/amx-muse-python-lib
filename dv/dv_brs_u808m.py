@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260508
+# 마지막 수정일 : 20260629
 from lib.event_manager import EventManager
 from lib.userdata import Userdata
 from lib.utility import CommonLogger, handle_exception

@@ -1,3 +1,4 @@
+# 마지막 수정일 : 20260629
 """
 KJH Conference Gooseneck Microphone Controller
 """

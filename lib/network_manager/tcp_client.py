@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260625
+# 마지막 수정일 : 20260629
 import atexit
 import socket
 import threading
@@ -140,7 +140,6 @@ class TcpClient(CommonLogger, EventManager):
             was_connected = self.connected
             self.connected = False
         if was_connected:
-            self.log_debug("disconnected from server")
             self.log_debug("_set_state_disconnected() : disconnected from server")
             try:
                 # emit: offline()

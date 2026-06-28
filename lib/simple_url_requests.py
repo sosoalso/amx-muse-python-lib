@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260514
+# 마지막 수정일 : 20260629
 import json
 import urllib.error
 import urllib.request
@@ -55,7 +55,12 @@ def url_request(
         data = None
         json_body = method in ("POST", "PUT", "PATCH") and body is not None
         if json_body:
-            data = json.dumps(body).encode()
+            try:
+                data = json.dumps(body).encode()
+            except (TypeError, ValueError) as e:
+                simple_url_requests_log_error(f"url_request() json serialization failed {method=} {url=} {e=}")
+                _run_callback(error_callback, e)
+                return
 
         req = urllib.request.Request(
             url=url,
@@ -66,7 +71,15 @@ def url_request(
 
         try:
             with urllib.request.urlopen(req, timeout=timeout) as response:
-                _run_callback(callback, response.read())
+                raw = response.read()
+                content_type = response.headers.get("Content-Type", "")
+                if "application/json" in content_type:
+                    try:
+                        _run_callback(callback, json.loads(raw.decode()))
+                    except (json.JSONDecodeError, UnicodeDecodeError):
+                        _run_callback(callback, raw)
+                else:
+                    _run_callback(callback, raw)
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError) as e:
             simple_url_requests_log_error(f"url_request() {method=} {url=} {e=}")
             _run_callback(error_callback, e)
@@ -94,10 +107,10 @@ def url_get(
 def url_post(
     url: str,
     header: dict | None = None,
-    body=None,
     callback: Callable | None = None,
     timeout: float = DEFAULT_TIMEOUT,
     error_callback: Callable | None = None,
+    body=None,
 ):
     return url_request(
         "POST",

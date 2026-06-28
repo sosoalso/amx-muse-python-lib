@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260625
+# 마지막 수정일 : 20260629
 import math
 import threading
 from enum import IntEnum

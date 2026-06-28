@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260514
+# 마지막 수정일 : 20260522
 
 
 def serial_disable_fault_detection(dv):

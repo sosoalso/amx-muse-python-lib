@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260505
+# 마지막 수정일 : 20260514
 import json
 import os
 from lib.utility import CommonLogger, handle_exception

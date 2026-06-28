@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260626
+# 마지막 수정일 : 20260629
 # Cisco 코덱 - xCommand 프로토콜 (Serial RS-232, 115200 baud)
 from lib.event_manager import EventManager
 from lib.utility import CommonLogger, handle_exception
