@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260629
+# 마지막 수정일 : 20260625
 import atexit
 import socket
 import threading
@@ -62,8 +62,8 @@ class TcpClient(CommonLogger, EventManager):
         self._set_state_disconnected()
         self._close_current_socket()
 
-    def send(self, message: bytes | bytearray | str):
-        message = to_bytes(message)
+    def send(self, msg: bytes | bytearray | str):
+        msg = to_bytes(msg)
 
         with self._state_lock:
             reconnect_enabled = self.reconnect
@@ -74,10 +74,10 @@ class TcpClient(CommonLogger, EventManager):
             if not (sock and is_connected):
                 return
             try:
-                self.log_debug(f"send() : sending {message=}")
-                sock.sendall(message)
+                self.log_debug(f"send() : sending {msg=}")
+                sock.sendall(msg)
             except Exception as e:
-                self.log_error(f"send() : failed to send {e=}")
+                self.log_error(f"send() : failed to send {msg=} {e=}")
                 with self._state_lock:
                     if self.socket is sock:
                         self.socket = None
@@ -85,7 +85,7 @@ class TcpClient(CommonLogger, EventManager):
                 self._close_socket(sock)
             return
 
-        start_thread(self._send_once, message)
+        start_thread(self._send_once, msg)
 
     def _connect_loop(self):
         while self.reconnect:
@@ -197,11 +197,11 @@ class TcpClient(CommonLogger, EventManager):
     def _is_socket_closed_error(self, error: OSError) -> bool:
         return error.errno in (9, 10038) or getattr(error, "winerror", None) == 10038
 
-    def _send_once(self, message: bytes | bytearray):
+    def _send_once(self, msg: bytes | bytearray):
         try:
             sock = socket.create_connection((self.ip, self.port), timeout=self.timeout_send_once)
-            sock.sendall(message)
-            self.log_debug(f"_send_once() : sending {message=}")
+            sock.sendall(msg)
+            self.log_debug(f"_send_once() : sending {msg=}")
             try:
                 sock.settimeout(self.timeout_send_once)
                 data = sock.recv(self.buffer_size)
@@ -216,7 +216,7 @@ class TcpClient(CommonLogger, EventManager):
                 self._close_socket(sock)
                 self.log_debug("_send_once() : connection closed")
         except Exception as e:
-            self.log_error(f"_send_once() : failed to send {e=}")
+            self.log_error(f"_send_once() : failed to send {msg=} {e=}")
 
     def _emit_received(self, data: bytes, address: Tuple[str, int]):
         # emit: received(event: ReceivedEvent)  — event.arguments["data"]: bytes

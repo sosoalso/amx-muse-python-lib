@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260629
+# 마지막 수정일 : 20260625
 import atexit
 import socket
 import threading
@@ -85,7 +85,7 @@ class UdpClient(CommonLogger, EventManager):
             sock.sendto(msg, (self.ip, self.port))
             self.log_debug(f"send() : sending - {msg=}")
         except Exception as e:
-            self.log_error(f"send() : failed to send: {e=}")
+            self.log_error(f"send() : failed to send {msg=} {e=}")
             self._set_state_disconnected()
             self._close_current_socket()
 

@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260629
+# 마지막 수정일 : 20260625
 import atexit
 import socket
 import threading
@@ -76,24 +76,24 @@ class UdpServer(CommonLogger, EventManager):
             self.emit("offline")
         self.log_debug("stop() : stop signal sent")
 
-    def send_to(self, host: str, port: int, data: bytes | bytearray | str):
+    def send_to(self, host: str, port: int, msg: bytes | bytearray | str):
         if not self.socket:
             return
         try:
-            self.log_debug(f"send_to() : {host=} {port=} {data=}")
-            self.socket.sendto(to_bytes(data), (host, port))
+            self.log_debug(f"send_to() : {host=} {port=} {msg=}")
+            self.socket.sendto(to_bytes(msg), (host, port))
         except Exception as e:
-            self.log_error(f"send_to() : failed to send {e=}")
+            self.log_error(f"send_to() : failed to send {msg=} {e=}")
 
-    def send(self, data: bytes | bytearray | str, exclude_client: tuple[str, int] | None = None):
+    def send(self, msg: bytes | bytearray | str, exclude_client: tuple[str, int] | None = None):
         try:
             with self._client_lock:
                 client_addrs = list(self.clients.keys())
             for client_addr in client_addrs:
                 if client_addr != exclude_client:
-                    self.send_to(client_addr[0], client_addr[1], data)
+                    self.send_to(client_addr[0], client_addr[1], msg)
         except Exception as e:
-            self.log_error(f"send() : failed to send {e=}")
+            self.log_error(f"send() : failed to send {msg=} {e=}")
 
     def _emit_received(self, data: bytes, address: Tuple[str, int]):
         # emit: received(event: ReceivedEvent)  — event.arguments["data"]: bytes

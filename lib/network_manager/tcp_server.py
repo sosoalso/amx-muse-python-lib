@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260629
+# 마지막 수정일 : 20260625
 import atexit
 import socket
 import threading
@@ -54,21 +54,21 @@ class TcpServer(CommonLogger, EventManager):
         self._close_server_socket()
         self.log_info("stop() : stop signal sent")
 
-    def send_to(self, client_socket: socket.socket, data: bytes | bytearray | str):
+    def send_to(self, client_socket: socket.socket, msg: bytes | bytearray | str):
         try:
-            client_socket.sendall(to_bytes(data))
+            client_socket.sendall(to_bytes(msg))
             return True
         except Exception as e:
-            self.log_error(f"send_to() : failed to send {e=}")
+            self.log_error(f"send_to() : failed to send {msg=} {e=}")
             return False
 
-    def send(self, data: bytes | bytearray | str, exclude_client: tuple[str, int] | None = None):
+    def send(self, msg: bytes | bytearray | str, exclude_client: tuple[str, int] | None = None):
         with self._client_lock:
             clients = list(self.clients.items())
         for address, client_socket in clients:
             if address == exclude_client:
                 continue
-            if not self.send_to(client_socket, data):
+            if not self.send_to(client_socket, msg):
                 self._close_client(address, client_socket)
 
     def _is_address_in_use_error(self, error: OSError) -> bool:
