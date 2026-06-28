@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260505
+# 마지막 수정일 : 20260627
 from lib.userdata import Userdata
 
 
@@ -21,12 +21,13 @@ class CamtrackPreset:
     def __init__(self, max_preset_index=40, filename="camtrack_preset.json"):
         self.max_preset_index = max_preset_index
         self.userdata = Userdata(filename)
-        # JSON 파일에서 camtrack_preset 데이터를 로드하거나, 없으면 더미 데이터로 초기화
-        self.camtrack_preset = self.userdata.get_value("camtrack_preset", self.make_dummy_presets())
+        loaded = self.userdata.get_value("camtrack_preset", None)
+        self.camtrack_preset = loaded if loaded is not None else self.make_dummy_presets()
 
     def make_dummy_presets(self):
-        # 초기 프리셋 딕셔너리 생성: preset_001~preset_MAX 형식으로 카메라와 프리셋 번호를 0으로 초기화
-        return {f"preset_{preset_index:03d}": {"camera": 0, "preset": 0} for preset_index in range(1, self.max_preset_index + 1)}
+        self.camtrack_preset = {f"preset_{i:03d}": {"camera": 0, "preset": 0} for i in range(1, self.max_preset_index + 1)}
+        self.userdata.set_value("camtrack_preset", self.camtrack_preset)
+        return self.camtrack_preset
 
     def get_preset(self, preset_index):
         # 입력된 preset_index에 해당하는 프리셋 딕셔너리 반환 (없으면 빈 딕셔너리)

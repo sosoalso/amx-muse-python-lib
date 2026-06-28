@@ -1,12 +1,12 @@
-# 마지막 수정일 : 20260625
+# 마지막 수정일 : 20260627
 import threading
 
 from lib.event_manager import EventManager
-from lib.utility import debounce, start_thread
+from lib.utility import debounce, run_thread
 
 
 def log_error(message):
-    print(f"(ERROR) - buttonhandler : {message}")
+    print(f"buttonhandler (ERROR) -- {message}")
 
 
 class ButtonHandler(EventManager):
@@ -17,9 +17,10 @@ class ButtonHandler(EventManager):
         self._is_pushed = False  # 현재 버튼 누름 상태
         self._is_hold = False  # 홀드 상태 플래그
         self.trigger_release_on_hold = trigger_release_on_hold  # 홀드 중 릴리즈 이벤트 발생 여부
+        self._thread_hold: threading.Thread | None = None  # 홀드 감지 스레드
+        self._thread_repeat: threading.Thread | None = None  # 반복 이벤트 스레드
         self._event_hold = threading.Event()  # 홀드 스레드 종료 신호
         self._event_repeat = threading.Event()  # 반복 스레드 종료 신호
-        # self._counter = 0
         self.init(init_action, init_handler)
 
     def init(self, init_action=None, init_handler=None):
@@ -29,8 +30,6 @@ class ButtonHandler(EventManager):
 
     def start_hold(self):
         """hold_time 동안 버튼이 눌려있으면 홀드 이벤트 발생"""
-        # hold_time 시간 동안 hold_event 신호를 기다림. 신호 없으면 False 반환
-        # 타임아웃 되었다는 것은 버튼이 계속 눌려있다는 뜻
         if not self._event_hold.wait(self.hold_time):
             if self._is_pushed and not self._is_hold:
                 self._is_hold = True
@@ -41,16 +40,15 @@ class ButtonHandler(EventManager):
 
     def start_repeat(self):
         """버튼 누름 상태에서 repeat_interval 간격으로 반복 이벤트 발생"""
-        # is_pushed 상태가 유지되고 종료 신호(repeat_event)가 없을 때까지 반복
-        while self._is_pushed and not self._event_repeat.is_set():
+        for _ in range(100):
+            if not self._is_pushed or self._event_repeat.is_set():
+                break
+            if self._event_repeat.wait(self.repeat_interval):
+                break
             try:
                 self.emit("repeat")
             except Exception as e:
                 log_error(f"start_repeat() : emit error {e=}")
-                break
-            # repeat_interval 시간 동안 repeat_event 신호를 기다림
-            # 신호 수신 시 루프 탈출
-            if self._event_repeat.wait(self.repeat_interval):
                 break
 
     def on(self, action, handler):
@@ -100,24 +98,16 @@ class ButtonHandler(EventManager):
 
     def handle_event(self, evt):
         if evt.value:  # 버튼 눌림 (True)
-            if self._is_pushed:
-                return
             self._is_pushed = True
             self._is_hold = False
-            # self._counter += 1
-            # press_id = self._counter
             self._event_repeat.clear()
             self._event_hold.clear()
             self.emit("push")
-            # repeat 핸들러가 등록되어 있으면 반복 스레드 시작
             if "repeat" in self.actions and self.actions["repeat"]:
-                start_thread(self.start_repeat)
-            # hold 핸들러가 등록되어 있으면 홀드 감지 스레드 시작
+                self._thread_repeat = run_thread(self._thread_repeat, self.start_repeat)
             if "hold" in self.actions and self.actions["hold"]:
-                start_thread(self.start_hold)
+                self._thread_hold = run_thread(self._thread_hold, self.start_hold)
         else:  # 버튼 뗌 (False)
-            if not self._is_pushed:
-                return
             self._is_pushed = False
             self._event_repeat.set()  # 반복 스레드 종료 신호
             self._event_hold.set()  # 홀드 스레드 종료 신호

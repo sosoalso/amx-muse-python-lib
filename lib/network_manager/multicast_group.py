@@ -54,7 +54,7 @@ class MulticastGroup(CommonLogger, EventManager):
         self.connect()
 
     def connect(self):
-        self.log_info("connect() starting")
+        self.log_debug("connect() starting")
         with self._state_lock:
             if self.connected:
                 return
@@ -121,7 +121,7 @@ class MulticastGroup(CommonLogger, EventManager):
                 self.emit("offline")
             except Exception as e:
                 self.log_error(f"disconnect() : emit error {e=}")
-        self.log_info("disconnect() : disconnect signal sent")
+        self.log_debug("disconnect() : disconnect signal sent")
 
     def send(self, msg: bytes | bytearray | str):
         if not self.socket or not self.connected:

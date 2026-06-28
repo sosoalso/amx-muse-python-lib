@@ -1,7 +1,22 @@
-# 마지막 수정일 : 20260626
+# 마지막 수정일 : 20260629
 import functools
+import inspect
 import threading
 from typing import Callable
+
+
+def handler_loc(handler, path_parts: int = 3) -> str:
+    """핸들러 함수의 qualname과 소스 위치(파일:줄번호)를 반환. path_parts: 경로 끝에서 남길 세그먼트 수"""
+    try:
+        src = inspect.getsourcefile(handler) or ""
+        line = inspect.getsourcelines(handler)[1]
+        name = getattr(handler, "__qualname__", repr(handler))
+        parts = src.replace("\\", "/").split("/")
+        src = "/".join(parts[-path_parts:])
+        return f"{name} ({src}:{line})"
+    except Exception:
+        return repr(handler)
+
 
 try:
     from mojo import context as _mojo_context
@@ -33,16 +48,20 @@ class CommonLogger:
     name: str = ""
 
     def _log_message(self, level: str, message):
-        prefix = f"({level}) - {self.__class__.__name__}"
-        if getattr(self, "name", None):
-            full_msg = f"{prefix} - {self.name} : {message}"
-        else:
-            full_msg = f"{prefix} : {message}"
+        cls_name = self.__class__.__name__
+        name = getattr(self, "name", None)
         if _mojo_context is not None:
             log_fn = getattr(_mojo_context.log, level.strip().lower(), None)
             if log_fn:
-                log_fn(full_msg)
+                if name:
+                    log_fn(f"{cls_name} - {name} : {message}")
+                else:
+                    log_fn(f"{cls_name} : {message}")
                 return
+        if name:
+            full_msg = f"({level}) - {cls_name} - {name} : {message}"
+        else:
+            full_msg = f"({level}) - {cls_name} : {message}"
         print(full_msg, end="\n", flush=True)
 
     def log_debug(self, message):
@@ -53,21 +72,22 @@ class CommonLogger:
         self._log_message("ERROR", message)
 
     def log_warn(self, message):
-        self._log_message(" WARN", message)
+        self._log_message("WARN", message)
 
     def log_info(self, message):
-        self._log_message(" INFO", message)
+        self._log_message("INFO", message)
 
 
 def handle_exception(func):
-    """예외 발생 시 에러 로그를 출력하고 None을 반환하는 데코레이터"""
+    """예외 발생 시 에러 로그를 출력하고 re-raise하는 데코레이터"""
 
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except Exception as e:
             print(f"(ERROR) : {func.__name__}() {e=}", end="\n", flush=True)
-            return None
+            raise
 
     return wrapper
 

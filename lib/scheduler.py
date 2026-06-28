@@ -1,6 +1,7 @@
-# 마지막 수정일 : 20260514
+# 마지막 수정일 : 20260528
 import atexit
 import threading
+from typing import Callable
 
 from lib.utility import CommonLogger
 
@@ -29,7 +30,7 @@ class Scheduler(CommonLogger):
             self.schedules.append(schedule)
         return schedule
 
-    def _run(self, schedule, func):
+    def _run(self, schedule, func: Callable):
         if schedule["stop_event"].is_set():
             return
 
@@ -52,11 +53,11 @@ class Scheduler(CommonLogger):
     def cancel(self, schedule):
         self._stop(schedule)
 
-    def set_interval(self, interval, func):
+    def set_interval(self, interval: int | float, func: Callable):
         if not isinstance(interval, (int, float)) or interval <= 0:
             raise ValueError(f"interval must be a positive number, got {interval}")
-        if not callable(func):
-            raise ValueError(f"func must be callable, got {type(func)}")
+        if not isinstance(func, Callable):
+            raise ValueError(f"func must be Callable, got {type(func)}")
 
         schedule = self._create("interval")
         if not schedule:
@@ -70,7 +71,8 @@ class Scheduler(CommonLogger):
                     try:
                         self._run(schedule, func)
                     except Exception as e:
-                        self.log_error(f"set_interval() func error {e=}")
+                        from lib.utility import handler_loc
+                        self.log_error(f"set_interval() func={handler_loc(func)} {e=}")
             finally:
                 self._finalize(schedule)
 
@@ -79,11 +81,11 @@ class Scheduler(CommonLogger):
         thread.start()
         return schedule
 
-    def set_timeout(self, delay, func):
+    def set_timeout(self, delay: int | float, func: Callable):
         if not isinstance(delay, (int, float)) or delay < 0:
             raise ValueError(f"delay must be a non-negative number, got {delay}")
-        if not callable(func):
-            raise ValueError(f"func must be callable, got {type(func)}")
+        if not isinstance(func, Callable):
+            raise ValueError(f"func must be Callable, got {type(func)}")
 
         schedule = self._create("timeout")
         if not schedule:
@@ -97,7 +99,8 @@ class Scheduler(CommonLogger):
                     try:
                         self._run(schedule, func)
                     except Exception as e:
-                        self.log_error(f"set_timeout() func error {e=}")
+                        from lib.utility import handler_loc
+                        self.log_error(f"set_timeout() func={handler_loc(func)} {e=}")
             finally:
                 self._finalize(schedule)
 
@@ -107,7 +110,13 @@ class Scheduler(CommonLogger):
         return schedule
 
     def shutdown(self):
+        atexit.unregister(self.shutdown)  # 누적 방지
         with self._lock:
             schedules = list(self.schedules)
         for schedule in schedules:
             self._stop(schedule)
+        current = threading.current_thread()
+        for schedule in schedules:
+            thread = schedule.get("thread")
+            if thread and thread.is_alive() and thread is not current:
+                thread.join()

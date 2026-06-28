@@ -1,4 +1,7 @@
-# 마지막 수정일 : 20260625
+# 마지막 수정일 : 20260627
+import functools
+
+
 class DebugFlags:
     debug_tp_add_watcher = False
     debug_tp_add_watcher_level = False
@@ -30,6 +33,7 @@ def tp_set_debug_flag(
 
 def tp_handle_exception(func):
     # 함수 실행 중 예외 발생 시 에러 로그를 출력하고 None 반환하는 데코레이터
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -61,7 +65,7 @@ def _notify(evt):
 @tp_handle_exception
 def tp_add_notification(tp, port, button):
     # 버튼 상태 변화를 감지하는 워처 등록 (중복 등록 방지)
-    if not _notify in tp.port[port].button[button].pythonWatchers or not any(
+    if not _notify in tp.port[port].button[button].pythonWatchers and not any(
         watcher.__name__ == _notify.__name__ for watcher in tp.port[port].button[button].pythonWatchers
     ):
         tp.port[port].button[button].watch(_notify)
@@ -115,12 +119,11 @@ def tp_get_device_state(tp):
 @tp_handle_exception
 def tp_add_watcher(tp, port, button, handler):
     # 버튼에 사용자 정의 핸들러 함수 등록 (중복 등록 방지 로직이 있으나 항상 등록함)
-    if DebugFlags.debug_tp_add_watcher:
-        tp_log_debug(f"tp_add_watcher() : {tp.id} {port=} {button=}")
     if tp.port[port].button[button].pythonWatchers and handler in tp.port[port].button[button].pythonWatchers:
         tp_log_debug(f"tp_add_watcher() : duplicate skipped {tp.id=} {port=} {button=}")
-    else:
-        tp.port[port].button[button].watch(handler)
+    tp.port[port].button[button].watch(handler)
+    if DebugFlags.debug_tp_add_watcher:
+        tp_log_debug(f"tp_add_watcher() : {tp.id} {port=} {button=}")
     tp_add_notification(tp, port, button)
 
 
@@ -144,12 +147,11 @@ def tp_clear_watcher(tp, port, button):
 @tp_handle_exception
 def tp_add_watcher_level(tp, port, level, handler):
     # 레벨에 사용자 정의 핸들러 함수 등록 (중복 등록 방지 로직이 있으나 항상 등록함)
-    if DebugFlags.debug_tp_add_watcher_level:
-        tp_log_debug(f"tp_add_watcher_level() : {tp.id} {port=} {level=}")
     if tp.port[port].level[level].pythonWatchers and handler in tp.port[port].level[level].pythonWatchers:
         tp_log_debug(f"tp_add_watcher_level() : duplicate skipped {tp.id=} {port=} {level=}")
-    else:
-        tp.port[port].level[level].watch(handler)
+    tp.port[port].level[level].watch(handler)
+    if DebugFlags.debug_tp_add_watcher_level:
+        tp_log_debug(f"tp_add_watcher_level() : {tp.id} {port=} {level=}")
     tp_add_notification_level(tp, port, level)
 
 
@@ -366,14 +368,14 @@ def tp_send_lvl(tp, port, level, value):
 
 
 @tp_handle_exception
-def tp_set_level(tp, port, level, value, *args):
+def tp_set_level(tp, port, level, value):
     # 레벨 설정 (tp_send_level 호출)
-    tp_send_level(tp, port, level, value, *args)
+    tp_send_level(tp, port, level, value)
 
 
 # 별칭 함수
-def tp_set_lvl(tp, port, level, value, *args):
-    tp_send_level(tp, port, level, value, *args)
+def tp_set_lvl(tp, port, level, value):
+    tp_send_level(tp, port, level, value)
 
 
 @tp_handle_exception
@@ -392,14 +394,14 @@ def tp_send_lvl_ss(tp_list: list | tuple, port, level, value):
 
 
 @tp_handle_exception
-def tp_set_level_ss(tp: list | tuple, port, level, value, *args):
+def tp_set_level_ss(tp: list | tuple, port, level, value):
     # 여러 터치패널의 레벨 설정
-    tp_send_level_ss(tp, port, level, value, *args)
+    tp_send_level_ss(tp, port, level, value)
 
 
 # 별칭 함수
-def tp_set_lvl_ss(tp: list | tuple, port, level, value, *args):
-    tp_send_lvl_ss(tp, port, level, value, *args)
+def tp_set_lvl_ss(tp: list | tuple, port, level, value):
+    tp_send_lvl_ss(tp, port, level, value)
 
 
 @tp_handle_exception

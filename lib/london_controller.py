@@ -2,6 +2,7 @@
 import math
 import threading
 from enum import IntEnum
+
 from lib.utility import CommonLogger
 
 MIN_VAL = -60  # 최소 값
@@ -31,7 +32,8 @@ class LondonObserver:
             try:
                 observer(*args, **kwargs)
             except Exception as e:
-                print(f"(ERROR) - LondonObserver : notify() {observer=} {e=}")
+                from lib.utility import handler_loc
+                print(f"(ERROR) - LondonObserver : notify() {handler_loc(observer)} {e=}")
 
 
 class LondonState:

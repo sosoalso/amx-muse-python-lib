@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260505
+# 마지막 수정일 : 20260627
 from lib.button import add_button
 from lib.tp import (
     tp_hide_all_popup,
@@ -29,12 +29,12 @@ class UiMenu:
         add_button(self.tp, 1, 100, "push", self.hide_all_menu_popup)
 
         # 페이지 1 ~ 9 전환 버튼 (버튼 번호 1 ~ 9)
-        for idx in range(1, 10):
-            add_button(self.tp, 1, idx, "push", lambda idx=idx: self.show_page(idx))
+        for ndx in range(1, 10):
+            add_button(self.tp, 1, ndx, "push", lambda ndx=ndx: self.show_page(ndx))
 
-        # 팝업 1 ~ 19 전환 버튼 (버튼 번호 11 ~ 29)
-        for idx in range(1, 20):
-            add_button(self.tp, 1, idx + 10, "push", lambda idx=idx: self.show_menu_popup(idx))
+        # 팝업 1 ~ 20 전환 버튼 (버튼 번호 11 ~ 30)
+        for ndx in range(1, 21):
+            add_button(self.tp, 1, ndx + 10, "push", lambda ndx=ndx: self.show_menu_popup(ndx))
         self.selected_menu = 0
         self.refresh_menu_popup_button()
 
@@ -73,5 +73,5 @@ class UiMenu:
 
     @handle_exception
     def refresh_menu_popup_button(self):
-        # 팝업 버튼 범위(11 ~ 29)에서 선택된 메뉴 버튼만 활성화
-        tp_set_button_in_range(self.tp, 1, 1 + 10, 20 + 10, self.selected_menu)
+        # 팝업 버튼 범위(11 ~ 30)에서 선택된 메뉴 버튼만 활성화
+        tp_set_button_in_range(self.tp, 1, 11, 20, self.selected_menu)

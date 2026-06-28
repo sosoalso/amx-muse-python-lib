@@ -57,7 +57,7 @@ class TcpClient(CommonLogger, EventManager):
             if not (self.connected or self.socket or self.reconnect):
                 return
             self.reconnect = False
-        self.log_info("disconnect() : disconnecting from server")
+        self.log_debug("disconnect() : disconnecting from server")
         self._set_state_disconnected()
         self._close_current_socket()
 
@@ -125,7 +125,7 @@ class TcpClient(CommonLogger, EventManager):
             was_connected = self.connected
             self.connected = True
         if not was_connected:
-            self.log_info("connected to server")
+            self.log_debug("connected to server")
             self.log_debug("_set_state_connected() : connected to server")
             try:
                 self.emit("connected")
@@ -138,7 +138,7 @@ class TcpClient(CommonLogger, EventManager):
             was_connected = self.connected
             self.connected = False
         if was_connected:
-            self.log_info("disconnected from server")
+            self.log_debug("disconnected from server")
             self.log_debug("_set_state_disconnected() : disconnected from server")
             try:
                 self.emit("offline")

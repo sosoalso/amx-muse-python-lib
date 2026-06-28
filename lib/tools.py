@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260514
+# 마지막 수정일 : 20260527
 from mojo import context
 
 
@@ -18,11 +18,12 @@ def muse_log_debug(msg):
     context.log.debug(msg)
 
 
-def set_log_level(level):
-    valid_levels = ["DEBUG", "INFO", "WARN", "ERROR", "debug", "info", "warn", "error"]
-    if level not in valid_levels:
+def muse_set_log_level(level: str):
+    lvl = level.lower()
+    valid_levels = ["debug", "info", "warn", "error"]
+    if lvl not in valid_levels:
         raise ValueError(f"wrong log {level=}. Available log levels: {valid_levels}")
-    context.log.level = level.upper()
+    context.log.level = lvl.upper()
 
 
 def get_device(device_name):

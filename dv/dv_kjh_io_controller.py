@@ -3,40 +3,22 @@ KJH Conference Gooseneck Microphone Controller
 """
 
 from lib.event_manager import EventManager
-from lib.network_manager import MulticastGroup
+from lib.network_manager import MulticastGroup, TcpClient
 from lib.scheduler import Scheduler
 from lib.utility import CommonLogger, handle_exception
 
-# class MessageHandler(Protocol):
-#     def __call__(self, msg: str) -> None: ...
 
-
-# class IoStateHandler(Protocol):
-#     def __call__(self, *, device_index: int, ch_index: int, value: bool) -> None: ...
-
-
-# class InputTriggerHandler(Protocol):
-#     def __call__(self, *, device_index: int, ch_index: int) -> None: ...
-
-
-# TIoStateHandler = TypeVar("TIoStateHandler", bound=IoStateHandler)
-# TInputTriggerHandler = TypeVar("TInputTriggerHandler", bound=InputTriggerHandler)
-
-
-class KjhIoController(CommonLogger, EventManager):
-    DEFAULT_GROUP = "239.224.0.1"
-    DEFAULT_PORT = 9000
-    MCAST_TTL = 4
+class KjhIoControllerBase(CommonLogger, EventManager):
     NUM_IO = 16
 
-    def __init__(self, device_index_list=None, group=DEFAULT_GROUP, port=DEFAULT_PORT):
-        super().__init__("a", "b", "c", "d", "e", "in", "out", "in_trigger")
+    def __init__(self, device_index_list=None):
+        super().__init__("in", "out", "in_trigger")
         if device_index_list is None:
-            device_index_list = [1]
+            device_index_list = [1, 2, 3, 4]
         self.device_index_list = device_index_list
-        self.dv = MulticastGroup(group, port, ttl=self.MCAST_TTL)
-        self.state_in = {device_index: [False] * self.NUM_IO for device_index in self.device_index_list}
-        self.state_out = {device_index: [False] * self.NUM_IO for device_index in self.device_index_list}
+        self.dv: MulticastGroup | TcpClient
+        self.state_in = {i: [False] * self.NUM_IO for i in self.device_index_list}
+        self.state_out = {i: [False] * self.NUM_IO for i in self.device_index_list}
         self.poll = Scheduler()
         self.mode = ""
 
@@ -45,25 +27,26 @@ class KjhIoController(CommonLogger, EventManager):
         self.dv.on("connected", self.query_all_out)
         self.dv.connect()
 
+    # ---------------------------------------------------------------------------- #
+    # INFO : TX
+    def send(self, cmd):
+        self.dv.send(f"{cmd}\r\n".encode("ascii"))
+
+    # ---------------------------------------------------------------------------- #
     def query_all_out(self):
         self.log_info("query_all_out")
         for idx, device_index in enumerate(self.device_index_list):
             self.poll.set_timeout(1.0 + idx, lambda device_index=device_index: self.cmd_get_all_out(device_index))
+
+    def query_all_in(self):
+        for idx, device_index in enumerate(self.device_index_list):
+            self.poll.set_timeout(1.2 + idx, lambda device_index=device_index: self.cmd_get_all_in(device_index))
 
     def mode_set_toggle(self):
         self.send("settriggermode,toggle")
 
     def mode_set_trigger(self):
         self.send("settriggermode,trigger")
-
-    def query_all_in(self):
-        for idx, device_index in enumerate(self.device_index_list):
-            self.poll.set_timeout(1.2 + idx, lambda device_index=device_index: self.cmd_get_all_in(device_index))
-
-    # ---------------------------------------------------------------------------- #
-    # INFO : TX
-    def send(self, cmd):
-        self.dv.send(f"{cmd}\r\n".encode("ascii"))
 
     # ---------------------------------------------------------------------------- #
     # INFO : RX
@@ -73,47 +56,38 @@ class KjhIoController(CommonLogger, EventManager):
         msg = data.decode("ascii", errors="ignore").strip()
         if not msg:
             return
-        if "help" in msg:
-            pass
-
+        self.log_debug(f"{msg=}")
         if msg.lower().startswith("trigger mode"):
             _, _, mode_raw = msg.partition(":")
             mode = mode_raw.strip().lower()
-            print(mode)
+            self.log_debug(f"{mode=}")
             if mode in ("trigger", "toggle"):
                 self.mode = mode
                 if self.mode == "toggle":
                     self.poll.set_timeout(1.0, self.query_all_in)
-
-        # self.log_debug(f"handle_receive(evt))
-        # self.emit("received", msg)
-
-        # Dispatch only comma-delimited IO status messages.
         if "," in msg:
             self.dispatch_msg(msg)
 
     @handle_exception
     def dispatch_msg(self, msg):
-        # self.log_debug(f"dispatch_msg() {msg=}")
         device_index = int(msg.split(",")[1])
         if device_index not in self.device_index_list:
             return
         if len(msg) > 16:
             if msg.startswith("in,"):
                 parts = msg.split(",")
-                if len(parts) == 3:
-                    if self.mode == "toggle":
-                        for idx, value in enumerate(parts[2]):
-                            if value == "1":
-                                self.state_in[device_index][idx] = False
-                                self.emit("in", device_index=device_index, ch_index=idx + 1, value=False)
-                            if value == "0":
-                                self.state_in[device_index][idx] = True
-                                self.emit("in", device_index=device_index, ch_index=idx + 1, value=True)
+                if len(parts) == 3 and self.mode == "toggle":
+                    for idx, value in enumerate(parts[2]):
+                        if value == "1":
+                            self.state_in[device_index][idx] = False
+                            self.emit("in", device_index=device_index, ch_index=idx + 1, value=False)
+                        if value == "0":
+                            self.state_in[device_index][idx] = True
+                            self.emit("in", device_index=device_index, ch_index=idx + 1, value=True)
             elif msg.startswith("out,"):
                 parts = msg.split(",")
                 if len(parts) == 3:
-                    print(f"get_all_out {parts[0]=} {parts[1]=} {parts[2]=}")
+                    self.log_debug(f"{parts[0]=} {parts[1]=} {parts[2]=}")
                     for idx, value in enumerate(parts[2]):
                         if value == "1":
                             self.state_out[device_index][idx] = True
@@ -134,13 +108,12 @@ class KjhIoController(CommonLogger, EventManager):
                         elif value == "1":
                             self.state_in[device_index][idx] = False
                             self.emit("in", device_index=device_index, ch_index=idx + 1, value=False)
-                    elif self.mode == "trigger" or self.mode == "":
+                    elif self.mode in ("trigger", ""):
                         self.emit("in_trigger", device_index=device_index, ch_index=idx + 1)
-
             if msg.startswith("out,") or msg.startswith("output_ch,"):
                 parts = msg.split(",")
                 if len(parts) == 4:
-                    print(f"get_out {parts[0]=} {parts[1]=} {parts[2]=} {parts[3]=}")
+                    self.log_debug(f"{parts[0]=} {parts[1]=} {parts[2]=} {parts[3]=}")
                     idx = int(parts[2]) - 1
                     value = parts[3]
                     if value == "1":
@@ -151,30 +124,6 @@ class KjhIoController(CommonLogger, EventManager):
                         self.emit("out", device_index=device_index, ch_index=idx + 1, value=False)
 
     # ---------------------------------------------------------------------------- #
-    def get_event_handler_help(self):
-        return {
-            "e": "handler(msg)",
-            "in": "handler(*, device_index, ch_index, value)",
-            "out": "handler(*, device_index, ch_index, value)",
-            "in_trigger": "handler(*, device_index, ch_index)",
-        }
-
-    # def on_message(self, handler: MessageHandler):
-    #     """Register raw message handler: handler(msg)."""
-    #     self.on("e", handler)
-
-    # def on_in(self, handler: IoStateHandler):
-    #     """Register input-state handler: handler(*, device_index, ch_index, value)."""
-    #     self.on("in", handler)
-
-    # def on_out(self, handler: IoStateHandler):
-    #     """Register output-state handler: handler(*, device_index, ch_index, value)."""
-    #     self.on("out", handler)
-
-    # def on_in_trigger(self, handler: InputTriggerHandler):
-    #     """Register trigger input handler: handler(*, device_index, ch_index)."""
-    #     self.on("in_trigger", handler)
-
     def cmd_get_all_in(self, device_index):
         self.send(f"getins,{device_index}")
 
@@ -191,10 +140,8 @@ class KjhIoController(CommonLogger, EventManager):
         self.send(f"set,{device_index},{index_ch},{1 if state else 0}")
 
     def cmd_toggle_out(self, device_index, index_ch: int):
-        current_state = self.get_out(device_index, index_ch)
-        self.cmd_set_out(device_index, index_ch, not current_state)
+        self.cmd_set_out(device_index, index_ch, not self.get_out(device_index, index_ch))
 
-    # ---------------------------------------------------------------------------- #
     def cmd_get_ip(self):
         self.send("getip")
 
@@ -206,3 +153,32 @@ class KjhIoController(CommonLogger, EventManager):
     @handle_exception
     def get_in(self, device_index, index_ch: int):
         return self.state_in[device_index][index_ch - 1]
+
+
+# ---------------------------------------------------------------------------- #
+class KjhIoControllerMc(KjhIoControllerBase):
+    """Multicast 기반 IO 컨트롤러"""
+
+    DEFAULT_GROUP = "239.224.0.1"
+    DEFAULT_PORT = 9000
+    MCAST_TTL = 4
+
+    def __init__(self, device_index_list=None, group=DEFAULT_GROUP, port=DEFAULT_PORT):
+        super().__init__(device_index_list)
+        self.dv = MulticastGroup(group, port, ttl=self.MCAST_TTL)
+
+
+# ---------------------------------------------------------------------------- #
+class KjhIoControllerTcp(KjhIoControllerBase):
+    """TCP 기반 IO 컨트롤러"""
+
+    DEFAULT_PORT = 5050
+
+    def __init__(self, ip, device_index_list=None, port=DEFAULT_PORT):
+        super().__init__(device_index_list)
+        self.dv = TcpClient(ip, port)
+
+
+# ---------------------------------------------------------------------------- #
+# 하위 호환
+KjhIoController = KjhIoControllerMc

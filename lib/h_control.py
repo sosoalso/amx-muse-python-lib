@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260507
+# 마지막 수정일 : 20260627
 import json
 
 
@@ -34,15 +34,25 @@ def parse_hc_response(evt):
     try:
         # 이벤트 데이터를 byte에서 문자열로 디코딩
         datas = evt.arguments["data"].value.decode()
-        # 여러 응답이 개행으로 구분되어 있을 수 있으므로 줄 단위로 파싱
-        for data in datas.split("\n"):
-            # 첫 공백을 기준으로 명령어와 JSON 데이터 분리
+    except Exception as e:
+        print(f"(ERROR) - hcontrol : parse_hc_response() decode error {e=}")
+        return None
+    # 여러 응답이 개행으로 구분되어 있을 수 있으므로 줄 단위로 파싱
+    for data in datas.split("\n"):
+        if not data.strip():
+            continue
+        # 첫 공백을 기준으로 명령어와 JSON 데이터 분리
+        try:
             cmd, d = data.split(" ", 1)
-            # 지원하는 응답 타입 확인
-            if cmd in ("@get", "@set", "@subscribe", "publish", "@unsubscribe"):
+        except ValueError:
+            continue
+        # 지원하는 응답 타입 확인
+        if cmd in ("@get", "@set", "@subscribe", "publish", "@unsubscribe"):
+            try:
                 json_data = json.loads(d)
                 if HControlDebugFlags.debug:
                     print(f"(DEBUG) - hcontrol : parse_hc_response() : {json_data=}")
                 return json_data
-    except Exception as e:
-        print(f"(ERROR) - hcontrol : parse_hc_response() {e=}")
+            except json.JSONDecodeError as e:
+                print(f"(ERROR) - hcontrol : parse_hc_response() json error {e=}")
+    return None

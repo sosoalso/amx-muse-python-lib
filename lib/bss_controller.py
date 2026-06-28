@@ -37,7 +37,8 @@ class BssObserver:
             try:
                 observer(*args, **kwargs)
             except Exception as e:
-                self.owner.log_error(f"BssObserver notify : observer error {observer=} {e=}")
+                from lib.utility import handler_loc
+                self.owner.log_error(f"BssObserver notify : observer error {handler_loc(observer)} {e=}")
 
 
 class BssState:
@@ -109,13 +110,17 @@ class BssController(CommonLogger):
 
     def tp_to_db(self, x):
         """터치패널 0-255 값을 dB 값으로 선형 변환"""
-        x_min = 0
-        x_max = 255
-        y_min = self.MIN_VAL
-        y_max = self.MAX_VAL
-        # 선형 변환 공식: (입력값 - 입력최소) * (출력최대 - 출력최소) / (입력최대 - 입력최소) + 출력최소
-        y = (x - x_min) * (y_max - y_min) / (x_max - x_min) + y_min
-        return y
+        try:
+            x_min = 0
+            x_max = 255
+            y_min = self.MIN_VAL
+            y_max = self.MAX_VAL
+            # 선형 변환 공식: (입력값 - 입력최소) * (출력최대 - 출력최소) / (입력최대 - 입력최소) + 출력최소
+            y = (x - x_min) * (y_max - y_min) / (x_max - x_min) + y_min
+            return y
+        except Exception as e:
+            self.log_error(f"tp_to_db() {e=}")
+            return self.MIN_VAL
 
     def init(self, *path_lists: Sequence[Union[list[str], tuple[str, ...]]]):
         """컴포넌트 초기화: 각 경로의 초기값을 상태에 저장하고 변경 감시 설정"""
@@ -261,10 +266,10 @@ class BssController(CommonLogger):
     def toggle_muted_unmuted(self, path):
         """Muted/Unmuted 상태 토글"""
         self.log_debug(f"toggle_muted_unmuted() : {path=}")
-        val = self.states.get_state(path)
-        if val == "Unmuted":
+        val = str(self.states.get_state(path)).lower()
+        if val == "unmuted":
             val_str = "Muted"
-        elif val == "Muted":
+        elif val == "muted":
             val_str = "Unmuted"
         else:
             return
@@ -272,11 +277,11 @@ class BssController(CommonLogger):
 
     def toggle_muted_unmuted_omni(self, path):
         """Muted/Unmuted 상태 토글"""
-        self.log_debug(f"toggle_muted_unmuted() : {path=}")
-        val = self.states.get_state(path)
-        if val == "UnMuted":
+        self.log_debug(f"toggle_muted_unmuted_omni() : {path=}")
+        val = str(self.states.get_state(path)).lower()
+        if val == "unmuted":
             val_str = "Muted"
-        elif val == "Muted":
+        elif val == "muted":
             val_str = "UnMuted"
         else:
             return
@@ -299,7 +304,7 @@ class BssController(CommonLogger):
 
     def set_unmuted_omni(self, path):
         """상태를 'Unmuted' 로 설정"""
-        self.log_debug(f"set_unmuted() : {path=}")
+        self.log_debug(f"set_unmuted_omni() : {path=}")
         self.set_state(path, "UnMuted")
 
     def set_val(self, path, val):

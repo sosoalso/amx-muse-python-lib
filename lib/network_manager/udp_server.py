@@ -52,7 +52,7 @@ class UdpServer(CommonLogger, EventManager):
             self.socket.bind(("", self.port))
             self.socket.settimeout(0.2)
             self.running = True
-            self.log_info("start() : server starting")
+            self.log_debug("start() : server starting")
             self.emit("online")
             self._thread_receive_loop = start_thread(self._receive_loop)
             if self.client_timeout > 0:
@@ -72,7 +72,7 @@ class UdpServer(CommonLogger, EventManager):
         self._close_server_socket()
         if was_running:
             self.emit("offline")
-        self.log_info("stop() : stop signal sent")
+        self.log_debug("stop() : stop signal sent")
 
     def send_to(self, host: str, port: int, data: bytes | bytearray | str):
         if not self.socket:
@@ -148,7 +148,7 @@ class UdpServer(CommonLogger, EventManager):
             for addr in stale:
                 with self._client_lock:
                     self.clients.pop(addr, None)
-                self.log_info(f"_cleanup_loop() : client timed out {addr=}")
+                self.log_debug(f"_cleanup_loop() : client timed out {addr=}")
         self.log_debug("_cleanup_loop() : thread ended")
 
     def _close_server_socket(self):

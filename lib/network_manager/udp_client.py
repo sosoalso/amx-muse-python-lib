@@ -72,7 +72,7 @@ class UdpClient(CommonLogger, EventManager):
             return
         self._set_state_disconnected()
         self._close_current_socket()
-        self.log_info("disconnect() : disconnect signal sent")
+        self.log_debug("disconnect() : disconnect signal sent")
 
     def send(self, msg: bytes | bytearray | str):
         msg = to_bytes(msg)
@@ -105,6 +105,7 @@ class UdpClient(CommonLogger, EventManager):
             self._last_received_at = time.time()
 
         if not was_connected:
+            self.log_debug(f"_connect_socket() : connected to {self.ip}:{self.port}")
             try:
                 self.emit("connected")
                 self.emit("online")
@@ -126,6 +127,7 @@ class UdpClient(CommonLogger, EventManager):
             was_connected = self.connected
             self.connected = False
         if was_connected:
+            self.log_debug(f"_set_state_disconnected() : disconnected from {self.ip}:{self.port}")
             try:
                 self.emit("offline")
                 self.emit("disconnected")
@@ -156,7 +158,7 @@ class UdpClient(CommonLogger, EventManager):
 
             if sock and connected and self.reconnect_time > 0:
                 if time.time() - last_received_at >= self.reconnect_time:
-                    self.log_info(f"_monitor_loop() : no response for {self.reconnect_time} seconds, reconnecting")
+                    self.log_debug(f"_monitor_loop() : no response for {self.reconnect_time} seconds, reconnecting")
                     self._set_state_disconnected()
                     self._close_current_socket()
                     self._connect_socket()

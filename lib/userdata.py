@@ -1,29 +1,36 @@
-# 마지막 수정일 : 20260514
+# 마지막 수정일 : 20260627
 import json
 import os
 import threading
 import time
+
 from lib.utility import CommonLogger
+
+_LIB_DIR = os.path.dirname(os.path.abspath(__file__))
+_SRC_DIR = os.path.dirname(_LIB_DIR)
+_BASE_DIR = os.path.dirname(_SRC_DIR)  # src/ → 프로젝트루트
+_PROGRAM_NAME = os.path.basename(_SRC_DIR)  # 프로젝트루트 폴더명
+_DEFAULT_FOLDER = f"{_PROGRAM_NAME}_userdata"  # e.g. "(2026_06)_HSW_KHNP_CRI_userdata"
 
 
 class Userdata(CommonLogger):
-    def __init__(self, filename="user_data.json", foldername=None, default_value=None):
+    def __init__(self, filename="userdata.json", foldername=_DEFAULT_FOLDER, default_value=None):
         self.filename = filename if filename.endswith(".json") else filename + ".json"
         self.foldername = foldername
         self.filepath = self.get_file_path()
         self.data = {}
         self._lock = threading.RLock()
-        self.init(default_value=default_value)
+        self.init(default_value)
 
     def get_file_path(self):
-        # foldername이 있으면 경로에 포함, 없으면 파일명만 반환
-        return f"{self.foldername}/" + self.filename if self.foldername is not None else self.filename
+        folder = os.path.join(_BASE_DIR, self.foldername) if self.foldername else _BASE_DIR
+        return os.path.join(folder, self.filename)
 
     def init(self, default_value=None):
         # 폴더가 없으면 생성
-        if self.foldername:
-            if not os.path.exists(self.foldername):
-                os.makedirs(self.foldername)
+        folder = os.path.dirname(self.filepath)
+        if not os.path.exists(folder):
+            os.makedirs(folder)
         # 파일이 없으면 새로 생성, 있으면 로드
         if not os.path.exists(self.filepath):
             self.log_debug(f"init() : file {self.filepath} not found, creating new file")
@@ -61,11 +68,15 @@ class Userdata(CommonLogger):
 
     def save_file(self):
         # self.data를 JSON 파일로 저장
-        with self._lock:
-            with open(self.filepath, "w", encoding="utf-8") as output_file:
-                json.dump(self.data, output_file, indent=2)
+        try:
+            with self._lock:
+                with open(self.filepath, "w", encoding="utf-8") as output_file:
+                    json.dump(self.data, output_file, indent=2)
+        except OSError as e:
+            self.log_error(f"save_file() : failed to save {self.filepath=} {e=}")
 
     def set_value(self, key, value):
+        # 주의: value가 dict이면 JSON 직렬화 시 int 키가 str로 변환됨. 읽을 때도 str 키로 접근할 것.
         key = str(key)
         with self._lock:
             self.data[key] = value
@@ -101,8 +112,11 @@ class Var:
     @classmethod
     def save_to_json(cls, filepath):
         # 클래스 속성을 JSON 파일로 저장
-        with open(filepath, "w", encoding="UTF-8") as f:
-            json.dump(cls.as_dict(), f, ensure_ascii=False, indent=2)
+        try:
+            with open(filepath, "w", encoding="UTF-8") as f:
+                json.dump(cls.as_dict(), f, ensure_ascii=False, indent=2)
+        except OSError as e:
+            print(f"(ERROR) - userdata : Var.save_to_json() failed {filepath=} {e=}")
 
     @classmethod
     def from_dict(cls, data):
@@ -116,6 +130,11 @@ class Var:
     @classmethod
     def load_from_json(cls, filepath):
         # JSON 파일을 읽어 클래스 속성으로 로드
-        with open(filepath, "r", encoding="UTF-8") as f:
-            data = json.load(f)
-        cls.from_dict(data)
+        try:
+            with open(filepath, "r", encoding="UTF-8") as f:
+                data = json.load(f)
+            cls.from_dict(data)
+        except OSError as e:
+            print(f"(ERROR) - userdata : Var.load_from_json() failed {filepath=} {e=}")
+        except json.JSONDecodeError as e:
+            print(f"(ERROR) - userdata : Var.load_from_json() invalid json {filepath=} {e=}")
