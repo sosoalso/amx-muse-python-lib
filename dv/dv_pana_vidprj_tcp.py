@@ -53,15 +53,19 @@ class PanaVidprjTcp(CommonLogger, EventManager):
                 res = response.partition("=")[2]
                 if res == "00001":
                     self.power = True
+                    # emit: power(value: bool)
                     self.emit("power", value=self.power)
                 elif res == "00000":
                     self.power = False
+                    # emit: power(value: bool)
                     self.emit("power", value=self.power)
                 if res == "001":
                     self.mute = True
+                    # emit: mute(value: bool)
                     self.emit("mute", value=self.mute)
                 elif res == "000":
                     self.mute = False
+                    # emit: mute(value: bool)
                     self.emit("mute", value=self.mute)
                 else:
                     return
@@ -73,6 +77,7 @@ class PanaVidprjTcp(CommonLogger, EventManager):
         self.send("PON" if value else "POF")
         self.power = value
         # USERDATA.set_value(f"{self.name}_power", self.power)
+        # emit: power(value: bool)
         self.emit("power", value=self.power)
 
     @handle_exception
@@ -88,6 +93,7 @@ class PanaVidprjTcp(CommonLogger, EventManager):
         self.send("OSH:1" if value else "OSH:0")
         self.mute = value
         # USERDATA.set_value(f"{self.name}_mute", self.mute)
+        # emit: mute(value: bool)
         self.emit("mute", value=self.mute)
 
     @handle_exception

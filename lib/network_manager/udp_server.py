@@ -53,6 +53,7 @@ class UdpServer(CommonLogger, EventManager):
             self.socket.settimeout(0.2)
             self.running = True
             self.log_debug("start() : server starting")
+            # emit: online()
             self.emit("online")
             self._thread_receive_loop = start_thread(self._receive_loop)
             if self.client_timeout > 0:
@@ -71,6 +72,7 @@ class UdpServer(CommonLogger, EventManager):
             self.clients.clear()
         self._close_server_socket()
         if was_running:
+            # emit: offline()
             self.emit("offline")
         self.log_debug("stop() : stop signal sent")
 
@@ -94,6 +96,7 @@ class UdpServer(CommonLogger, EventManager):
             self.log_error(f"send() : failed to send {e=}")
 
     def _emit_received(self, data: bytes, address: Tuple[str, int]):
+        # emit: received(event: ReceivedEvent)  — event.arguments["data"]: bytes
         self.emit("received", make_received_event(self, data, address))
 
     def _receive_loop(self):
@@ -131,6 +134,7 @@ class UdpServer(CommonLogger, EventManager):
             self._close_server_socket()
             if was_running:
                 try:
+                    # emit: offline()
                     self.emit("offline")
                 except Exception as e:
                     self.log_error(f"_receive_loop() : emit error {e=}")

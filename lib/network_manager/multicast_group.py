@@ -82,7 +82,9 @@ class MulticastGroup(CommonLogger, EventManager):
                 self.connected = True
 
             try:
+                # emit: connected()
                 self.emit("connected")
+                # emit: online()
                 self.emit("online")
             except Exception as e:
                 self.log_error(f"connect() : emit error {e=}")
@@ -118,6 +120,7 @@ class MulticastGroup(CommonLogger, EventManager):
 
         if was_connected:
             try:
+                # emit: offline()
                 self.emit("offline")
             except Exception as e:
                 self.log_error(f"disconnect() : emit error {e=}")
@@ -158,6 +161,7 @@ class MulticastGroup(CommonLogger, EventManager):
         self.log_debug("_receive_loop() : thread ended")
 
     def _emit_received(self, data: bytes, address: Tuple[str, int]):
+        # emit: received(event: ReceivedEvent)  — event.arguments["data"]: bytes
         self.emit("received", make_received_event(self, data, address))
 
     def _close_socket(self, sock: socket.socket):

@@ -181,9 +181,11 @@ class PanaVidswt(CommonLogger, EventManager):
             if route:
                 idx_dest, idx_src = route
                 self.routes[idx_dest] = idx_src
+                # emit: route(idx_dest: int, idx_src: int, routes: list)
                 self.emit("route", idx_dest=idx_dest, idx_src=idx_src, routes=self.routes)
                 continue
             if ":" in line:
                 key, value = line.strip("\x02\x03").split(":", 1)
                 self.params[key.strip()] = value.strip()
+        # emit: received(text: str)
         self.emit("received", text=text)

@@ -54,18 +54,21 @@ class Videohub(CommonLogger, EventManager):
                             line = match.group(0)
                             idx_out, idx_in = map(int, line.split())
                             self.set_route_value(idx_in + 1, idx_out + 1)
+                            # emit: route(index_in: int, index_out: int)
                             self.emit("route", index_in=idx_in + 1, index_out=idx_out + 1)
                 elif "INPUT LABELS:" in header:
                     for msg in splitted_message[1:]:
                         idx, name = msg.split(maxsplit=1)
                         self.input_labels[int(idx)] = name
                     self.log_debug(f"Input labels: {self.input_labels}")
+                    # emit: refresh_input_labels()
                     self.emit("refresh_input_labels")
                 elif "OUTPUT LABELS:" in header:
                     for msg in splitted_message[1:]:
                         idx, name = msg.split(maxsplit=1)
                         self.output_labels[int(idx)] = name
                     self.log_debug(f"Output labels: {self.output_labels}")
+                    # emit: refresh_output_labels()
                     self.emit("refresh_output_labels")
         except (AttributeError, KeyError, UnicodeDecodeError, ValueError) as e:
             self.log_error(f"Error decoding data: {e}")
@@ -74,4 +77,5 @@ class Videohub(CommonLogger, EventManager):
         if 0 <= index_in <= self.max_inputs and 1 <= index_out <= self.max_outputs:
             self.dv.send(f"VIDEO OUTPUT ROUTING:\n{index_out-1} {index_in-1}\n\n".encode())
             self.set_route_value(index_in, index_out)
+            # emit: route(index_in: int, index_out: int)
             self.emit("route", index_in=index_in, index_out=index_out)

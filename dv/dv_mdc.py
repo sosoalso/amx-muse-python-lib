@@ -16,7 +16,7 @@ class Mdc(CommonLogger, EventManager):
     HEADER = 0xAA
     RESPONSE_CMD = 0xFF
     ACK = ord("A")
-    GET = "g"
+    GET = ord("g")
 
     def __init__(self, dv, id_mdc=DEFAULT_ID, name=None):
         super().__init__("power", "power_on", "power_off", "input", "poll")
@@ -123,9 +123,11 @@ class Mdc(CommonLogger, EventManager):
 
             if r_cmd == self.CMD_PWR:
                 self.power = bool(val)
+                # emit: power(value: bool)
                 self.emit("power", value=self.power)
             elif r_cmd == self.CMD_INPT_SRC:
                 self.source = val
+                # emit: input(value: int)
                 self.emit("input", value=self.source)
 
     @handle_exception
@@ -133,6 +135,7 @@ class Mdc(CommonLogger, EventManager):
         self.send(self.CMD_PWR, 0x01 if value else 0x00)
         self.send(self.CMD_PWR, self.GET)
         self.power = value
+        # emit: power(value: bool)
         self.emit("power", value=self.power)
 
     @handle_exception
@@ -148,6 +151,7 @@ class Mdc(CommonLogger, EventManager):
         self.send(self.CMD_INPT_SRC, source)
         self.send(self.CMD_INPT_SRC, self.GET)
         self.source = source
+        # emit: input(value: int)
         self.emit("input", value=self.source)
 
     # @handle_exception

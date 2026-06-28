@@ -68,6 +68,7 @@ class PjLink(CommonLogger, EventManager):
                     else:
                         return
                     # USERDATA.set_value(f"{self.name}_power", self.power)
+                    # emit: power(value: bool)
                     self.emit("power", value=self.power)
                 elif "%1AVMT=" in response:
                     try:
@@ -78,6 +79,7 @@ class PjLink(CommonLogger, EventManager):
                         else:
                             return
                         # USERDATA.set_value(f"{self.name}_mute", self.mute)
+                        # emit: mute(value: bool)
                         self.emit("mute", value=self.mute)
                     except ValueError:
                         self.log_error(f"Invalid video mute response: {res}")
@@ -87,6 +89,7 @@ class PjLink(CommonLogger, EventManager):
                         if p.isnumeric():
                             self.lamp_time = int(p) or -1
                             # USERDATA.set_value(f"{self.name}_lamp_time", self.lamp_time)
+                            # emit: lamp_time(value: int)
                             self.emit("lamp_time", value=self.lamp_time)
                     except ValueError:
                         self.log_error(f"Invalid lamp time response: {res}")
@@ -110,6 +113,7 @@ class PjLink(CommonLogger, EventManager):
         self.dv.send("%1POWR 1\r" if value else "%1POWR 0\r")
         self.power = value
         # USERDATA.set_value(f"{self.name}_power", self.power)
+        # emit: power(value: bool)
         self.emit("power", value=self.power)
 
     @handle_exception
@@ -125,6 +129,7 @@ class PjLink(CommonLogger, EventManager):
         self.dv.send("%1AVMT 31\r" if value else "%1AVMT 30\r")
         self.mute = value
         # USERDATA.set_value(f"{self.name}_mute", self.mute)
+        # emit: mute(value: bool)
         self.emit("mute", value=self.mute)
 
     @handle_exception
@@ -140,6 +145,7 @@ class PjLink(CommonLogger, EventManager):
         self.dv.send("%2FREZ 1\r" if value else "%2FREZ 0\r")
         self.freeze = value
         # USERDATA.set_value(f"{self.name}_freeze", self.freeze)
+        # emit: freeze(value: bool)
         self.emit("freeze", value=self.freeze)
 
     @handle_exception

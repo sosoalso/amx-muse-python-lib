@@ -41,6 +41,7 @@ class MicManager(CommonLogger, EventManager):
         self.log_debug(f"set_max_mics() {max_mics=}")
         self.max_mics = max_mics
         self.last_on_mics.clear()
+        # emit: mic_all_off()
         self.emit("mic_all_off")
 
     # ---------------------------------------------------------------------------- #
@@ -56,7 +57,9 @@ class MicManager(CommonLogger, EventManager):
                 oldest = non_vip.pop(0)
                 self.last_on_mics.remove(oldest)
                 self.log_debug(f"notify_mic_on() : max_mics exceeded, turning off {oldest=} {self.last_on_mics=}")
+                # emit: mic_off(mic_index: int)
                 self.emit("mic_off", oldest)
+        # emit: mic_on(mic_index: int)
         self.emit("mic_on", mic_index)
 
     def notify_mic_off(self, mic_index):
@@ -65,13 +68,17 @@ class MicManager(CommonLogger, EventManager):
             return
         self.last_on_mics.remove(mic_index)
         if self.last_on_mics:
+            # emit: mic_off(mic_index: int)
             self.emit("mic_off", mic_index)
             if self.last_mic_enabled:
+                # emit: last_mic_on(mic_index: int)
                 self.emit("last_mic_on", self.last_on_mics[-1])
         else:
+            # emit: mic_all_off()
             self.emit("mic_all_off")
 
     def notify_all_mic_off(self):
         self.log_debug("notify_all_mic_off()")
         self.last_on_mics.clear()
+        # emit: mic_all_off()
         self.emit("mic_all_off")

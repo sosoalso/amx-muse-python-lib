@@ -48,6 +48,7 @@ class TcpClient(CommonLogger, EventManager):
         return self.connected
 
     def connect(self):
+        self.log_debug(f"connect() : {self.ip}:{self.port}")
         with self._state_lock:
             self.reconnect = True
         self._thread_connect = run_thread(self._thread_connect, self._connect_loop)
@@ -125,10 +126,11 @@ class TcpClient(CommonLogger, EventManager):
             was_connected = self.connected
             self.connected = True
         if not was_connected:
-            self.log_debug("connected to server")
-            self.log_debug("_set_state_connected() : connected to server")
+            self.log_debug(f"_set_state_connected() : connected to {self.ip}:{self.port}")
             try:
+                # emit: connected()
                 self.emit("connected")
+                # emit: online()
                 self.emit("online")
             except Exception as e:
                 self.log_error(f"_set_state_connected() : emit error {e=}")
@@ -141,7 +143,9 @@ class TcpClient(CommonLogger, EventManager):
             self.log_debug("disconnected from server")
             self.log_debug("_set_state_disconnected() : disconnected from server")
             try:
+                # emit: offline()
                 self.emit("offline")
+                # emit: disconnected()
                 self.emit("disconnected")
             except Exception as e:
                 self.log_error(f"_set_state_disconnected() : emit error {e=}")
@@ -216,4 +220,5 @@ class TcpClient(CommonLogger, EventManager):
             self.log_error(f"_send_once() : failed to send {e=}")
 
     def _emit_received(self, data: bytes, address: Tuple[str, int]):
+        # emit: received(event: ReceivedEvent)  — event.arguments["data"]: bytes
         self.emit("received", make_received_event(self, data, address))

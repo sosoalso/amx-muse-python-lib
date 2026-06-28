@@ -73,6 +73,7 @@ class AtemSwitcher(CommonLogger, EventManager):
         was_connected = self.connected
         self._reset_connection_state()
         if was_connected:
+            # emit: disconnected()
             self.emit("disconnected")
 
     @handle_exception
@@ -160,6 +161,7 @@ class AtemSwitcher(CommonLogger, EventManager):
                 self.initialized = True
                 self.waiting_for_incoming = True
                 self.initial_buffer = bytearray()
+                # emit: connected()
                 self.emit("connected")
             self.log_debug("parse_data() : atem initialized")
 
@@ -191,16 +193,19 @@ class AtemSwitcher(CommonLogger, EventManager):
                     if decoded_command.find("PrgI") != -1 and command_length >= 12:
                         self.program_input = data[index_pointer + 10] << 8 | data[index_pointer + 11]
                         self.log_debug(f"parse_packet() : Program Input: {self.program_input}")
+                        # emit: pgm_switched(program_input: int)
                         self.emit("pgm_switched", self.program_input)
                     elif decoded_command.find("PrvI") != -1 and command_length >= 12:
                         self.preview_input = data[index_pointer + 10] << 8 | data[index_pointer + 11]
                         self.log_debug(f"parse_packet() : {self.preview_input=}")
+                        # emit: pvw_switched(preview_input: int)
                         self.emit("pvw_switched", self.preview_input)
                     elif decoded_command.find("AuxS") != -1 and command_length >= 13:
                         aux_index = int(data[index_pointer + 8])
                         if 0 <= aux_index <= 7:
                             self.aux_inputs[aux_index] = data[index_pointer + 11] << 8 | data[index_pointer + 12]
                             self.log_debug(f"parse_packet() : Aux Input {aux_index}: {self.aux_inputs[aux_index]}")
+                            # emit: aux_switched(aux_input: int)
                             self.emit("aux_switched", self.aux_inputs[aux_index])
                     elif decoded_command.find("InPr") != -1:
                         # todo 이름 가져오기 구현

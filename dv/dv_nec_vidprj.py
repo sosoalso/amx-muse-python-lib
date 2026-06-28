@@ -106,6 +106,7 @@ class NecVidprj(CommonLogger, EventManager):
                             self.power = False
                         else:
                             continue
+                        # emit: power(value: bool)
                         self.emit("power", value=self.power)
                     elif self.CMD_QUERY_MUTE == bytes(self.last_send_command):
                         picture_mute = message[5]
@@ -115,6 +116,7 @@ class NecVidprj(CommonLogger, EventManager):
                             self.mute = False
                         else:
                             continue
+                        # emit: mute(value: bool)
                         self.emit("mute", value=self.mute)
 
                     self.last_send_command.clear()
@@ -125,24 +127,28 @@ class NecVidprj(CommonLogger, EventManager):
     def set_power(self, value):
         self.send(b"\x02\x00\x00\x00\x00" if value else b"\x02\x01\x00\x00\x00")
         self.power = value
+        # emit: power(value: bool)
         self.emit("power", value=self.power)
 
     @handle_exception
     def power_on(self):
         self.set_power(True)
         self.mute = False
+        # emit: mute(value: bool)
         self.emit("mute", value=self.mute)
 
     @handle_exception
     def power_off(self):
         self.set_power(False)
         self.mute = False
+        # emit: mute(value: bool)
         self.emit("mute", value=self.mute)
 
     @handle_exception
     def set_mute(self, value):
         self.send(b"\x02\x10\x00\x00\x00" if value else b"\x02\x11\x00\x00\x00")
         self.mute = value
+        # emit: mute(value: bool)
         self.emit("mute", value=self.mute)
 
     @handle_exception

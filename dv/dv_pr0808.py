@@ -49,12 +49,14 @@ class Pr0808(CommonLogger, EventManager):
             if m:
                 idx_in, idx_out = int(m.group(1)), int(m.group(2))
                 self.routes[idx_out] = idx_in
+                # emit: route(idx_in: int, idx_out: int, routes: dict)
                 self.emit("route", idx_in=idx_in, idx_out=idx_out, routes=self.routes)
                 continue
             m = re.match(r"set switch video from no input for output (\d+)", line)
             if m:
                 idx_out = int(m.group(1))
                 self.routes[idx_out] = 0
+                # emit: route(idx_in: int, idx_out: int, routes: dict)
                 self.emit("route", idx_in=0, idx_out=idx_out, routes=self.routes)
 
     @handle_exception
@@ -62,6 +64,7 @@ class Pr0808(CommonLogger, EventManager):
         """입력 idx_in 을 출력 idx_out 으로 라우팅 (1-based). 비디오+오디오"""
         self.dv.send(f"set switch CI{idx_in}O{idx_out}\r\n".encode())
         self.routes[idx_out] = idx_in
+        # emit: route(idx_in: int, idx_out: int, routes: dict)
         self.emit("route", idx_in=idx_in, idx_out=idx_out, routes=self.routes)
 
     @handle_exception
@@ -69,4 +72,5 @@ class Pr0808(CommonLogger, EventManager):
         """입력 idx_in 을 출력 idx_out 으로 라우팅 (1-based). 비디오만"""
         self.dv.send(f"set switch VI{idx_in}O{idx_out}\r\n".encode())
         self.routes[idx_out] = idx_in
+        # emit: route(idx_in: int, idx_out: int, routes: dict)
         self.emit("route", idx_in=idx_in, idx_out=idx_out, routes=self.routes)

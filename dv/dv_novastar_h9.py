@@ -20,7 +20,9 @@ class NovastarH9(CommonLogger, EventManager):
     @handle_exception
     def init(self):
         self.dv.receive.listen(self._on_receive)
+        # emit: connected()
         self.dv.online(lambda *_, **__: self.emit("connected"))
+        # emit: disconnected()
         self.dv.offline(lambda *_, **__: self.emit("disconnected"))
         self.dv.connect()
 
@@ -36,6 +38,7 @@ class NovastarH9(CommonLogger, EventManager):
             return
         data = args[0].arguments["data"]
         self.log_debug(f"_on_receive() : {data=}")
+        # emit: received(data: bytes)
         self.emit("received", data=data)
 
     # ------------------------------------------------------------------ #

@@ -37,6 +37,7 @@ class BrsU808m(CommonLogger, EventManager):
         flag_out = 1 << (idx_out - 1)
         self.vidmtx_send(0x01, bytearray([flag_in, flag_out]))
         self.userdata.set_value(idx_out, idx_in)
+        # emit: route(idx_in: int, idx_out: int)
         self.emit("route", idx_in=idx_in, idx_out=idx_out)
 
     @handle_exception
@@ -51,6 +52,7 @@ class BrsU808m(CommonLogger, EventManager):
                 flags_out |= 1 << (idx_out - 1)
             self.userdata.set_value(idx_out, idx_in if idx_out in idx_outs else 0)
         self.vidmtx_send(0x01, bytearray([flag_in, flags_out]))
+        # emit: routes(idx_in: int, idx_outs: list[int])
         self.emit("routes", idx_in=idx_in, idx_outs=idx_outs)
 
     def parse_response(self, *args):

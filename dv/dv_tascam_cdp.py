@@ -81,18 +81,23 @@ class TascamCdp(CommonLogger, EventManager):
     @handle_exception
     def _set_playing(self, value):
         self.is_playing = value
+        # emit: status(key: str, value: any)
         self.emit("status", key="playing", value=self.is_playing)
         if value:
             self.log_debug(f"_set_playing() {self.is_playing=}")
+            # emit: play()
             self.emit("play")
         else:
             self.log_debug(f"_set_playing() {self.is_playing=}")
+            # emit: stop()
             self.emit("stop")
 
     @handle_exception
     def _set_source(self, source):
         self.source = source
+        # emit: source(value: str)
         self.emit("source", value=source)
+        # emit: status(key: str, value: any)
         self.emit("status", key="source", value=source)
 
     @handle_exception
@@ -120,4 +125,5 @@ class TascamCdp(CommonLogger, EventManager):
                     self._set_playing(False)
         except Exception as e:
             self.log_error(f"parse_response() {e=}")
+            # emit: error(value: str)
             self.emit("error", value=str(e))

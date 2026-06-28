@@ -75,6 +75,7 @@ class TcpServer(CommonLogger, EventManager):
         return error.errno in (48, 98) or getattr(error, "winerror", None) == 10048
 
     def _emit_received(self, data: bytes, address: Tuple[str, int]):
+        # emit: received(event: ReceivedEvent)  — event.arguments["data"]: bytes
         self.emit("received", make_received_event(self, data, address))
 
     def _close_all_clients(self):
@@ -91,7 +92,9 @@ class TcpServer(CommonLogger, EventManager):
         if socket_to_close:
             self._close_socket(socket_to_close)
         if removed_socket and emit_events:
+            # emit: offline(address: tuple[str, int])
             self.emit("offline", address=address)
+            # emit: disconnected(address: tuple[str, int])
             self.emit("disconnected", address=address)
         return removed_socket is not None
 
@@ -127,7 +130,9 @@ class TcpServer(CommonLogger, EventManager):
                     self.log_debug(f"_start_server() : client connected {address=}")
                     with self._client_lock:
                         self.clients[address] = client
+                    # emit: connected(address: tuple[str, int])
                     self.emit("connected", address=address)
+                    # emit: online(address: tuple[str, int])
                     self.emit("online", address=address)
                     start_thread(self._receive_loop, client, address)
                 except socket.timeout:

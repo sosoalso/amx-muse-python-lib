@@ -35,7 +35,9 @@ class HyperdeckStudio(CommonLogger, EventManager):
         self.is_recording = True
         self.is_playing = False
         self.is_stopped = False
+        # emit: record()
         self.emit("record")
+        # emit: transport(transport: str)
         self.emit("transport", transport=self.transport)
 
     @handle_exception
@@ -44,7 +46,9 @@ class HyperdeckStudio(CommonLogger, EventManager):
         self.is_playing = False
         self.is_recording = False
         self.is_stopped = True
+        # emit: stop()
         self.emit("stop")
+        # emit: transport(transport: str)
         self.emit("transport", transport=self.transport)
 
     @handle_exception
@@ -53,7 +57,9 @@ class HyperdeckStudio(CommonLogger, EventManager):
         self.is_playing = True
         self.is_recording = False
         self.is_stopped = False
+        # emit: play()
         self.emit("play")
+        # emit: transport(transport: str)
         self.emit("transport", transport=self.transport)
 
     @handle_exception
@@ -88,30 +94,36 @@ class HyperdeckStudio(CommonLogger, EventManager):
                         self.is_playing = False
                         self.is_stopped = False
                         self.transport = "record"
+                        # emit: record()
                         self.emit("record")
                     elif "stopped" in response[7:]:
                         self.is_recording = False
                         self.is_playing = False
                         self.is_stopped = True
                         self.transport = "stopped"
+                        # emit: stop()
                         self.emit("stop")
                     elif "preview" in response[7:]:
                         self.is_recording = False
                         self.is_playing = False
                         self.is_stopped = False
                         self.transport = "preview"
+                        # emit: preview()
                         self.emit("preview")
                     elif "play" in response[7:]:
                         self.is_recording = False
                         self.is_playing = True
                         self.is_stopped = False
                         self.transport = "play"
+                        # emit: play()
                         self.emit("play")
                     else:
                         return
+                    # emit: transport(transport: str, this: HyperdeckStudio)
                     self.emit("transport", transport=self.transport, this=self)
                 elif response.startswith("display timecode: "):
                     self.timecode = response[17:].strip()
+                    # emit: timecode(timecode: str)
                     self.emit("timecode", timecode=self.timecode)
                 elif response.startswith("video format: "):
                     self.video_format = response[14:].strip()

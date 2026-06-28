@@ -44,11 +44,13 @@ class CiscoCodec(CommonLogger, EventManager):
             self.is_in_call = True
             self.is_incoming = False
             self._incoming_call_id = None
+            # emit: call_connected()
             self.emit("call_connected")
         elif "*e CallDisconnect" in msg:
             self.is_in_call = False
             self.is_incoming = False
             self._incoming_call_id = None
+            # emit: call_disconnected()
             self.emit("call_disconnected")
         # 수신 전화 (*e IncomingCallIndication CallId: N ...)
         elif "*e IncomingCallIndication" in msg:
@@ -57,21 +59,26 @@ class CiscoCodec(CommonLogger, EventManager):
             except (IndexError, ValueError):
                 self._incoming_call_id = None
             self.is_incoming = True
+            # emit: call_incoming()
             self.emit("call_incoming")
         # 셀프뷰 상태 (*s Video Selfview Mode: On/Off)
         elif "*s Video Selfview Mode:" in msg:
             self.is_selfview = "On" in msg
+            # emit: selfview_changed(value: bool)
             self.emit("selfview_changed", value=self.is_selfview)
         # 프레젠테이션 상태
         elif "*e PresentationStarted" in msg:
             self.is_presentation = True
+            # emit: presentation_changed(value: bool)
             self.emit("presentation_changed", value=True)
         elif "*e PresentationStopped" in msg:
             self.is_presentation = False
+            # emit: presentation_changed(value: bool)
             self.emit("presentation_changed", value=False)
         # xStatus Conference Presentation Mode 응답 (*s Conference Presentation Mode: Sending/Off)
         elif "*s Conference Presentation Mode:" in msg:
             self.is_presentation = "Sending" in msg
+            # emit: presentation_changed(value: bool)
             self.emit("presentation_changed", value=self.is_presentation)
 
     # ---------------------------------------------------------------------------- #

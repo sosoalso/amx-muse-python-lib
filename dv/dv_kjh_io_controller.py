@@ -80,9 +80,11 @@ class KjhIoControllerBase(CommonLogger, EventManager):
                     for idx, value in enumerate(parts[2]):
                         if value == "1":
                             self.state_in[device_index][idx] = False
+                            # emit: in(device_index: int, ch_index: int, value: bool)
                             self.emit("in", device_index=device_index, ch_index=idx + 1, value=False)
                         if value == "0":
                             self.state_in[device_index][idx] = True
+                            # emit: in(device_index: int, ch_index: int, value: bool)
                             self.emit("in", device_index=device_index, ch_index=idx + 1, value=True)
             elif msg.startswith("out,"):
                 parts = msg.split(",")
@@ -91,9 +93,11 @@ class KjhIoControllerBase(CommonLogger, EventManager):
                     for idx, value in enumerate(parts[2]):
                         if value == "1":
                             self.state_out[device_index][idx] = True
+                            # emit: out(device_index: int, ch_index: int, value: bool)
                             self.emit("out", device_index=device_index, ch_index=idx + 1, value=True)
                         if value == "0":
                             self.state_out[device_index][idx] = False
+                            # emit: out(device_index: int, ch_index: int, value: bool)
                             self.emit("out", device_index=device_index, ch_index=idx + 1, value=False)
         else:
             if msg.startswith("in,") or msg.startswith("input_ch,"):
@@ -104,11 +108,14 @@ class KjhIoControllerBase(CommonLogger, EventManager):
                     if self.mode == "toggle":
                         if value == "0":
                             self.state_in[device_index][idx] = True
+                            # emit: in(device_index: int, ch_index: int, value: bool)
                             self.emit("in", device_index=device_index, ch_index=idx + 1, value=True)
                         elif value == "1":
                             self.state_in[device_index][idx] = False
+                            # emit: in(device_index: int, ch_index: int, value: bool)
                             self.emit("in", device_index=device_index, ch_index=idx + 1, value=False)
                     elif self.mode in ("trigger", ""):
+                        # emit: in_trigger(device_index: int, ch_index: int)
                         self.emit("in_trigger", device_index=device_index, ch_index=idx + 1)
             if msg.startswith("out,") or msg.startswith("output_ch,"):
                 parts = msg.split(",")
@@ -118,9 +125,11 @@ class KjhIoControllerBase(CommonLogger, EventManager):
                     value = parts[3]
                     if value == "1":
                         self.state_out[device_index][idx] = True
+                        # emit: out(device_index: int, ch_index: int, value: bool)
                         self.emit("out", device_index=device_index, ch_index=idx + 1, value=True)
                     elif value == "0":
                         self.state_out[device_index][idx] = False
+                        # emit: out(device_index: int, ch_index: int, value: bool)
                         self.emit("out", device_index=device_index, ch_index=idx + 1, value=False)
 
     # ---------------------------------------------------------------------------- #

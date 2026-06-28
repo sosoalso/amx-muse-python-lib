@@ -207,4 +207,5 @@ class YamahaMixer(CommonLogger, EventManager):
         if msg.startswith("NOTIFY ssrecall_ex scene_a"):
             idx_scene = int(msg[27:])
             self.last_scene = idx_scene + 1
+            # emit: scene_recall(scene_no: int)
             self.emit("scene_recall", scene_no=self.last_scene)

@@ -56,29 +56,35 @@ class PolycomGroup500(CommonLogger, EventManager):
             if state == "connected":
                 self.is_in_call = True
                 self.is_incoming = False
+                # emit: call_connected()
                 self.emit("call_connected")
             elif state in ("disconnected", "idle"):
                 self.is_in_call = False
                 self.is_incoming = False
+                # emit: call_disconnected()
                 self.emit("call_disconnected")
             elif state == "ringing":
                 self.is_incoming = True
+                # emit: call_incoming()
                 self.emit("call_incoming")
 
         # 오디오 뮤트: mute near on / mute near off
         elif line.startswith("mute near"):
             self.is_muted_near = line.endswith("on")
+            # emit: mute_changed(value: bool)
             self.emit("mute_changed", value=self.is_muted_near)
 
         # 비디오 뮤트: videomute near on / videomute near off
         elif line.startswith("videomute near"):
             self.is_videomuted_near = line.endswith("on")
+            # emit: videomute_changed(value: bool)
             self.emit("videomute_changed", value=self.is_videomuted_near)
 
         # 볼륨: volume N (0~50)
         elif line.startswith("volume "):
             try:
                 self.volume = int(line.split()[1])
+                # emit: volume_changed(value: int)
                 self.emit("volume_changed", value=self.volume)
             except (IndexError, ValueError):
                 pass

@@ -34,6 +34,7 @@ class ButtonHandler(EventManager):
             if self._is_pushed and not self._is_hold:
                 self._is_hold = True
                 try:
+                    # emit: hold()
                     self.emit("hold")
                 except Exception as e:
                     log_error(f"start_hold() : emit error {e=}")
@@ -46,6 +47,7 @@ class ButtonHandler(EventManager):
             if self._event_repeat.wait(self.repeat_interval):
                 break
             try:
+                # emit: repeat()
                 self.emit("repeat")
             except Exception as e:
                 log_error(f"start_repeat() : emit error {e=}")
@@ -102,6 +104,7 @@ class ButtonHandler(EventManager):
             self._is_hold = False
             self._event_repeat.clear()
             self._event_hold.clear()
+            # emit: push()
             self.emit("push")
             if "repeat" in self.actions and self.actions["repeat"]:
                 self._thread_repeat = run_thread(self._thread_repeat, self.start_repeat)
@@ -114,6 +117,7 @@ class ButtonHandler(EventManager):
             # 홀드 상태가 아니거나 trigger_release_on_hold 설정이 True이면 릴리즈 이벤트 발생
             # (홀드 중에 버튼을 뗄 때도 릴리즈 이벤트를 발생시킬지 결정)
             if not self._is_hold or self.trigger_release_on_hold:
+                # emit: release()
                 self.emit("release")
             self._is_hold = False
 
@@ -130,6 +134,7 @@ class LevelHandler(EventManager):
         def debounced_emit(value):
             self.emit("level", value)
 
+        # emit: level(value: int)
         self.debounced_emit = debounced_emit
         if init_handler:
             self.on("level", init_handler)
