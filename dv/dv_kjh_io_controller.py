@@ -1,4 +1,3 @@
-# 마지막 수정일 : 20260629
 """
 KJH Conference Gooseneck Microphone Controller
 """
@@ -53,7 +52,7 @@ class KjhIoControllerBase(CommonLogger, EventManager):
     # INFO : RX
     @handle_exception
     def handle_receive(self, evt):
-        data = evt.arguments["data"]
+        data = evt.arguments.get("data", b"")
         msg = data.decode("ascii", errors="ignore").strip()
         if not msg:
             return
@@ -186,7 +185,7 @@ class KjhIoControllerTcp(KjhIoControllerBase):
 
     def __init__(self, ip, device_index_list=None, port=DEFAULT_PORT):
         super().__init__(device_index_list)
-        self.dv = TcpClient(ip, port)
+        self.dv = TcpClient(ip, port, reconnect_time=10.0)
 
 
 # ---------------------------------------------------------------------------- #

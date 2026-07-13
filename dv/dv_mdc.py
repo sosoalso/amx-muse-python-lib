@@ -1,9 +1,10 @@
-# 마지막 수정일 : 20260629
+# 마지막 수정일 : 20260713
 from lib.event_manager import EventManager
-from lib.scheduler import Scheduler
+
 from lib.utility import CommonLogger, handle_exception
 
 
+# 연결 지속 안하고 원샷
 class Mdc(CommonLogger, EventManager):
     DEFAULT_PORT = 1515
     DEFAULT_ID = 1
@@ -26,13 +27,10 @@ class Mdc(CommonLogger, EventManager):
         self.power = False
         self.source = 0
         self.buffer = bytearray()
-        self.poll = Scheduler()
 
     @handle_exception
     def init(self):
         self.dv.receive.listen(self.parse_response)
-        self.dv.online(lambda *_, **__: self.start_poll())
-        self.dv.offline(lambda *_, **__: self.poll.shutdown())
 
     def _checksum(self, data):
         return sum(data) & 0xFF
@@ -49,17 +47,6 @@ class Mdc(CommonLogger, EventManager):
         msg = self._build_command(cmd, data)
         self.log_debug(f"send() msg={msg.hex(' ')}")
         self.dv.send(msg)
-
-    @handle_exception
-    def start_poll(self, *_):
-        def query_power():
-            self.send(self.CMD_PWR, self.GET)
-
-        def query_input():
-            self.send(self.CMD_INPT_SRC, self.GET)
-
-        self.poll.set_timeout(1.0, lambda: self.poll.set_interval(10.0, query_power))
-        self.poll.set_timeout(3.0, lambda: self.poll.set_interval(10.0, query_input))
 
     def _get_next_message(self):
         while self.buffer and self.buffer[0] != self.HEADER:
@@ -133,9 +120,7 @@ class Mdc(CommonLogger, EventManager):
     @handle_exception
     def set_power(self, value):
         self.send(self.CMD_PWR, 0x01 if value else 0x00)
-        self.send(self.CMD_PWR, self.GET)
         self.power = value
-        # emit: power(value: bool)
         self.emit("power", value=self.power)
 
     @handle_exception
@@ -149,11 +134,7 @@ class Mdc(CommonLogger, EventManager):
     @handle_exception
     def set_input(self, source):
         self.send(self.CMD_INPT_SRC, source)
-        self.send(self.CMD_INPT_SRC, self.GET)
+        # self.send(self.CMD_INPT_SRC, self.GET)
         self.source = source
         # emit: input(value: int)
         self.emit("input", value=self.source)
-
-    # @handle_exception
-    # def set_brightness(self, value):
-    #     self.send(self.CMD_BRIGHTNESS, value)

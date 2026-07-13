@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260629
+# 마지막 수정일 : 20260713
 from lib.event_manager import EventManager
 from lib.network_manager import TcpClient
 from lib.utility import CommonLogger, handle_exception
@@ -135,7 +135,7 @@ class PanaVidswt(CommonLogger, EventManager):
             return None
         evt = args[0]
         if hasattr(evt, "arguments") and isinstance(evt.arguments, dict):
-            return evt.arguments.get("data")
+            return evt.arguments.get("data", b"")
         return evt
 
     @handle_exception

@@ -1,4 +1,12 @@
-# 마지막 수정일 : 20260629
+# 마지막 수정일 : 20260713
+"""설정/상태를 JSON 파일로 영속화하는 모듈.
+
+Userdata: key-value 데이터를 프로젝트 폴더 옆 전용 폴더의 JSON 파일에 저장한다.
+값이 바뀔 때마다 즉시 파일에 반영되므로 컨트롤러 재부팅 후에도 상태가 유지된다
+(볼륨 값, 카메라 프리셋, 마지막 선택 소스 등).
+Var: 클래스 속성을 그대로 설정값으로 쓰는 간소화 버전 (자동 저장 없음).
+"""
+
 import json
 import os
 import threading
@@ -14,6 +22,13 @@ _DEFAULT_FOLDER = f"{_PROGRAM_NAME}_userdata"  # e.g. "(2026_06)_HSW_KHNP_CRI_us
 
 
 class Userdata(CommonLogger):
+    """JSON 파일 기반 key-value 저장소.
+
+    생성 시 파일을 로드하고(없으면 default_value 로 생성, 깨졌으면 백업 후 재생성),
+    set_value/delete_value 호출 시마다 곧바로 파일에 저장한다.
+    RLock 으로 스레드 간 동시 접근을 보호하며, 키는 항상 문자열로 변환해 다룬다.
+    """
+
     def __init__(self, filename="userdata.json", foldername=_DEFAULT_FOLDER, default_value=None):
         self.filename = filename if filename.endswith(".json") else filename + ".json"
         self.foldername = foldername
@@ -27,10 +42,14 @@ class Userdata(CommonLogger):
         return os.path.join(folder, self.filename)
 
     def init(self, default_value=None):
+        """폴더/파일 준비 및 데이터 로드.
+
+        파일이 손상되어 있으면 .broken_타임스탬프 이름으로 백업해 두고
+        default_value(없으면 빈 dict)로 새 파일을 만든다.
+        """
         # 폴더가 없으면 생성
         folder = os.path.dirname(self.filepath)
-        if not os.path.exists(folder):
-            os.makedirs(folder)
+        os.makedirs(folder, exist_ok=True)
         # 파일이 없으면 새로 생성, 있으면 로드
         if not os.path.exists(self.filepath):
             self.log_debug(f"init() : file {self.filepath} not found, creating new file")
@@ -45,6 +64,7 @@ class Userdata(CommonLogger):
                 self.save_file()
 
     def load_file(self):
+        """파일을 self.data 로 로드. 성공 시 True, 실패(손상/IO 오류) 시 None 반환."""
         # JSON 파일을 읽어 self.data에 로드
         try:
             with self._lock:
@@ -59,6 +79,7 @@ class Userdata(CommonLogger):
             return None
 
     def _backup_broken_file(self):
+        """깨진 JSON 파일을 지우지 않고 .broken_타임스탬프 이름으로 옮겨 보존."""
         if not os.path.exists(self.filepath):
             return
         timestamp = time.strftime("%Y%m%d_%H%M%S")
@@ -67,15 +88,18 @@ class Userdata(CommonLogger):
         self.log_error(f"_backup_broken_file() : moved broken file to {backup_path}")
 
     def save_file(self):
-        # self.data를 JSON 파일로 저장
+        # self.data를 JSON 파일로 저장 (임시 파일에 쓴 뒤 원자적 교체 - 쓰는 도중 죽어도 원본은 안 깨짐)
         try:
             with self._lock:
-                with open(self.filepath, "w", encoding="utf-8") as output_file:
+                tmp_path = self.filepath + ".tmp"
+                with open(tmp_path, "w", encoding="utf-8") as output_file:
                     json.dump(self.data, output_file, indent=2)
+                os.replace(tmp_path, self.filepath)
         except OSError as e:
             self.log_error(f"save_file() : failed to save {self.filepath=} {e=}")
 
     def set_value(self, key, value):
+        """값 설정 후 즉시 파일 저장 (부수효과: 디스크 쓰기)."""
         # 주의: value가 dict이면 JSON 직렬화 시 int 키가 str로 변환됨. 읽을 때도 str 키로 접근할 것.
         key = str(key)
         with self._lock:
@@ -104,6 +128,14 @@ class Userdata(CommonLogger):
 
 # 간소화 버전: 클래스 변수를 JSON으로 관리
 class Var:
+    """클래스 속성을 그대로 설정값으로 쓰는 간소화 영속화 도구.
+
+    Var 를 상속해 클래스 변수로 설정값을 정의하고,
+    save_to_json()/load_from_json() 을 명시적으로 호출해 파일과 동기화한다.
+    Userdata 와 달리 값 변경 시 자동 저장은 없다.
+    load 시 클래스에 이미 존재하는 속성만 갱신한다 (오타/구버전 키 방지).
+    """
+
     @classmethod
     def as_dict(cls):
         # 클래스의 모든 공개 속성(메서드 제외)을 딕셔너리로 반환

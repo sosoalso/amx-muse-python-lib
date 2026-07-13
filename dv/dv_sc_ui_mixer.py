@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260514
+# 마지막 수정일 : 20260713
 import re
 from lib.event_manager import EventManager
 from lib.scheduler import Scheduler
@@ -160,7 +160,7 @@ class ScUiMixer(CommonLogger, EventManager):
 
     @handle_exception
     def parse_response(self, evt):
-        data_text = evt.arguments["data"].decode()
+        data_text = evt.arguments.get("data", b"").decode()
 
         @handle_exception
         def iter_lines(text: str):

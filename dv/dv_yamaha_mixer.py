@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260629
+# 마지막 수정일 : 20260713
 from lib.utility import handle_exception, CommonLogger
 from lib.event_manager import EventManager
 from lib.network_manager import TcpClient, DEFAULT_TCP_CLIENT_RECONNECT_TIME
@@ -137,7 +137,7 @@ class YamahaMixer(CommonLogger, EventManager):
 
     @handle_exception
     def init(self):
-        self.dv.on("received", lambda evt: self.parse_response(evt.arguments["data"]))
+        self.dv.on("received", lambda evt: self.parse_response(evt.arguments.get("data", b"")))
         self.dv.connect()
 
     @handle_exception

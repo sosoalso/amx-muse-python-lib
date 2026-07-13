@@ -1,4 +1,10 @@
-# 마지막 수정일 : 20260629
+# 마지막 수정일 : 20260713
+"""카메라 트래킹 프리셋 저장/조회 모듈.
+
+프리셋 인덱스(예: 마이크/좌석 번호) → (카메라 번호, 카메라 프리셋 번호) 매핑을 관리한다.
+마이크가 켜지면 해당 좌석의 카메라 프리셋으로 이동시키는 회의실 카메라 트래킹에 사용.
+Userdata(JSON 파일)로 영속화되므로 컨트롤러 재시작 후에도 설정이 유지된다.
+"""
 from lib.userdata import Userdata
 
 
@@ -22,9 +28,11 @@ class CamtrackPreset:
         self.max_preset_index = max_preset_index
         self.userdata = Userdata(filename)
         loaded = self.userdata.get_value("camtrack_preset", None)
+        # 저장된 파일이 없으면(첫 실행) 기본값으로 채운 더미 프리셋 생성
         self.camtrack_preset = loaded if loaded is not None else self.make_dummy_presets()
 
     def make_dummy_presets(self):
+        """모든 프리셋을 기본값(camera=0, preset=0)으로 초기화하고 파일에 저장한다. 0 은 미설정 의미."""
         self.camtrack_preset = {f"preset_{i:03d}": {"camera": 0, "preset": 0} for i in range(1, self.max_preset_index + 1)}
         self.userdata.set_value("camtrack_preset", self.camtrack_preset)
         return self.camtrack_preset
@@ -45,5 +53,7 @@ class CamtrackPreset:
 
     def set_preset(self, preset_index, cam_no, preset_no, **kwargs):
         # 프리셋 설정: 카메라 번호, 프리셋 번호 및 추가 옵션(**kwargs)을 저장 후 JSON 파일에 동기화
+        if not 1 <= preset_index <= self.max_preset_index:
+            raise ValueError(f"set_preset() : preset_index must be in range 1 - {self.max_preset_index}, got {preset_index}")
         self.camtrack_preset[f"preset_{preset_index:03d}"] = {"camera": cam_no, "preset": preset_no, **kwargs}
         self.userdata.set_value("camtrack_preset", self.camtrack_preset)

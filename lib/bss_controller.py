@@ -1,4 +1,13 @@
-# 마지막 수정일 : 20260629
+# 마지막 수정일 : 20260713
+"""BSS Soundweb London 오디오 DSP 제어용 상위 래퍼 모듈.
+
+mojo 디바이스 드라이버(dv)가 노출하는 London DI 컴포넌트 트리를
+튜플 경로(예: ("Gain1", "Gain"))로 접근해 값을 읽고 쓴다.
+장치에서 올라오는 값 변경을 watch 로 받아 내부 상태 캐시(BssState)에 반영하고,
+옵저버(BssObserver)를 통해 UI 등 외부에 변경을 알린다.
+볼륨 up/down/set, 뮤트 토글, dB <-> 터치패널(0~255) 스케일 변환을 제공한다.
+"""
+
 from typing import Sequence, Union
 
 from lib.utility import CommonLogger
@@ -12,6 +21,13 @@ UNIT_VAL: float = 1.0
 
 
 class BssObserver:
+    """단순 옵저버(pub-sub) 목록 관리자.
+
+    subscribe 로 콜백을 등록해 두면 notify 호출 시 등록된 모든 콜백이 순서대로 실행된다.
+    개별 옵저버에서 예외가 나도 나머지 옵저버 호출은 계속 진행한다.
+    owner 는 로깅용으로 참조하는 상위 객체(BssController).
+    """
+
     # 옵저버 리스트 초기화
     def __init__(self, owner):
         self._observers = []
@@ -38,10 +54,17 @@ class BssObserver:
                 observer(*args, **kwargs)
             except Exception as e:
                 from lib.utility import handler_loc
+
                 self.owner.log_error(f"BssObserver notify : observer error {handler_loc(observer)} {e=}")
 
 
 class BssState:
+    """경로(tuple) -> 값 형태의 상태 캐시.
+
+    set_state 로 값이 갱신될 때마다 구독자에게 변경된 key(경로)를 알린다.
+    장치를 매번 조회하지 않고 마지막으로 알려진 값을 즉시 읽기 위한 용도.
+    """
+
     # 상태 저장 딕셔너리 초기화
     def __init__(self, owner):
         self.owner = owner
@@ -62,6 +85,7 @@ class BssState:
         self._event.notify(key)
 
     def remove_state(self, key):
+        """상태 캐시에서 key 제거 (없어도 조용히 넘어감)"""
         self.owner.log_debug(f"BssState remove_state() {key=}")
         self._states.pop(key, None)
 
@@ -82,6 +106,17 @@ class BssState:
 
 
 class BssController(CommonLogger):
+    """BSS Soundweb London DSP 제어 컨트롤러.
+
+    대표 사용 흐름:
+    1. init() 에 감시할 경로 목록을 넘겨 초기값 캐시 + 값 변경 watch 등록
+    2. add_path_event() 로 상태 변경 시 UI 피드백 콜백 등록
+    3. vol_up/vol_down/set_vol, toggle_muted_unmuted 등으로 장치 값 제어
+
+    값 쓰기(set_state)는 장치에만 쓰고, 캐시 갱신은 장치가 되돌려주는
+    변경 이벤트(watch)를 통해 이루어진다. 즉 장치 응답이 곧 상태의 원본이다.
+    """
+
     def __init__(self, dv, states=None, min_val=MIN_VAL, max_val=MAX_VAL, unit_val=UNIT_VAL):
         # 장치 설정
         self.dv = dv
@@ -244,10 +279,10 @@ class BssController(CommonLogger):
     def toggle_on_off(self, path, *args):
         """On/Off 상태 토글"""
         self.log_debug(f"toggle_on_off() : {path=}")
-        val = self.states.get_state(path)
-        if val == "On":
+        val = str(self.states.get_state(path)).lower()
+        if val == "on":
             val_str = "Off"
-        elif val == "Off":
+        elif val == "off":
             val_str = "On"
         else:
             return
@@ -278,6 +313,7 @@ class BssController(CommonLogger):
     def toggle_muted_unmuted_omni(self, path):
         """Muted/Unmuted 상태 토글"""
         self.log_debug(f"toggle_muted_unmuted_omni() : {path=}")
+        # omni 계열 컴포넌트는 "UnMuted"(대문자 M) 표기를 요구해서 별도 함수로 분리됨
         val = str(self.states.get_state(path)).lower()
         if val == "unmuted":
             val_str = "Muted"
@@ -299,12 +335,13 @@ class BssController(CommonLogger):
 
     def set_muted_omni(self, path):
         """상태를 'Muted' 로 설정"""
-        self.log_debug(f"set_muted() : {path=}")
+        self.log_debug(f"set_muted_omni() : {path=}")
         self.set_state(path, "Muted")
 
     def set_unmuted_omni(self, path):
         """상태를 'Unmuted' 로 설정"""
         self.log_debug(f"set_unmuted_omni() : {path=}")
+        # omni 계열은 "UnMuted"(대문자 M) 표기를 사용
         self.set_state(path, "UnMuted")
 
     def set_val(self, path, val):

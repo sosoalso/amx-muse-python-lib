@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260626
+# 마지막 수정일 : 20260713
 from lib.event_manager import EventManager
 from lib.network_manager import TcpClient
 from lib.utility import CommonLogger, handle_exception
@@ -18,6 +18,8 @@ class Svsi(CommonLogger, EventManager):
     @handle_exception
     def init(self):
         self.dv.receive.listen(self.parse_response)
+        self.dv.on("connected", lambda: self.emit("connected"))
+        self.dv.on("disconnected", lambda: self.emit("disconnected"))
         self.dv.connect()
 
     @handle_exception

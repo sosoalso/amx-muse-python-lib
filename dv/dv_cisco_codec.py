@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260629
+# 마지막 수정일 : 20260713
 # Cisco 코덱 - xCommand 프로토콜 (Serial RS-232, 115200 baud)
 from lib.event_manager import EventManager
 from lib.utility import CommonLogger, handle_exception
@@ -24,8 +24,8 @@ class CiscoCodec(CommonLogger, EventManager):
         self._send("xFeedback Register /Event/CallDisconnect")
         self._send("xFeedback Register /Event/IncomingCallIndication")
         self._send("xFeedback Register /Status/Video/Selfview/Mode")
-        self._send("xFeedback Register /Event/PresentationStarted")
-        self._send("xFeedback Register /Event/PresentationStopped")
+        # 프레젠테이션은 Event가 아니라 Status로 통지됨 (*s Conference Presentation Mode)
+        self._send("xFeedback Register /Status/Conference/Presentation/Mode")
         # 초기 상태 조회
         self._send("xStatus Video Selfview Mode")
         self._send("xStatus Conference Presentation Mode")
@@ -66,16 +66,17 @@ class CiscoCodec(CommonLogger, EventManager):
             self.is_selfview = "On" in msg
             # emit: selfview_changed(value: bool)
             self.emit("selfview_changed", value=self.is_selfview)
-        # 프레젠테이션 상태
-        elif "*e PresentationStarted" in msg:
+        # 프레젠테이션 Start/Stop 명령 결과 (*r PresentationStart/StopResult (status=OK))
+        # 이 코덱은 상태 변화 시 *s 통지를 보내지 않으므로 명령 결과로 상태를 확정한다
+        elif "PresentationStartResult (status=OK)" in msg:
             self.is_presentation = True
             # emit: presentation_changed(value: bool)
             self.emit("presentation_changed", value=True)
-        elif "*e PresentationStopped" in msg:
+        elif "PresentationStopResult (status=OK)" in msg:
             self.is_presentation = False
             # emit: presentation_changed(value: bool)
             self.emit("presentation_changed", value=False)
-        # xStatus Conference Presentation Mode 응답 (*s Conference Presentation Mode: Sending/Off)
+        # 초기 상태 조회 응답 (*s Conference Presentation Mode: Sending/Off/Receiving)
         elif "*s Conference Presentation Mode:" in msg:
             self.is_presentation = "Sending" in msg
             # emit: presentation_changed(value: bool)

@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260629
+# 마지막 수정일 : 20260713
 from lib.event_manager import EventManager
 from lib.network_manager import TcpClient, DEFAULT_TCP_CLIENT_RECONNECT_TIME
 from lib.scheduler import Scheduler
@@ -103,6 +103,8 @@ class PjLink(CommonLogger, EventManager):
                         else:
                             return
                         # USERDATA.set_value(f"{self.name}_freeze", self.freeze)
+                        # emit: freeze(value: bool)
+                        self.emit("freeze", value=self.freeze)
                     except ValueError:
                         self.log_error(f"Invalid freeze response: {res}")
             except (AttributeError, KeyError, UnicodeDecodeError) as e:

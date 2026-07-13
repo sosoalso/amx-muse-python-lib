@@ -1,9 +1,16 @@
-# 마지막 수정일 : 20260629
+# 마지막 수정일 : 20260713
+"""BSS Soundweb London 오디오 DSP 를 London DI(Direct Inject) 프로토콜로 제어하는 모듈.
+게인/뮤트/소스선택 등 state variable(SV)을 읽고 쓰며, 구독(subscribe)한 SV 의
+변경 피드백을 받아 내부 상태 저장소(LondonState)에 반영한다.
+회의실/강당 AV 제어에서 믹서, 룸컴바인, 소스 셀렉터 같은 DSP 오브젝트를
+터치패널과 연동할 때 사용한다.
+"""
+
 import math
 import threading
 from enum import IntEnum
 
-from lib.utility import CommonLogger
+from lib.utility import CommonLogger, handler_loc
 
 MIN_VAL = -60  # 최소 값
 MAX_VAL = 10  # 최대 값
@@ -11,9 +18,15 @@ UNIT_VAL = 1  # 단위 값2
 
 
 class LondonObserver:
-    def __init__(self):
+    """옵저버(콜백) 목록을 스레드 안전하게 관리하는 단순 pub-sub 헬퍼.
+    subscribe/unsubscribe 로 콜백을 등록/해제하고, notify 가 호출되면 등록된
+    모든 콜백을 실행한다. 개별 콜백에서 예외가 나도 로그만 남기고 나머지는 계속 실행한다.
+    """
+
+    def __init__(self, owner):
         self._observers = []
         self._lock = threading.Lock()
+        self.owner = owner
 
     def subscribe(self, observer):
         with self._lock:
@@ -32,14 +45,19 @@ class LondonObserver:
             try:
                 observer(*args, **kwargs)
             except Exception as e:
-                from lib.utility import handler_loc
-                print(f"(ERROR) - LondonObserver : notify() {handler_loc(observer)} {e=}")
+                self.owner.log_error(f"LondonObserver notify() {handler_loc(observer)} {e=}")
 
 
 class LondonState:
-    def __init__(self):
+    """장비 상태값 저장소 (key → value).
+    key 는 노드주소+VD+오브젝트주소+SV 를 이어붙인 bytes, value 는 장비 원시값(int).
+    set_state 시 등록된 옵저버들에게 (key, value) 형태로 변경을 통지한다.
+    """
+
+    def __init__(self, owner):
+        self.owner = owner
         self._states = {}
-        self._event = LondonObserver()
+        self._event = LondonObserver(self.owner)
         self._lock = threading.Lock()
 
     def get_all_states_keys(self):
@@ -70,6 +88,10 @@ class LondonState:
 
 
 class LondonDev(IntEnum):
+    """London DI 프로토콜의 가상 디바이스(DSP 오브젝트) 종류 상수.
+    get_sv() 에서 이 값에 따라 SV 번호 계산 방식이 달라진다.
+    """
+
     AUTOMIXER = 1
     MIXER = 2
     GAIN = 3
@@ -88,6 +110,11 @@ class LondonDev(IntEnum):
 
 
 class LondonParam(IntEnum):
+    """디바이스별 파라미터 종류 상수.
+    같은 숫자가 디바이스에 따라 다른 의미로 재사용된다
+    (예: MUTE=1 과 ROUTE=1). 실제 의미는 get_sv() 의 디바이스별 분기에서 결정된다.
+    """
+
     # PARAMETER CONSTANTS <PARAM> FUNCTION PARAMETER
     METER = 7
     UNMUTE = 0
@@ -141,16 +168,30 @@ class LondonParam(IntEnum):
     R = 3
 
 
+# London DI 프로토콜 기본 TCP 포트
 BLU_IP_PORT = 1023
 
 
 class LondonController(CommonLogger):
+    """BSS Soundweb London DSP 컨트롤러.
+    - dv(TCP/시리얼 디바이스)의 수신 이벤트를 받아 DI 프로토콜 프레임을 파싱하고,
+      구독 중인 SV 의 피드백을 states 에 반영한다.
+    - set_val/set_gain/subscribe 등으로 SV 설정·구독 명령을 조립해 전송한다.
+    - 대표 사용 흐름: subscribe() 로 관심 SV 구독 → add_path_event() 로 상태 변경
+      콜백 등록 → set_gain_db()/set_value_toggle() 등으로 제어.
+    - 게인은 dB ↔ 장비 원시값 변환(convert_db_to_value 등)을 거친다.
+    """
+
     DEFAULT_PORT = BLU_IP_PORT
 
     def __init__(self, dv, min_val=MIN_VAL, max_val=MAX_VAL, unit_val=UNIT_VAL):
+        """dv 는 send()/receive/online 을 제공하는 통신 디바이스.
+        min_val/max_val/unit_val 은 dB 편의 함수(set_gain_up 등)에서 쓰는
+        음량 범위와 증감 단위(dB).
+        """
         self.dv = dv
         self.buffer = bytearray()
-        self.states = LondonState()
+        self.states = LondonState(self)
         self.meter_subscription_rate = 250
         self.check_message_attempts = 0
         self._buffer_lock = threading.Lock()
@@ -164,12 +205,18 @@ class LondonController(CommonLogger):
         self.dv.online(callback)
 
     def parse(self, data: bytes | bytearray):
+        """수신 바이트를 내부 버퍼에 쌓고 완전한 토큰 단위로 반복 파싱한다.
+        parse_buffer 가 진행을 못 하면(같은 버퍼 길이 유지) 맨 앞 바이트를 버려
+        파싱이 무한 루프에 빠지지 않게 한다.
+        """
         # 수신 데이터를 버퍼에 추가하고 파싱
         with self._buffer_lock:
             self.buffer.extend(data)
             while self.buffer:
                 before_len = len(self.buffer)
-                self.parse_buffer()
+                if not self.parse_buffer():
+                    # 불완전 메시지(ETX 미도착) - 다음 수신 때 이어서 파싱
+                    break
                 if len(self.buffer) == before_len:
                     self.log_error(f"parse() : parser made no progress, dropping byte {self.buffer[0]:02x}")
                     self.buffer.pop(0)
@@ -183,10 +230,15 @@ class LondonController(CommonLogger):
         self.states.subscribe(observer)
 
     def set_meter_subscription_rate(self, rate: int):
-        # 메터 구독 주기 설정 (ms 단위)
+        # 메터 구독 주기 설정 (ms 단위, 0 ~ 65535)
+        rate = int(rate)
+        if not 0 <= rate <= 0xFFFF:
+            self.log_warn(f"set_meter_subscription_rate() : rate out of range, clamped {rate=}")
+            rate = max(0, min(rate, 0xFFFF))
         self.meter_subscription_rate = rate
 
     def get_key(self, node_addr, index_device, index_input, index_output, index_param) -> bytes:
+        """상태 저장소 키(노드주소 + SV) 생성. SV 매핑 실패 시 빈 bytes 반환."""
         # 상태 저장소의 키 생성
         s_v = self.get_sv(index_device, index_input, index_output, index_param)
         return bytes(node_addr + s_v) if s_v else b""
@@ -200,11 +252,18 @@ class LondonController(CommonLogger):
         return self.get_val(self.get_key(*node_sv))
 
     def convert_db_to_value(self, db_value: float) -> int:
+        """dB(float) → London 게인 원시값(int) 변환.
+        London DI 게인 SV 포맷: -10dB 이상은 dB x 10000 선형 스케일,
+        -10dB 미만은 로그 스케일로 인코딩된다.
+        """
         # dB 값을 장비 컨트롤 값으로 변환
         # -10dB 이상: 선형 변환, 미만: 로그 변환
         return int(db_value * 10000 if db_value >= -10 else (-math.log10(abs(db_value / 10)) * 200000) - 100000)
 
     def convert_value_to_db(self, int_value: int) -> float:
+        """London 게인 원시값(int) → dB(float) 역변환. convert_db_to_value 의 역함수.
+        -100000(= -10dB) 이상은 선형, 그 미만은 로그 스케일 복원.
+        """
         # 장비 컨트롤 값을 dB 값으로 변환
         return float(int_value / 10000) if int_value >= -100000 else float(-10 * (10 ** ((-int_value - 100000) / 200000)))
 
@@ -233,6 +292,10 @@ class LondonController(CommonLogger):
         index_param: int,
         value: int,
     ):
+        """SV 에 값을 쓰고 곧바로 Get 을 보내 피드백으로 상태를 갱신한다.
+        디바이스 종류에 따라 SET_PERCENT(0x8d, 바이트2 위치)와
+        SET(0x88, 바이트4 위치) 중 어떤 이벤트를 쓸지 갈린다.
+        """
         # 기기별 특화된 값 설정 루틴으로 분기
         if index_device == LondonDev.MIXER:
             self.set_mixer(node_addr, index_input, index_output, index_param, value)
@@ -258,6 +321,7 @@ class LondonController(CommonLogger):
             self.checksum_then_send(bytes(get_event + node_addr + s_v + bytes([0x00, 0x00, 0x00, 0x00])))
 
     def set_mixer(self, node_addr: bytes | bytearray, index_input: int, index_output: int, index_param: int, value: int):
+        """믹서 전용 값 설정. 파라미터 종류에 따라 이벤트(0x88/0x8d)와 값 위치가 달라진다."""
         # 믹서 파라미터 중 특정 파라미터는 바이트 2 위치에 설정
         if index_param in (LondonParam.PAN, LondonParam.OFF_GAIN, LondonParam.AUX_GAIN, LondonParam.GROUP_GAIN):
             event = b"\x8d"
@@ -274,6 +338,7 @@ class LondonController(CommonLogger):
             self.checksum_then_send(bytes(get_event + node_addr + s_v + bytes([0x00, 0x00, 0x00, 0x00])))
 
     def set_room_combine(self, node_addr: bytes | bytearray, index_input: int, index_output: int, index_param: int, value: int):
+        """룸컴바인 전용 값 설정. 게인류 파라미터는 0x8d 이벤트로, 나머지는 0x88 로 보낸다."""
         # 룸컴바인 파라미터 중 특정 파라미터는 바이트 2 위치에 설정
         if index_param in (LondonParam.SOURCE_GAIN, LondonParam.BGM_GAIN, LondonParam.MASTER_GAIN):
             event = b"\x8d"
@@ -290,6 +355,10 @@ class LondonController(CommonLogger):
             self.checksum_then_send(bytes(get_event + node_addr + s_v + bytes([0x00, 0x00, 0x00, 0x00])))
 
     def set_gain(self, node_addr: bytes | bytearray, index_device: int, index_input: int, index_output: int, _: int, value: int):
+        """게인 SV 설정. value 는 convert_db_to_value 로 변환된 원시값(4바이트 signed).
+        다섯 번째 인자(_)는 다른 set 계열과 시그니처를 맞추기 위한 자리로, 무시하고
+        파라미터는 항상 GAIN 으로 고정한다.
+        """
         # 게인값은 4바이트 부호있는 정수로 설정
         event = b"\x88"
         get_event = b"\x89"
@@ -307,34 +376,46 @@ class LondonController(CommonLogger):
             self.checksum_then_send(bytes([0x8B, 0x00, 0x00, 0x00, preset_number]))
 
     def subscribe(self, node_addr: bytes | bytearray, index_device: int, index_input: int, index_output: int, index_param: int):
+        """SV 구독 요청. 이후 값 변화가 피드백으로 수신되어 states 에 반영된다.
+        부수효과: 해당 key 를 states 에 미리 등록한다. process_feedback 은
+        등록된 key 만 갱신하므로, 구독한 SV 만 상태 추적 대상이 된다.
+        """
         # 상태값 구독 설정 (메터는 주기설정, 기타는 0)
         event = b"\x89"
         s_v = self.get_sv(index_device, index_input, index_output, index_param)
         if not s_v:
             self.log_error("subscribe() : invalid s_v")
             return
-        index_param = self.meter_subscription_rate if index_param == LondonParam.METER else 0
-        my_data = bytes([0x00, 0x00, 0x00, index_param])
+        # 메터 구독 주기는 dword(4바이트)로 인코딩 (0 ~ 65535ms)
+        rate = self.meter_subscription_rate if index_param == LondonParam.METER else 0
+        my_data = rate.to_bytes(4, "big")
         # 초기 상태값 설정
         self.states.set_state(bytes(node_addr + s_v), int.from_bytes(my_data, "big", signed=True))
         # 구독 명령 전송
         self.checksum_then_send(bytes(event + node_addr + s_v + my_data))
 
     def unsubscribe(self, node_addr: bytes | bytearray, index_device: int, index_input: int, index_output: int, index_param: int):
+        """SV 구독 해제. states 에서 해당 key 도 함께 제거해 피드백 반영을 막는다."""
         # 상태값 구독 해제
         event = b"\x8a"
         s_v = self.get_sv(index_device, index_input, index_output, index_param)
         if not s_v:
             self.log_error("unsubscribe() : invalid s_v")
             return
-        index_param = self.meter_subscription_rate if index_param == LondonParam.METER else 0
-        my_data = bytes([0x00, 0x00, 0x00, index_param])
+        # 메터 구독 주기는 dword(4바이트)로 인코딩 (0 ~ 65535ms)
+        rate = self.meter_subscription_rate if index_param == LondonParam.METER else 0
+        my_data = rate.to_bytes(4, "big")
         # 상태값 제거
         self.states.remove_state(bytes(node_addr + s_v))
         # 구독 해제 명령 전송
         self.checksum_then_send(bytes(event + node_addr + s_v + my_data))
 
     def get_sv(self, index_device, index_input, index_output, index_param):
+        """(디바이스, 입력, 출력, 파라미터) 조합을 SV 번호로 매핑한다.
+        반환: 2바이트 big-endian signed bytes, 매핑 불가 시 None.
+        SV 번호 체계는 London DI 스펙의 디바이스별 주소 배치를 그대로 옮긴 것
+        (예: 믹서 입력 채널당 100 간격, 매트릭스 출력당 128 간격).
+        """
         # 기기, 입출력, 파라미터 인덱스를 장비 SV(Sub-Verb) 값으로 변환
         try:
             sv = None
@@ -487,6 +568,11 @@ class LondonController(CommonLogger):
         return data in (0x02, 0x03, 0x06, 0x15, 0x1B)
 
     def checksum_then_send(self, my_string: bytes | bytearray):
+        """본문에 체크섬을 붙이고 프레임으로 감싸 전송한다.
+        프레임: STX(0x02) + 이스케이프된 본문 + 체크섬 + ETX(0x03).
+        체크섬은 이스케이프 전 원본 바이트 전체의 XOR 이며,
+        체크섬 자체가 특수문자면 그것도 이스케이프한다.
+        """
         # 체크섬 계산 및 특수문자 이스케이프 처리 후 전송
         try:
             send = bytearray()
@@ -508,55 +594,61 @@ class LondonController(CommonLogger):
         except Exception as e:
             self.log_error(f"checksum_then_send() : {e=}")
 
-    def parse_buffer(self):
+    def parse_buffer(self) -> bool:
+        # 버퍼 앞의 토큰 하나를 처리. 데이터가 더 필요해서 다음 수신을 기다려야 하면 False 반환
         try:
             # 수신 버퍼 파싱: ACK, NAK, 메시지 처리
             if self.buffer.startswith(b"\x06"):
                 # ACK(0x06) 처리
                 while self.buffer and self.buffer[0] == 0x06:
                     self.buffer.pop(0)
+                return True
             if self.buffer.startswith(b"\x15"):
                 # NAK(0x15) 처리
                 self.buffer.pop(0)
+                return True
             if self.buffer.startswith(b"\x02"):
                 # STX(0x02)로 시작하는 메시지 처리
                 end_index = self.buffer.find(b"\x03")
-                if end_index != -1:
-                    # ETX(0x03) 발견: 완전한 메시지 추출
-                    message = self.buffer[1:end_index]
-                    self.buffer = self.buffer[end_index + 1 :]
-                    self.log_debug(f"Message extracted: {message.hex()} Remaining buffer: {self.buffer.hex()}")
-                    self.check_message_attempts = 0
-                    # 이스케이프 시퀀스 복원: ESC + (문자+128) → 원본 문자
-                    temp = bytearray(message)
-                    i = 0
-                    while i < len(temp):
-                        if temp[i] == 0x1B and i + 1 < len(temp):
-                            temp[i] = temp[i + 1] - 128
-                            temp.pop(i + 1)
-                        i += 1
-                    # 체크섬 검증: 마지막 바이트 제외 모든 바이트 XOR
-                    r_cs = 0
-                    for b in temp[:-1]:
-                        r_cs = r_cs ^ b
-                    # 체크섬 일치 시 메시지 처리
-                    if r_cs == temp[-1]:
-                        self.process_feedback(temp[:-1])
-                    else:
-                        self.log_warn(f"parse_buffer() : checksum mismatch {r_cs=} expected={temp[-1]}")
-                else:
-                    # ETX 미발견: 재시도 횟수 증가
+                if end_index == -1:
+                    # ETX 미발견: 불완전 메시지 - 다음 수신을 기다림 (수신마다 재시도 횟수 증가)
                     self.check_message_attempts += 1
                     if self.check_message_attempts > 5:
-                        # 5회 이상 실패시 버퍼 초기화
+                        # 5회 이상 수신에도 ETX가 없으면 쓰레기로 판단하고 버퍼 초기화
                         self.buffer.clear()
                         self.check_message_attempts = 0
-            elif self.buffer:
+                    return False
+                # ETX(0x03) 발견: 완전한 메시지 추출
+                message = self.buffer[1:end_index]
+                self.buffer = self.buffer[end_index + 1 :]
+                self.log_debug(f"Message extracted: {message.hex()} Remaining buffer: {self.buffer.hex()}")
+                self.check_message_attempts = 0
+                # 이스케이프 시퀀스 복원: ESC + (문자+128) → 원본 문자
+                temp = bytearray(message)
+                i = 0
+                while i < len(temp):
+                    if temp[i] == 0x1B and i + 1 < len(temp):
+                        temp[i] = temp[i + 1] - 128
+                        temp.pop(i + 1)
+                    i += 1
+                # 체크섬 검증: 마지막 바이트 제외 모든 바이트 XOR
+                r_cs = 0
+                for b in temp[:-1]:
+                    r_cs = r_cs ^ b
+                # 체크섬 일치 시 메시지 처리
+                if r_cs == temp[-1]:
+                    self.process_feedback(temp[:-1])
+                else:
+                    self.log_warn(f"parse_buffer() : checksum mismatch {r_cs=} expected={temp[-1]}")
+                return True
+            if self.buffer:
                 self.log_error(f"parse_buffer() : unexpected start byte {self.buffer[0]:02x}")
                 self.buffer.pop(0)
+            return True
         except Exception as e:
             self.log_error(f"parse_buffer() : {e=}")
             self.buffer.clear()  # 예외 발생 시 클리어 추가
+            return True
 
     def process_feedback(self, received_string: bytes | bytearray):
         # 수신한 피드백 메시지 처리 및 상태 업데이트
@@ -574,8 +666,9 @@ class LondonController(CommonLogger):
                 f"process_feedback() : event={event.hex()} node={node.hex()} vd={vd.hex()} node_addr={node_addr.hex()} s_v={s_v.hex()} my_data={my_data.hex()}"
             )
             # 등록된 상태값에만 업데이트
-            if bytes(node + vd + node_addr + s_v) in self.states.get_all_states_keys():
-                self.states.set_state(bytes(node + vd + node_addr + s_v), int.from_bytes(my_data, "big", signed=True))
+            key = bytes(node + vd + node_addr + s_v)
+            if self.states.get_state(key) is not None:
+                self.states.set_state(key, int.from_bytes(my_data, "big", signed=True))
         except Exception as e:
             self.log_error(f"process_feedback() : {e=}")
 
@@ -613,6 +706,12 @@ class LondonController(CommonLogger):
             return val
 
     # 사용자 편의 함수
+    def set_gain_db(self, node_addr, index_device, index_input, index_output, index_param, value_db_float):
+        # dB 값을 받아 범위 검증 후 장비 컨트롤 값으로 변환하여 설정
+        if not self.check_vol_range(value_db_float):
+            self.log_error(f"set_gain_db() : value out of range {value_db_float=} but applying value anyway")
+        self.set_gain(node_addr, index_device, index_input, index_output, index_param, self.convert_db_to_value(value_db_float))
+
     def set_gain_up(self, node_addr, index_device, index_input, index_output, index_param):
         # 게인값 상향 조정 (1 단위)
         self.set_gain(
@@ -645,9 +744,6 @@ class LondonController(CommonLogger):
             index_param,
             self.val_toggle(self.get_val_by_node_sv(node_addr, index_device, index_input, index_output, index_param)),
         )
-
-    def set_val_toggle(self, node_addr, index_device, index_input, index_output, index_param):
-        self.set_value_toggle(node_addr, index_device, index_input, index_output, index_param)
 
     def set_value(self, node_addr, index_device, index_input, index_output, index_param, value=None):
         if value is not None:

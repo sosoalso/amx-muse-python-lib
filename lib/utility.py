@@ -1,53 +1,38 @@
-# 마지막 수정일 : 20260629
+# 마지막 수정일 : 20260713
+"""라이브러리 전반에서 쓰는 공용 유틸리티 모음.
+
+CommonLogger(공통 로깅 믹스인), 스레드 실행 헬퍼(start_thread/run_thread),
+데코레이터(handle_exception/pulse/debounce), 문자열·리스트 헬퍼(atoi/safe_index)
+를 제공한다. mojo(AMX MUSE) 런타임이 있으면 context.log 로,
+없으면(PC 개발 환경 등) print 로 로그를 남긴다.
+"""
+
 import functools
 import inspect
 import threading
 from typing import Callable
 
-
-def handler_loc(handler, path_parts: int = 3) -> str:
-    """핸들러 함수의 qualname과 소스 위치(파일:줄번호)를 반환. path_parts: 경로 끝에서 남길 세그먼트 수"""
-    try:
-        src = inspect.getsourcefile(handler) or ""
-        line = inspect.getsourcelines(handler)[1]
-        name = getattr(handler, "__qualname__", repr(handler))
-        parts = src.replace("\\", "/").split("/")
-        src = "/".join(parts[-path_parts:])
-        return f"{name} ({src}:{line})"
-    except Exception:
-        return repr(handler)
-
-
+# AMX MUSE 런타임 컨텍스트. 런타임 밖(PC 개발 환경)에서는 None 이 되어 print 로 대체된다.
 try:
     from mojo import context as _mojo_context
 except ImportError:
     _mojo_context = None
 
 
-def start_thread(target, *args, **kwargs):
-    """일회성 전송 스레드 시작"""
-    try:
-        thread = threading.Thread(target=target, args=args, kwargs=kwargs, daemon=True)
-        thread.start()
-        return thread
-    except Exception as e:
-        print(f"(ERROR) : start_thread() {e=}", end="\n", flush=True)
-        return None
-
-
-def run_thread(thread: threading.Thread | None, target: Callable, *args, **kwargs):
-    """스레드가 None이거나 실행 중이 아니면 새 스레드를 시작 (스레드를 외부에서 관리)"""
-    if not thread or not thread.is_alive():
-        thread = threading.Thread(target=target, args=args, kwargs=kwargs, daemon=True)
-        thread.start()
-    return thread
-
-
 class CommonLogger:
+    """상속해서 쓰는 공통 로거 믹스인.
+
+    mojo context 가 있으면 context.log 의 해당 레벨로, 없으면 print 로 출력한다.
+    debug 를 True 로 바꾼 인스턴스/클래스만 log_debug 가 출력된다.
+    name 속성을 주면 로그가 "클래스명 - name : 메시지" 형태로 표기되어
+    같은 클래스 인스턴스 여러 개를 구분할 수 있다.
+    """
+
     debug: bool = False
     name: str = ""
 
     def _log_message(self, level: str, message):
+        """실제 출력 담당. context.log 에 해당 레벨 함수가 있으면 사용, 없으면 print 폴백."""
         cls_name = self.__class__.__name__
         name = getattr(self, "name", None)
         if _mojo_context is not None:
@@ -78,6 +63,42 @@ class CommonLogger:
         self._log_message("INFO", message)
 
 
+def handler_loc(handler, path_parts: int = 3) -> str:
+    """핸들러 함수의 qualname과 소스 위치(파일:줄번호)를 반환. path_parts: 경로 끝에서 남길 세그먼트 수"""
+    try:
+        src = inspect.getsourcefile(handler) or ""
+        line = inspect.getsourcelines(handler)[1]
+        name = getattr(handler, "__qualname__", repr(handler))
+        parts = src.replace("\\", "/").split("/")
+        src = "/".join(parts[-path_parts:])
+        return f"{name} ({src}:{line})"
+    except Exception:
+        return repr(handler)
+
+
+# ---------------------------------------------------------------------------- #
+def start_thread(target, *args, **kwargs):
+    """일회성 전송 스레드 시작"""
+    try:
+        thread = threading.Thread(target=target, args=args, kwargs=kwargs, daemon=True)
+        thread.start()
+        return thread
+    except Exception as e:
+        print(f"(ERROR) : start_thread() {e=}", end="\n", flush=True)
+        return None
+
+
+def run_thread(thread: threading.Thread | None, target: Callable, *args, **kwargs):
+    """스레드가 None이거나 실행 중이 아니면 새 스레드를 시작 (스레드를 외부에서 관리)"""
+    if not thread or not thread.is_alive():
+        thread = threading.Thread(target=target, args=args, kwargs=kwargs, daemon=True)
+        thread.start()
+    return thread
+
+
+# ---------------------------------------------------------------------------- #
+
+
 def handle_exception(func):
     """예외 발생 시 에러 로그를 출력하고 re-raise하는 데코레이터"""
 
@@ -92,6 +113,7 @@ def handle_exception(func):
     return wrapper
 
 
+# ---------------------------------------------------------------------------- #
 def pulse(duration_seconds, off_method, *off_args, **off_kwargs):
     """함수 실행 후 지정된 시간 후에 off_method를 자동으로 호출하는 데코레이터"""
 
@@ -131,6 +153,9 @@ def debounce(timeout_ms: float):
     return decorator
 
 
+# ---------------------------------------------------------------------------- #
+
+
 def atoi(s: str) -> int:
     """문자열을 정수로 변환 (숫자가 아닌 문자는 무시, 부호는 유지)"""
     s = s.strip()
@@ -149,7 +174,9 @@ def atoi(s: str) -> int:
     return sign * int("".join(digits))
 
 
+# ---------------------------------------------------------------------------- #
 def safe_index(lst, value, default=-1):
+    """lst 에서 value 의 인덱스를 반환. 없으면 예외 대신 default(-1) 반환."""
     try:
         return lst.index(value)
     except ValueError:

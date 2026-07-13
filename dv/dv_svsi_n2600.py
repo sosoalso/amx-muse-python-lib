@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260514
+# 마지막 수정일 : 20260713
 from lib.event_manager import EventManager
 from lib.network_manager import DEFAULT_TCP_CLIENT_RECONNECT_TIME, TcpClient
 from lib.scheduler import Scheduler
@@ -21,6 +21,8 @@ class SvsiN2600(CommonLogger, EventManager):
         self.dv.receive.listen(self.parse_response)
         self.dv.online(lambda *_args, **_kwargs: self.poll.set_interval(10.0, self.get_status))
         self.dv.offline(lambda *_args, **_kwargs: self.poll.shutdown())
+        self.dv.on("connected", lambda: self.emit("connected"))
+        self.dv.on("disconnected", lambda: self.emit("disconnected"))
         self.dv.connect()
 
     def send(self, msg):
