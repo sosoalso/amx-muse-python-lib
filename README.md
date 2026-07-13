@@ -105,15 +105,51 @@ projector.init()
 projector.on("power", lambda value: tp_set_button(tp, port, btn_power, value))  # 피드백 연결
 ```
 
+## 디버그 로그 켜서 보기
+
+기본적으로는 조용합니다. `log_debug()`는 그 로거 인스턴스의 `debug` 플래그가 `True`일 때만 출력되고, 전부 다 켜면 시끄러워서 필요한 부분만 골라 켜는 걸 추천합니다.
+
+1. **MUSE 런타임(context.log)을 쓰는 경우 먼저**: `context.log.level`을 `debug`로 놓아야, 아래서 켠 `log_debug()` 내용이 실제로 콘솔에 찍힙니다. (mojo 런타임 없는 PC 환경이면 이 단계는 필요 없고 바로 `print`로 나갑니다)
+
+2. **장비 드라이버(`dv/`) 하나만 보고 싶을 때**: 거의 다 `CommonLogger`를 상속하니, 그 인스턴스의 `debug`만 켜면 됩니다.
+   ```python
+   projector = PjLink("192.168.0.10")
+   projector.debug = True   # 이 인스턴스의 log_debug()만 출력
+   ```
+
+3. **`EventManager` 자체(on/off/emit 내부 동작)를 보고 싶을 때**: 각 dv 인스턴스가 아니라 `lib/event_manager.py` 모듈 안의 전역 로거 하나를 씁니다.
+   ```python
+   from lib.event_manager import event_manager_logger
+   event_manager_logger.debug = True
+   ```
+
+4. **`tp.py`(터치패널 연동)를 보고 싶을 때**: 개인적으로 제일 자주 켜는 부분입니다 — 버튼 워처가 잘 등록됐는지, 눌림 이벤트가 실제로 잡히는지 바로 보여서 유용함. 섹션별로 로거가 따로 있어서 `tp_set_debug_flag(...)`로 필요한 것만 골라 켤 수 있습니다.
+   ```python
+   from lib.tp import tp_set_debug_flag
+   tp_set_debug_flag(
+       debug_tp_add_watcher=True,        # 버튼 워처 등록/트리거 - 제일 유용함
+       debug_tp_add_watcher_level=False,
+       debug_tp_add_notification=False,
+       debug_tp_add_notification_level=False,
+       debug_tp_set_button=False,
+       debug_tp_send_level=False,
+       debug_tp_send_command=False,
+   )
+   ```
+
+요약하면: `context.log.level`을 `debug`로 열어두고, 보고 싶은 대상(dv 인스턴스 / `event_manager_logger` / `tp.py` 섹션별 로거)의 `debug`만 켜는 구조입니다.
+
 ## 새 장비 드라이버 추가하기
 
 1. `dv/dv_<브랜드>_<장비종류>.py` 형식으로 파일 생성
 2. `CommonLogger, EventManager`를 상속하고, 이 드라이버가 낼 이벤트 이름을 `super().__init__(...)`에 등록
 3. 통신은 직접 소켓을 열지 말고 `lib/network_manager`의 `TcpClient`/`UdpClient`/`MulticastGroup` 중 프로토콜에 맞는 걸 사용
-4. 주기 폴링이 필요하면 `lib/scheduler.py`의 `Scheduler` 사용
+4. 주기 폴링이 필요하면 저는 `lib/scheduler.py`의 `Scheduler`를 써왔는데, 이건 그냥 제가 그렇게 써온 거라 꼭 이걸 써야 하는 건 아닙니다 — 편한 걸로 쓰세요
 5. 상태가 바뀔 때마다 `self.emit(...)` 로 발행 — 상위 UI 코드는 `.on(...)`으로만 구독하면 되게
 
-기존 `dv_pjlink.py`, `dv_wp412.py` 같은 파일을 템플릿 삼는 게 제일 빠릅니다.
+시리얼이랑 섞어 쓰거나 통신 방식이 딱 하나로 정해지지 않는 장비는(`dv_cisco_codec.py`처럼), 클래스가 직접 인터페이스를 만들지 않고 생성자에서 `dv`를 인자로 받아서 씁니다. 인터페이스(TCP든 Serial이든)는 밖에서 만들어서 넣어주고, 클래스는 `dv.send()`/`dv.receive.listen()`만 쓸 줄 알면 되는 식입니다.
+
+기존 `dv_pjlink.py`, `dv_wp412.py`(직접 TcpClient 관리), `dv_cisco_codec.py`(dv를 외부에서 주입) 같은 파일을 템플릿 삼는 게 제일 빠릅니다.
 
 ## 요구 사항
 
