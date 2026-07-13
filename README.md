@@ -139,6 +139,41 @@ projector.on("power", lambda value: tp_set_button(tp, port, btn_power, value))  
 
 요약하면: `context.log.level`을 `debug`로 열어두고, 보고 싶은 대상(dv 인스턴스 / `event_manager_logger` / `tp.py` 섹션별 로거)의 `debug`만 켜는 구조입니다.
 
+## 설정값 저장하기 (`lib/userdata.py`)
+
+볼륨, 카메라 프리셋, 마지막 선택 소스처럼 컨트롤러 재부팅 후에도 남아있어야 하는 값은 JSON 파일로 저장합니다. 상황에 따라 둘 중 하나를 씁니다.
+
+**`Userdata`** — key-value 하나씩 다루고, `set_value()` 호출 즉시 파일에 저장됩니다(자동저장).
+
+```python
+from lib.userdata import Userdata
+
+userdata = Userdata("volume.json", default_value={"volume": 50})
+userdata.set_value("volume", 70)              # 호출 즉시 파일에 반영됨
+current = userdata.get_value("volume", 50)    # 70 (없으면 기본값 50)
+userdata.delete_value("volume")
+```
+
+- 파일 위치는 기본적으로 프로젝트 폴더 옆 `<프로젝트폴더명>_userdata/` 안에 잡힙니다 (`foldername` 인자로 변경 가능)
+- 파일이 없으면 `default_value`로 새로 만들고, JSON이 깨져 있으면 지우지 않고 `.broken_시각` 이름으로 백업해 둔 뒤 새로 만듭니다
+- 키는 내부적으로 항상 문자열로 저장되니(JSON 특성상), 정수 키를 넣었어도 꺼낼 땐 문자열처럼 다뤄집니다
+
+**`Var`** — 값 하나하나가 아니라 클래스 속성 자체를 통째로 설정값처럼 씁니다. 자동저장은 없고, `save_to_json()`/`load_from_json()`을 직접 호출해야 반영됩니다.
+
+```python
+from lib.userdata import Var
+
+class Settings(Var):
+    volume = 50
+    last_source = "hdmi1"
+
+Settings.load_from_json("settings.json")   # 파일 있으면 클래스 속성을 덮어씀 (기존에 있는 속성만)
+Settings.volume = 70
+Settings.save_to_json("settings.json")      # 명시적으로 저장해야 파일에 반영됨
+```
+
+설정값이 몇 개 안 되고 그때그때 즉시 저장돼야 하면 `Userdata`, 설정 묶음을 한 번에 불러오고/저장하고 싶으면 `Var` 쪽이 편합니다.
+
 ## 새 장비 드라이버 추가하기
 
 1. `dv/dv_<브랜드>_<장비종류>.py` 형식으로 파일 생성
