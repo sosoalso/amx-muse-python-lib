@@ -40,9 +40,9 @@ class Videohub(CommonLogger, EventManager):
     def get_route_value(self, index_out):
         return self.routes.get(str(index_out), 0)
 
-    def parse_response(self, *args):
+    def parse_response(self, evt):
         try:
-            data_text = args[0].arguments["data"].decode()
+            data_text = evt.arguments.get("data", b"").decode()
             parsed_data_text_chunks = data_text.split("\n\n")
             for parsed_data_text in parsed_data_text_chunks:
                 splitted_message = parsed_data_text.split("\n")

@@ -70,14 +70,13 @@ class Mdc(CommonLogger, EventManager):
         return bool(message) and (sum(message[1:-1]) & 0xFF) == message[-1]
 
     @handle_exception
-    def parse_response(self, *args):
-        if not args or not hasattr(args[0], "arguments") or "data" not in args[0].arguments:
-            self.log_error(f"Received response is in an invalid format. {args=}")
-            return
-
-        data = args[0].arguments["data"]
+    def parse_response(self, evt):
+        data = evt.arguments.get("data", b"")
         if isinstance(data, str):
             data = data.encode("latin-1")
+        if not data:
+            self.log_error(f"Received response is in an invalid format. {evt=}")
+            return
 
         self.buffer += data
         self.log_debug(f"parse_response() received={bytes(data).hex(' ')} buffer={self.buffer.hex(' ')}")

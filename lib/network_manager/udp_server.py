@@ -33,7 +33,7 @@ class UdpServer(CommonLogger, EventManager):
 
     이벤트:
         "online"/"offline" : 서버 시작/종료 시
-        "received"         : 데이터 수신 시 (event.arguments["data"], ["address"])
+        "received"         : 데이터 수신 시 (evt.arguments.get("data", b""), ["address"])
     """
 
     def __init__(self, port, buffer_size=DEFAULT_BUFFER_SIZE, client_timeout=DEFAULT_UDP_SERVER_CLIENT_TIMEOUT, name=None):
@@ -121,7 +121,7 @@ class UdpServer(CommonLogger, EventManager):
             self.log_error(f"send() : failed to send {msg=} {e=}")
 
     def _emit_received(self, data: bytes, address: Tuple[str, int]):
-        # emit: received(event: ReceivedEvent)  — event.arguments["data"]: bytes
+        # emit: received(evt: ReceivedEvent)  — evt.arguments.get("data", b""): bytes
         self.emit("received", make_received_event(self, data, address))
 
     def _receive_loop(self, recv_sock: socket.socket):

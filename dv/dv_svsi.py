@@ -47,11 +47,11 @@ class Svsi(CommonLogger, EventManager):
         self.send("get")
 
     @handle_exception
-    def parse_response(self, *args):
-        if not args or not hasattr(args[0], "arguments") or "data" not in args[0].arguments:
-            self.log_error(f"parse_response() : ip={self.dv.ip} {args=}")
+    def parse_response(self, evt):
+        responses = evt.arguments.get("data", b"")
+        if not responses:
+            self.log_error(f"parse_response() : ip={self.dv.ip} {evt=}")
         else:
-            responses = args[0].arguments["data"]
             responses = responses.decode("utf-8")
             for response in responses.splitlines():
                 if ":" in response:

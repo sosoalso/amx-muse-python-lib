@@ -36,12 +36,13 @@ class EikiVidprj(CommonLogger, EventManager):
         self.poll.set_interval(10.0, query_power)
 
     @handle_exception
-    def parse_response(self, *args):
-        if not args or not hasattr(args[0], "arguments") or "data" not in args[0].arguments:
-            self.log_error(f"Received response is in an invalid format. {args=}")
+    def parse_response(self, evt):
+        data = evt.arguments.get("data", b"")
+        if not data:
+            self.log_error(f"Received response is in an invalid format. {evt=}")
         else:
             try:
-                data_text = args[0].arguments["data"].decode("utf-8")
+                data_text = data.decode("utf-8")
                 response = data_text.splitlines()[0]
                 self.log_debug(f"parse_response() {response=}")
                 if "CR0" == self.last_send_command:

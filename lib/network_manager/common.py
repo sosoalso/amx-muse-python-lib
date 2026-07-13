@@ -21,7 +21,7 @@ class ReceiveListener:
         self._register_listener = register_listener
 
     def listen(self, listener):
-        """수신 콜백을 등록한다. 콜백은 event(.arguments["data"]) 를 받는다."""
+        """수신 콜백을 등록한다. 콜백은 evt(.arguments.get("data", b"")) 를 받는다."""
         self._register_listener(listener)
 
 
@@ -33,13 +33,13 @@ def to_bytes(data: bytes | bytearray | str) -> bytes | bytearray:
 def make_received_event(source, data: bytes, address: tuple[str, int]):
     """수신 이벤트 객체를 만든다.
 
-    MUSE 네이티브 이벤트와 비슷한 모양(event.source, event.arguments)으로
-    맞춰서, 리스너 쪽에서 event.arguments["data"] / ["address"] 로 꺼내 쓴다.
+    MUSE 네이티브 이벤트와 비슷한 모양(evt.source, evt.arguments)으로
+    맞춰서, 리스너 쪽에서 evt.arguments.get("data", b"") / ["address"] 로 꺼내 쓴다.
     """
-    event = SimpleNamespace()
-    event.source = source
-    event.arguments = {"data": data, "address": address}
-    return event
+    evt = SimpleNamespace()
+    evt.source = source
+    evt.arguments = {"data": data, "address": address}
+    return evt
 
 
 def close_socket(sock: socket.socket, shutdown=False):

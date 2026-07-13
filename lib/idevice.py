@@ -53,7 +53,7 @@ def serial_enable_receive(dv):
 
 @handle_exception
 def serial_listen_receive(dv, callback):
-    """수신 이벤트 콜백 등록. callback(event) 형태이며 event.arguments["data"] 에 수신 bytes 가 들어온다."""
+    """수신 이벤트 콜백 등록. callback(evt) 형태이며 evt.arguments.get("data", b"") 에 수신 bytes 가 들어온다."""
     dv.receive.listen(callback)
 
 

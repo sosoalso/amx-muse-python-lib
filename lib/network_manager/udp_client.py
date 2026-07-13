@@ -36,7 +36,7 @@ class UdpClient(CommonLogger, EventManager):
     이벤트:
         "connected"/"online"     : 소켓 오픈 성공 시
         "disconnected"/"offline" : 무응답으로 재연결하거나 disconnect() 할 때
-        "received"               : 데이터 수신 시 (event.arguments["data"])
+        "received"               : 데이터 수신 시 (evt.arguments.get("data", b""))
 
     reconnect_time 이 0 이하면 무응답 감지를 끄고 소켓을 계속 유지한다.
     """
@@ -270,7 +270,7 @@ class UdpClient(CommonLogger, EventManager):
         self.log_debug("_receive_loop() : thread ended")
 
     def _emit_received(self, data: bytes, address: Tuple[str, int]):
-        # emit: received(event: ReceivedEvent)  — event.arguments["data"]: bytes
+        # emit: received(evt: ReceivedEvent)  — evt.arguments.get("data", b""): bytes
         self.emit("received", make_received_event(self, data, address))
 
     def _close_current_socket(self):

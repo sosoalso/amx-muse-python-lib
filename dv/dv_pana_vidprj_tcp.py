@@ -43,12 +43,13 @@ class PanaVidprjTcp(CommonLogger, EventManager):
         self.poll.set_timeout(2.0, lambda: self.poll.set_interval(10.0, query_mute))
 
     @handle_exception
-    def parse_response(self, *args):
-        if not args or not hasattr(args[0], "arguments") or "data" not in args[0].arguments:
-            self.log_error(f"Received response has an invalid format. {args=}")
+    def parse_response(self, evt):
+        data = evt.arguments.get("data", b"")
+        if not data:
+            self.log_error(f"Received response has an invalid format. {evt=}")
         else:
             try:
-                data_text = args[0].arguments["data"].decode("utf-8")
+                data_text = data.decode("utf-8")
                 response = data_text.split("\r")[0]
                 res = response.partition("=")[2]
                 if res == "00001":

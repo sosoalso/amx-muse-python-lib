@@ -79,11 +79,12 @@ class HyperdeckStudio(CommonLogger, EventManager):
         self.send("goto: clip: end")
 
     @handle_exception
-    def parse_response(self, *args):
+    def parse_response(self, evt):
         try:
-            if not args or not hasattr(args[0], "arguments") or "data" not in args[0].arguments:
+            data = evt.arguments.get("data", b"")
+            if not data:
                 return
-            data_text = args[0].arguments["data"].decode("utf-8")
+            data_text = data.decode("utf-8")
             self.log_debug(f"parse_response() {data_text=}")
             while "\r\n" in data_text:
                 response = data_text.split("\r\n", 1)[0]

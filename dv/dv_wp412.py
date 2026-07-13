@@ -30,13 +30,14 @@ class Wp412(CommonLogger, EventManager):
         return line
 
     @handle_exception
-    def _parse(self, *args):
-        if not args or not hasattr(args[0], "arguments") or "data" not in args[0].arguments:
-            self.log_error(f"Received response is in an invalid format. {args=}")
+    def _parse(self, evt):
+        data = evt.arguments.get("data", b"")
+        if not data:
+            self.log_error(f"Received response is in an invalid format. {evt=}")
             return
 
         try:
-            self._buf += args[0].arguments["data"].decode("utf-8", "ignore")
+            self._buf += data.decode("utf-8", "ignore")
         except (AttributeError, UnicodeDecodeError) as e:
             self.log_error(f"_parse() decode error {e=}")
             return

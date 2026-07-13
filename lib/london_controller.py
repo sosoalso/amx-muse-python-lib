@@ -4,6 +4,9 @@
 변경 피드백을 받아 내부 상태 저장소(LondonState)에 반영한다.
 회의실/강당 AV 제어에서 믹서, 룸컴바인, 소스 셀렉터 같은 DSP 오브젝트를
 터치패널과 연동할 때 사용한다.
+
+AMX 공식 BSS NetLinx Module 을 파이썬으로 포팅한 것으로, 전화(telephone/paging) 등 일부 기능은
+제외되어 있다 (정확히 어떤 기능들이 빠졌는지는 원본 모듈과 대조가 필요함).
 """
 
 import math
@@ -115,7 +118,7 @@ class LondonParam(IntEnum):
     (예: MUTE=1 과 ROUTE=1). 실제 의미는 get_sv() 의 디바이스별 분기에서 결정된다.
     """
 
-    # PARAMETER CONSTANTS <PARAM> FUNCTION PARAMETER
+    # <PARAM> 함수 파라미터의 일반 파라미터 상수들
     METER = 7
     UNMUTE = 0
     MUTE = 1
@@ -131,7 +134,7 @@ class LondonParam(IntEnum):
     LOGIC_SOURCE = 1
     LOGIC_END = 0
     SOURCE_SELECTOR = 0
-    # PARAMETER CONSTANTS SPECIFICALLY FOR 'SET_MIXER' <PARAM> FUNCTION PARAMETER
+    # 'SET_MIXER' <PARAM> 함수 파라미터에만 해당하는 파라미터 상수들
     SOLO = 13
     GROUP = 14
     AUX = 15
@@ -141,7 +144,7 @@ class LondonParam(IntEnum):
     PAN = 19
     OFF_GAIN = 20
     GROUP_GAIN = 21
-    # PARAMETER CONSTANTS SPECIFICALLY FOR 'SET_ROOMCOMBINE' <PARAM> FUNCTION PARAMETER
+    # 'SET_ROOMCOMBINE' <PARAM> 함수 파라미터에만 해당하는 파라미터 상수들
     SOURCE_MUTE = 30
     BGM_MUTE = 31
     MASTER_MUTE = 32
@@ -150,20 +153,20 @@ class LondonParam(IntEnum):
     MASTER_GAIN = 35
     BGM_SELECT = 36
     PARTITION = 37
-    # PARAMETER CONSTANTS SPECIFICALLY FOR 'SET_PRESET' <PARAM> FUNCTION PARAMETER
+    # 'SET_PRESET' <PARAM> 함수 파라미터에만 해당하는 파라미터 상수들
     DEVICE_PRESET = 1
     PARAMETER_PRESET = 2
-    # PARAMETER CONSTANTS ONLY WHEN <DEVICE> == INPUT_CARD || OUTPUT_CARD
+    # <DEVICE> == INPUT_CARD || OUTPUT_CARD 일 때만 해당하는 파라미터 상수들
     PHANTOM = 22
     REFERENCE = 23
     ATTACK = 24
     RELEASED = 25
-    # GENERAL FORMAT CONSTANTS
+    # 일반 포맷 상수들
     A = 1
     B = 2
     C = 3
     D = 4
-    # INPUT_CARD DENOTIONS
+    # INPUT_CARD 표기
     L = 1
     R = 3
 
@@ -223,7 +226,7 @@ class LondonController(CommonLogger):
 
     def _init(self):
         # 디바이스 수신 이벤트 리스너 등록
-        self.dv.receive.listen(lambda event: self.parse(event.arguments["data"]))
+        self.dv.receive.listen(lambda evt: self.parse(evt.arguments.get("data", b"")))
 
     def add_path_event(self, observer):
         # 상태 변경 옵저버 등록

@@ -32,7 +32,7 @@ class MulticastGroup(CommonLogger, EventManager):
     이벤트:
         "connected"/"online" : 그룹 참가 성공 시
         "offline"            : 그룹 탈퇴 시 ("disconnected" 는 없음)
-        "received"           : 데이터 수신 시 (event.arguments["data"])
+        "received"           : 데이터 수신 시 (evt.arguments.get("data", b""))
     """
 
     def __init__(
@@ -204,7 +204,7 @@ class MulticastGroup(CommonLogger, EventManager):
         self.log_debug("_receive_loop() : thread ended")
 
     def _emit_received(self, data: bytes, address: Tuple[str, int]):
-        # emit: received(event: ReceivedEvent)  — event.arguments["data"]: bytes
+        # emit: received(evt: ReceivedEvent)  — evt.arguments.get("data", b""): bytes
         self.emit("received", make_received_event(self, data, address))
 
     def _close_socket(self, sock: socket.socket):

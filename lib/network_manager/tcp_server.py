@@ -32,7 +32,7 @@ class TcpServer(CommonLogger, EventManager):
     이벤트:
         "connected"/"online"     : 클라이언트 접속 시 (address=(ip, port) 키워드 인자 포함)
         "disconnected"/"offline" : 클라이언트 접속 종료 시 (address=(ip, port) 키워드 인자 포함)
-        "received"               : 데이터 수신 시 (event.arguments["data"], ["address"])
+        "received"               : 데이터 수신 시 (evt.arguments.get("data", b""), ["address"])
 
     사용 흐름:
         server = TcpServer(5000)
@@ -130,7 +130,7 @@ class TcpServer(CommonLogger, EventManager):
         return error.errno in (48, 98) or getattr(error, "winerror", None) == 10048
 
     def _emit_received(self, data: bytes, address: Tuple[str, int]):
-        # emit: received(event: ReceivedEvent)  — event.arguments["data"]: bytes
+        # emit: received(evt: ReceivedEvent)  — evt.arguments.get("data", b""): bytes
         self.emit("received", make_received_event(self, data, address))
 
     def _close_all_clients(self):

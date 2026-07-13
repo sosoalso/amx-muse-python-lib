@@ -37,7 +37,7 @@ class TcpClient(CommonLogger, EventManager):
     이벤트:
         "connected"/"online"     : 연결 성공 시
         "disconnected"/"offline" : 연결 끊김 시
-        "received"               : 데이터 수신 시 (event.arguments["data"])
+        "received"               : 데이터 수신 시 (evt.arguments.get("data", b""))
 
     사용 흐름:
         client = TcpClient("192.168.0.10", 23)
@@ -296,5 +296,5 @@ class TcpClient(CommonLogger, EventManager):
             self.log_error(f"_send_once() : failed to send {msg=} {e=}")
 
     def _emit_received(self, data: bytes, address: Tuple[str, int]):
-        # emit: received(event: ReceivedEvent)  — event.arguments["data"]: bytes
+        # emit: received(evt: ReceivedEvent)  — evt.arguments.get("data", b""): bytes
         self.emit("received", make_received_event(self, data, address))

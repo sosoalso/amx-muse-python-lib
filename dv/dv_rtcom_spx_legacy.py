@@ -84,11 +84,12 @@ class RtcomSpxLegacy(CommonLogger, EventManager):
         return self.routes.get(output_id, 0)
 
     @handle_exception
-    def parse_response(self, *args):
-        if not args or not hasattr(args[0], "arguments") or "data" not in args[0].arguments:
-            self.log_error(f"parse_response() : {args=}")
+    def parse_response(self, evt):
+        data = evt.arguments.get("data", b"")
+        if not data:
+            self.log_error(f"parse_response() : {evt=}")
             return
-        text = args[0].arguments["data"].decode(errors="ignore")
+        text = data.decode(errors="ignore")
         self.log_debug(f"parse_response() : {text=}")
         for line in text.splitlines():
             line = line.strip()

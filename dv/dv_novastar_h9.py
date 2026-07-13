@@ -33,11 +33,11 @@ class NovastarH9(CommonLogger, EventManager):
         self.log_debug(f"_send() : {msg}")
 
     @handle_exception
-    def _on_receive(self, *args):
-        if not args or not hasattr(args[0], "arguments") or "data" not in args[0].arguments:
-            self.log_error(f"_on_receive() : {args=}")
+    def _on_receive(self, evt):
+        data = evt.arguments.get("data", b"")
+        if not data:
+            self.log_error(f"_on_receive() : {evt=}")
             return
-        data = args[0].arguments["data"]
         self.log_debug(f"_on_receive() : {data=}")
         # emit: received(data: bytes)
         self.emit("received", data=data)

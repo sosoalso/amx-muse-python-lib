@@ -105,12 +105,13 @@ class TascamCdp(CommonLogger, EventManager):
         self.send(self.COMMANDS.get("query"))
 
     @handle_exception
-    def parse_response(self, *args):
-        if not args or not hasattr(args[0], "arguments") or "data" not in args[0].arguments:
-            self.log_error(f"parse_response() invalid response format {args=}")
+    def parse_response(self, evt):
+        data = evt.arguments.get("data", b"")
+        if not data:
+            self.log_error(f"parse_response() invalid response format {evt=}")
             return
         try:
-            data_text = args[0].arguments["data"].decode("utf-8", errors="ignore")
+            data_text = data.decode("utf-8", errors="ignore")
             part = data_text.split("\r")[0].strip()
             if len(part) < 4:
                 return
