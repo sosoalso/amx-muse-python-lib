@@ -154,7 +154,8 @@ current = userdata.get_value("volume", 50)    # 70 (없으면 기본값 50)
 userdata.delete_value("volume")
 ```
 
-- 파일 위치는 기본적으로 프로젝트 폴더 옆 `<프로젝트폴더명>_userdata/` 안에 잡힙니다 (`foldername` 인자로 변경 가능)
+- 파일 위치는 기본적으로 프로젝트 폴더 **옆**(안이 아니라) `<프로젝트폴더명>_userdata/`에 잡힙니다 (`foldername` 인자로 변경 가능). 프로젝트 폴더 안에 두면 소스를 다시 업로드할 때 폴더가 통째로 갈아엎어지면서 저장해 둔 값도 같이 날아가기 때문에, 일부러 프로젝트 폴더 밖에 둡니다.
+- 이 폴더에 직접 들어가 보고 싶으면 컨트롤러에 SFTP로 접속해서 `mojo/program/` 경로 밑을 찾아보면 됩니다.
 - 파일이 없으면 `default_value`로 새로 만들고, JSON이 깨져 있으면 지우지 않고 `.broken_시각` 이름으로 백업해 둔 뒤 새로 만듭니다
 - 키는 내부적으로 항상 문자열로 저장되니(JSON 특성상), 정수 키를 넣었어도 꺼낼 땐 문자열처럼 다뤄집니다
 
@@ -173,6 +174,34 @@ Settings.save_to_json("settings.json")      # 명시적으로 저장해야 파�
 ```
 
 설정값이 몇 개 안 되고 그때그때 즉시 저장돼야 하면 `Userdata`, 설정 묶음을 한 번에 불러오고/저장하고 싶으면 `Var` 쪽이 편합니다.
+
+## 유용한 데코레이터 (`lib/utility.py`)
+
+**`pulse(duration_seconds, off_method)`** — 함수 실행하고 일정 시간 뒤에 자동으로 꺼주는 데코레이터. 릴레이 on 시키고 몇 초 뒤 자동으로 off 시킬 때 씁니다.
+
+```python
+def turn_on_relay(self):
+    def turn_off():
+        self.dv.relay_off()
+
+    @pulse(2.0, turn_off)   # turn_on() 실행 후 2초 뒤 turn_off() 자동 호출
+    def turn_on():
+        self.dv.relay_on()
+
+    turn_on()
+```
+
+**`debounce(timeout_ms)`** — 짧은 시간 안에 연달아 호출되면 마지막 호출만 살아남는 데코레이터. 터치패널 레벨(슬라이더) 이벤트가 손가락 움직일 때마다 훅훅 쏟아지는 걸 걸러낼 때 씁니다 (`lib/button_handler.py`의 `LevelHandler`가 실제로 이렇게 씀).
+
+```python
+@debounce(100)  # 100ms 안에 또 들어오면 타이머가 리셋되고, 결국 마지막 호출만 반영됨
+def debounced_emit(value):
+    self.emit("level", value)
+
+debounced_emit(50)
+debounced_emit(51)
+debounced_emit(52)   # 100ms 안에 연달아 오면 이 마지막 호출만 실제로 emit 됨
+```
 
 ## 새 장비 드라이버 추가하기
 
