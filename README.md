@@ -72,6 +72,37 @@ MUSE 터치패널의 채널(버튼)/레벨(슬라이더)/문자열 명령을 감
 
 그런데 `tp_add_watcher`가 주는 건 딱 "눌렸다/뗐다"뿐이라, 오래 누르고 있으면(hold) 뭘 하거나 누르고 있는 동안 반복(repeat)시키고 싶은 순간 막막해집니다. NetLinx에서는 당연히 되던 걸 MUSE에서 매번 손으로 스레드/타이머 짜서 흉내내다 지쳐서 만든 게 `button_handler.py`입니다 — 이제는 `ButtonHandler`가 push/release/hold/repeat 이벤트를 대신 내주고, dv 드라이버의 `emit("power", ...)`과 터치패널 버튼 이벤트가 같은 on/emit 어휘로 이어집니다.
 
+버튼/레벨을 실제로 코드에서 연결할 때는 `tp_add_watcher`를 직접 쓰지 말고 `lib/button.py`의 `add_button`/`add_level`을 씁니다. 같은 (tp, port, 번호)에 여러 번 등록해도 내부적으로 핸들러 하나만 캐싱해서 재사용하기 때문에, 중복 등록 걱정 없이 필요할 때마다 그냥 호출하면 됩니다.
+
+```python
+from lib.button import add_button, add_level
+
+# push: 눌리는 순간 1회
+add_button(tp, 1, 30, "push", lambda: camera.pan_left())
+# release: 손 뗀 순간 1회 - 조이스틱형 버튼에서 이동 정지시킬 때
+add_button(tp, 1, 30, "release", lambda: camera.pan_stop())
+# repeat: 누르고 있는 동안 반복. 기본 0.3초 간격이 아니라 다른 값을 쓰고 싶으면
+# "repeat_0.6" 이나 "repeat=0.6" 처럼 액션 문자열에 값을 같이 적으면 파싱해서 적용됨 (0.1~3.0 범위)
+add_button(tp, 1, 30, "repeat_0.6", lambda: camera.pan_left())
+# hold: 일정 시간 이상 눌리고 있으면 1회. 기본 30초라 너무 기니까 "hold_3.0"(0.5~30 범위)으로 줄임
+add_button(tp, 1, 30, "hold_3.0", lambda: camera.goto_preset(1))
+
+# 레벨: (tp, port, 레벨번호, 콜백) - 값은 이미 debounce 처리되어 들어옴
+add_level(tp, 1, 20, lambda value: mixer.set_volume(value))
+```
+
+같은 버튼/레벨이 터치패널 여러 대(벽부형 + 태블릿 등)에 똑같이 있으면, `tp` 하나씩 따로 등록하지 말고 `_ss`가 붙은 함수에 `tp` 리스트/튜플을 넘기면 한 번에 다 등록됩니다. `button.py`(`add_button_ss`/`add_level_ss`)와 `tp.py`(`tp_set_button_ss`/`tp_send_level_ss`/`tp_send_command_ss` 등 피드백 함수들) 양쪽에 다 있습니다.
+
+```python
+from lib.button import add_button_ss
+from lib.tp import tp_set_button_ss
+
+tp_list = [tp1, tp2]  # 벽부형 + 태블릿
+
+add_button_ss(tp_list, 1, 30, "push", lambda: camera.pan_left())   # 둘 다 동시 등록
+tp_set_button_ss(tp_list, 1, 30, True)                              # 둘 다 동시 피드백
+```
+
 ### 4. network_manager — 통신 계층
 
 TCP는 자동 재연결(`tcp_client.py`), UDP는 무응답 감지 후 소켓 재생성으로 "연결 유지"를 흉내내고 connect() 없이 send()만 호출하면 1회성 전송으로 동작합니다. 전부 백그라운드 스레드 + 락으로 스레드 안전하게 짜여 있습니다.
