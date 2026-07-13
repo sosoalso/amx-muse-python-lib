@@ -2,8 +2,8 @@
 """표준 라이브러리(urllib)만으로 만든 간단한 비동기 HTTP 클라이언트.
 모든 요청은 백그라운드 스레드에서 실행되어 제어 로직을 블로킹하지 않으며,
 결과/실패는 callback / error_callback 으로 전달된다.
-requests 같은 외부 패키지를 설치할 수 없는 MUSE 컨트롤러 환경에서
-REST API 기반 장비 제어에 사용한다.
+MUSE 컨트롤러도 pip 설치 자체는 가능하지만 번거로워서, requests 같은 외부 패키지 없이
+내장 라이브러리만으로 REST API 기반 장비 제어를 처리하고 싶을 때 사용한다.
 """
 
 import json
