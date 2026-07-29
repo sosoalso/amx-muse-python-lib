@@ -84,7 +84,7 @@ def start_thread(target, *args, **kwargs):
         thread.start()
         return thread
     except Exception as e:
-        print(f"(ERROR) : start_thread() {e=}", end="\n", flush=True)
+        print(f"[ERROR] : start_thread() {e=}", end="\n", flush=True)
         return None
 
 
@@ -100,15 +100,15 @@ def run_thread(thread: threading.Thread | None, target: Callable, *args, **kwarg
 
 
 def handle_exception(func):
-    """예외 발생 시 에러 로그를 출력하고 re-raise하는 데코레이터"""
+    """예외 발생 시 에러 로그를 출력하고 re-raise 하는 대신 무시하는 데코레이터"""
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            print(f"(ERROR) : {func.__name__}() {e=}", end="\n", flush=True)
-            raise
+            print(f"[ERROR] : {func.__name__}() {e=}", end="\n", flush=True)
+            # raise
 
     return wrapper
 

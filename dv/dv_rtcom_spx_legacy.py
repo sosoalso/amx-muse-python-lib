@@ -15,7 +15,7 @@ RtcomSpx 클래스에서 다룬다. 신식 프로토콜을 지원하는 펌웨�
 import re
 
 from lib.event_manager import EventManager
-from lib.network_manager import DEFAULT_TCP_CLIENT_RECONNECT_TIME, TcpClient
+from lib.network_manager import DEFAULT_TCP_CLIENT_RECONNECT_TIME
 from lib.utility import CommonLogger, handle_exception
 
 
@@ -62,10 +62,18 @@ class RtcomSpxLegacy(CommonLogger, EventManager):
         self.router_id = router_id
         self.name = f"{__class__.__name__.lower()}_{getattr(self.dv, 'name', '') or ''}"
         self.routes = {output_id: 0 for output_id in range(1, self.max_outputs + 1)}
+        self._buf = ""
 
     @handle_exception
     def init(self):
         self.dv.receive.listen(self.parse_response)
+
+    def _next_line(self):
+        idx = self._buf.find("!")
+        if idx < 0:
+            return None
+        line, self._buf = self._buf[: idx + 1], self._buf[idx + 1 :]
+        return line
 
     @handle_exception
     def _send(self, body: str):
@@ -89,29 +97,40 @@ class RtcomSpxLegacy(CommonLogger, EventManager):
         if not data:
             self.log_error(f"parse_response() : {evt=}")
             return
-        text = data.decode(errors="ignore")
-        self.log_debug(f"parse_response() : {text=}")
-        for line in text.splitlines():
-            line = line.strip()
+        try:
+            self._buf += data.decode("utf-8", "ignore")
+        except (AttributeError, UnicodeDecodeError) as e:
+            self.log_error(f"parse_response() decode error {e=}")
+            return
+        self.log_debug(f"parse_response() : buf={self._buf!r}")
+        while True:
+            line = self._next_line()
+            if line is None:
+                return
+            line = line.strip().rstrip("!").strip()
             if not line:
                 continue
+            self.log_debug(f"parse_response() : line={line!r}")
             ack_match = re.match(rf"\*{self.router_id}s(.+)", line, re.IGNORECASE)
             if ack_match:
+                body = ack_match.group(1).strip()
+                self.log_debug(f"parse_response() : ack_match body={body!r}")
                 # emit: ack(success: bool, body: str)
-                self.emit("ack", success=True, body=ack_match.group(1))
-                route_match = re.match(r"CI(\d{3})O(\d{3})", ack_match.group(1), re.IGNORECASE)
-                if route_match:
-                    input_id, output_id = int(route_match.group(1)), int(route_match.group(2))
+                self.emit("ack", success=True, body=body)
+                route_matches = re.findall(r"I(\d{3})O(\d{3})", body, re.IGNORECASE)
+                for input_id_str, output_id_str in route_matches:
+                    input_id, output_id = int(input_id_str), int(output_id_str)
+                    self.log_debug(f"parse_response() : route_match {input_id=} {output_id=}")
                     if output_id in self.routes:
                         self.routes[output_id] = input_id
                         # emit: route(idx_in: int, idx_out: int)
                         self.emit("route", idx_in=input_id, idx_out=output_id)
-                continue
-            if "error" in line.lower():
+            elif "error" in line.lower():
+                self.log_debug(f"parse_response() : error line={line!r}")
                 # emit: ack(success: bool, body: str)
                 self.emit("ack", success=False, body=line)
-        # emit: received(text: str)
-        self.emit("received", text=text)
+            # emit: received(text: str)
+            self.emit("received", text=line)
 
     # ------------------------------------------------------------------ #
     # Switching (C/D)
@@ -121,6 +140,13 @@ class RtcomSpxLegacy(CommonLogger, EventManager):
         """input_id: 1~max_inputs, output_id(_end): 출력 포트 (범위 연결 시 output_id_end 지정)"""
         self._send(f"CI{input_id:03d}{self._port_range(output_id, output_id_end)}")
         self.log_debug(f"connect() : {input_id=} {output_id=} {output_id_end=}")
+
+    @handle_exception
+    def switch_all(self, input_id, output_id_list):
+        """input_id: 1~max_inputs, output_id_list: 출력 포트 번호 리스트"""
+        body = "C" + ",".join(f"I{input_id:03d}O{output_id:03d}" for output_id in output_id_list)
+        self._send(body)
+        self.log_debug(f"switch_all() : {input_id=} {output_id_list=}")
 
     @handle_exception
     def disconnect_switch(self, output_id, output_id_end=None):

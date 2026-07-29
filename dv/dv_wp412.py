@@ -22,6 +22,9 @@ class Wp412(CommonLogger, EventManager):
     def init(self):
         self.dv.receive.listen(self._parse)
 
+    def load_preset(self, preset_no: int):
+        self.dv.send(f"load preset {preset_no}\r\n".encode())
+
     def _next_line(self):
         idx = self._buf.find("\r\n>")
         if idx < 0:

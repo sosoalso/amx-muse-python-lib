@@ -156,7 +156,7 @@ class PolycomGroup500(CommonLogger, EventManager):
 
     @handle_exception
     def set_selfview(self, enable: bool):
-        self._send(f"selfview {'on' if enable else 'off'}")
+        self._send(f"systemsetting selfview {'on' if enable else 'off'}")
 
     @handle_exception
     def toggle_selfview(self):
@@ -205,12 +205,40 @@ class PolycomGroup500(CommonLogger, EventManager):
     # 지원 키 (Group 500 button 명령)
     BUTTON_NAMES = frozenset(
         [
-            "#", "*", ".",
-            "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-            "down", "left", "right", "select", "up",
-            "back", "call", "graphics", "hangup",
-            "help", "mute", "volume+", "volume-",
-            "camera", "delete", "directory", "home", "keyboard", "period", "pip", "preset",
+            "#",
+            "*",
+            ".",
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "down",
+            "left",
+            "right",
+            "select",
+            "up",
+            "back",
+            "call",
+            "graphics",
+            "hangup",
+            "help",
+            "mute",
+            "volume+",
+            "volume-",
+            "camera",
+            "delete",
+            "directory",
+            "home",
+            "keyboard",
+            "period",
+            "pip",
+            "preset",
             "info",
         ]
     )

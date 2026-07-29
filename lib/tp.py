@@ -234,7 +234,7 @@ def _tp_channel_exists(tp, port, button):
     # 실제 파라미터/컴포넌트는 kind 가 "param"/"object" 등이므로 "unknown" 이 아니면 존재로 본다.
     # 확인 자체가 실패하면 True 로 간주하여 기존 동작(값 쓰기)을 유지한다.
     try:
-        return tp.port[port].channel[button].kind != "unknown"
+        return str(tp.port[port].channel[button].kind) != "unknown"
     except Exception:
         return True
 

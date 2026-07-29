@@ -11,12 +11,11 @@ class PjLink(CommonLogger, EventManager):
     DEFAULT_PORT = 4352
 
     def __init__(self, ip, port=DEFAULT_PORT, reconnect_time=DEFAULT_TCP_CLIENT_RECONNECT_TIME):
-        super().__init__("power", "poweron", "poweroff", "mute", "muted", "unmuted", "poll", "lamp_time")
+        super().__init__("power", "mute", "poll", "lamp_time")
         self.dv = TcpClient(ip, port, reconnect_time=reconnect_time)
         self.name = f"{__class__.__name__.lower()}_{self.dv.name if self.dv.name else ''}"
         self.power = False  # USERDATA.get_value(f"{self.name}_power", False)
         self.mute = False  # USERDATA.get_value(f"{self.name}_mute", False)
-        self.freeze = False  # USERDATA.get_value(f"{self.name}_freeze", False)
         self.source = "0"
         self.lamp_time = 0
         self.poll = Scheduler()
@@ -42,14 +41,9 @@ class PjLink(CommonLogger, EventManager):
         def query_lamp():
             self.dv.send("%1LAMP ?\r")
 
-        @handle_exception
-        def query_freeze():
-            self.dv.send("%2FREZ ?\r")
-
         self.poll.set_timeout(1.0, lambda: self.poll.set_interval(10.0, query_power))
         self.poll.set_timeout(2.0, lambda: self.poll.set_interval(10.0, query_mute))
         self.poll.set_timeout(3.0, lambda: self.poll.set_interval(10.0, query_lamp))
-        self.poll.set_timeout(4.0, lambda: self.poll.set_interval(10.0, query_freeze))
 
     @handle_exception
     def parse_response(self, evt):
@@ -94,20 +88,6 @@ class PjLink(CommonLogger, EventManager):
                             self.emit("lamp_time", value=self.lamp_time)
                     except ValueError:
                         self.log_error(f"Invalid lamp time response: {res}")
-                elif "%2FREZ=" in response:
-                    res = response.partition("=")[2]
-                    try:
-                        if res == "1":
-                            self.freeze = True
-                        elif res == "0":
-                            self.freeze = False
-                        else:
-                            return
-                        # USERDATA.set_value(f"{self.name}_freeze", self.freeze)
-                        # emit: freeze(value: bool)
-                        self.emit("freeze", value=self.freeze)
-                    except ValueError:
-                        self.log_error(f"Invalid freeze response: {res}")
             except (AttributeError, KeyError, UnicodeDecodeError) as e:
                 self.log_error(f"PJLink {self.name=} Error decoding data: {e}")
 
@@ -142,19 +122,3 @@ class PjLink(CommonLogger, EventManager):
     @handle_exception
     def mute_off(self):
         self.set_mute(False)
-
-    @handle_exception
-    def set_freeze(self, value):
-        self.dv.send("%2FREZ 1\r" if value else "%2FREZ 0\r")
-        self.freeze = value
-        # USERDATA.set_value(f"{self.name}_freeze", self.freeze)
-        # emit: freeze(value: bool)
-        self.emit("freeze", value=self.freeze)
-
-    @handle_exception
-    def freeze_on(self):
-        self.set_freeze(True)
-
-    @handle_exception
-    def freeze_off(self):
-        self.set_freeze(False)

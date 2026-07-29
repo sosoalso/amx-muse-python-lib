@@ -42,10 +42,18 @@ class RtcomSpx(CommonLogger, EventManager):
         self.max_outputs = max_outputs
         self.name = f"{__class__.__name__.lower()}_{self.dv.name if self.dv.name else ''}"
         self.routes = {output_id: 0 for output_id in range(1, self.max_outputs + 1)}
+        self._buf = ""
 
     @handle_exception
     def init(self):
         self.dv.receive.listen(self.parse_response)
+
+    def _next_line(self):
+        idx = self._buf.find("\r")
+        if idx < 0:
+            return None
+        line, self._buf = self._buf[:idx], self._buf[idx + 1 :]
+        return line
 
     @handle_exception
     def _send(self, cmd: str):
@@ -62,9 +70,16 @@ class RtcomSpx(CommonLogger, EventManager):
         if not data:
             self.log_error(f"parse_response() : {evt=}")
             return
-        text = data.decode(errors="ignore")
-        self.log_debug(f"parse_response() : {text=}")
-        for line in text.splitlines():
+        try:
+            self._buf += data.decode("utf-8", "ignore")
+        except (AttributeError, UnicodeDecodeError) as e:
+            self.log_error(f"parse_response() decode error {e=}")
+            return
+        self.log_debug(f"parse_response() : buf={self._buf!r}")
+        while True:
+            line = self._next_line()
+            if line is None:
+                return
             line = line.strip()
             if not line:
                 continue
@@ -75,14 +90,14 @@ class RtcomSpx(CommonLogger, EventManager):
                     self.routes[output_id] = input_id
                     # emit: route(idx_in: int, idx_out: int)
                     self.emit("route", idx_in=input_id, idx_out=output_id)
-                continue
-            link_match = re.match(r"hdmi\s+(input|output)\s*(\d+)\s*:\s*(connect|disconnect)", line, re.IGNORECASE)
-            if link_match:
-                direction, port_id, status = link_match.group(1).lower(), int(link_match.group(2)), link_match.group(3).lower()
-                # emit: link_in/link_out(port_id: int, connected: bool)
-                self.emit("link_in" if direction == "input" else "link_out", port_id=port_id, connected=status == "connect")
-        # emit: received(text: str)
-        self.emit("received", text=text)
+            else:
+                link_match = re.match(r"hdmi\s+(input|output)\s*(\d+)\s*:\s*(connect|disconnect)", line, re.IGNORECASE)
+                if link_match:
+                    direction, port_id, status = link_match.group(1).lower(), int(link_match.group(2)), link_match.group(3).lower()
+                    # emit: link_in/link_out(port_id: int, connected: bool)
+                    self.emit("link_in" if direction == "input" else "link_out", port_id=port_id, connected=status == "connect")
+            # emit: received(text: str)
+            self.emit("received", text=line)
 
     # ------------------------------------------------------------------ #
     # 7.1 System Setup Command

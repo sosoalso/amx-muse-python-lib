@@ -30,6 +30,7 @@ class DCernoCur(CommonLogger, EventManager):
         self.buffer = b""
         self.state = {}
         self._packet_id = 0
+        self._pending_bodies = {}
 
     @handle_exception
     def init(self):
@@ -131,10 +132,15 @@ class DCernoCur(CommonLogger, EventManager):
         if not body:
             return
 
+        packet_key = header[3:7]
+        full_body = self._pending_bodies.pop(packet_key, "") + body
+
         try:
-            payload = json.loads(body)
+            payload = json.loads(full_body)
         except json.JSONDecodeError as e:
-            self.log_error(f"_parse_packet() invalid json {body=} {e=}")
+            # 큰 응답(예: gunits)은 장비가 같은 packet_id로 여러 프레임에 나눠 보낼 수 있어서, 파싱 실패 시 (불완전한 JSON 코드가 들어올 테니 JSONDecodeError 발생) 다음 프레임과 이어붙여 재시도한다.
+            self._pending_bodies[packet_key] = full_body
+            self.log_debug(f"_parse_packet() incomplete json, waiting for more data {packet_key=} {e=}")
             return
 
         name = payload.get("nam")
