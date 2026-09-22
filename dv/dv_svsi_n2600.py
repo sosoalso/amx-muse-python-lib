@@ -19,8 +19,8 @@ class SvsiN2600(CommonLogger, EventManager):
     @handle_exception
     def init(self):
         self.dv.receive.listen(self.parse_response)
-        self.dv.online(lambda *_args, **_kwargs: self.poll.set_interval(10.0, self.get_status))
-        self.dv.offline(lambda *_args, **_kwargs: self.poll.shutdown())
+        self.dv.online(lambda *args, **kwargs: self.poll.set_interval(10.0, self.get_status))
+        self.dv.offline(lambda *args, **kwargs: self.poll.shutdown())
         self.dv.on("connected", lambda: self.emit("connected"))
         self.dv.on("disconnected", lambda: self.emit("disconnected"))
         self.dv.connect()

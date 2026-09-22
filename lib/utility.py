@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260713
+# 마지막 수정일 : 20260813
 """라이브러리 전반에서 쓰는 공용 유틸리티 모음.
 
 CommonLogger(공통 로깅 믹스인), 스레드 실행 헬퍼(start_thread/run_thread),
@@ -94,6 +94,13 @@ def run_thread(thread: threading.Thread | None, target: Callable, *args, **kwarg
         thread = threading.Thread(target=target, args=args, kwargs=kwargs, daemon=True)
         thread.start()
     return thread
+
+
+def start_timer(duration_seconds: float, off_method, *off_args, **off_kwargs):
+    try:
+        threading.Timer(duration_seconds, off_method, args=off_args, kwargs=off_kwargs).start()
+    except Exception as e:
+        print(f"[ERROR] : start_timer() {e=}", end="\n", flush=True)
 
 
 # ---------------------------------------------------------------------------- #

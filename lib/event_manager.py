@@ -1,20 +1,20 @@
 # 마지막 수정일 : 20260713
 """이벤트 이름 → 핸들러 리스트를 관리하는 pub/sub 모듈.
-
 장치 드라이버나 매니저 클래스(MicManager 등)가 상속하거나 인스턴스로 만들어,
 상태 변화가 생기면 emit() 으로 구독자들에게 알리는 용도로 쓴다.
 on() 으로 구독, off() 로 해제, emit() 으로 발행하는 단순한 구조다.
 """
+
 import functools
 import threading
 
-from lib.utility import handler_loc, CommonLogger
+from lib.utility import CommonLogger, handler_loc
 
 # ---------------------------------------------------------------------------- #
 event_manager_logger = CommonLogger()
+
+
 # ---------------------------------------------------------------------------- #
-
-
 def log_debug(message):
     event_manager_logger.log_debug(message)
 
@@ -33,12 +33,12 @@ def log_info(message):
 
 class EventManager:
     """이벤트 pub/sub 관리자.
-
     - actions : {이벤트 이름: [핸들러, ...]} 딕셔너리
     - 생성자에 이벤트 이름들을 넘기면 미리 등록된다 (emit 시 "없는 이벤트" 로그 방지)
     - 사용 흐름: mgr.on("mic_on", handler) 로 구독 → mgr.emit("mic_on", 3) 으로 발행
       → 등록된 핸들러들이 등록 순서대로 호출된다.
     """
+
     def __init__(self, *initial_actions):
         self.actions = {event: [] for event in initial_actions}
         self._event_lock = threading.Lock()
@@ -66,7 +66,6 @@ class EventManager:
     # ---------------------------------------------------------------------------- #
     def on(self, action, handler, unique=False):
         """이벤트에 핸들러를 등록한다.
-
         - 없는 이벤트면 자동 생성 후 등록
         - unique=True 면 같은 핸들러의 중복 등록을 막는다 (기본은 중복 허용)
         """
@@ -89,9 +88,9 @@ class EventManager:
 
     def once(self, action, handler):
         """한 번만 실행되는 핸들러 등록. 첫 emit 때 실행 후 자동 해제된다.
-
         실제 등록되는 건 wrapper 이므로, 실행 전에 수동으로 off 하려면 반환값(wrapper)을 써야 한다.
         """
+
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
             # 먼저 자신을 해제한 뒤 실행 → 핸들러 안에서 emit 이 또 일어나도 재실행 안 됨
@@ -113,7 +112,6 @@ class EventManager:
     # ---------------------------------------------------------------------------- #
     def emit(self, action, *args, **kwargs):
         """이벤트 발행. 등록된 핸들러들을 등록 순서대로 동기 호출한다.
-
         개별 핸들러 예외는 로그만 남기고 다음 핸들러를 계속 호출한다.
         없는 이벤트면 info 로그만 남기고 조용히 반환.
         """

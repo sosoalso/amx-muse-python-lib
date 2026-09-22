@@ -22,9 +22,9 @@ class NovastarH9(CommonLogger, EventManager):
     def init(self):
         self.dv.receive.listen(self._on_receive)
         # emit: connected()
-        self.dv.online(lambda *_, **__: self.emit("connected"))
+        self.dv.online(lambda *args, **kwargs: self.emit("connected"))
         # emit: disconnected()
-        self.dv.offline(lambda *_, **__: self.emit("disconnected"))
+        self.dv.offline(lambda *args, **kwargs: self.emit("disconnected"))
         self.dv.connect()
 
     def _send(self, cmd: list):

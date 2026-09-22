@@ -11,8 +11,7 @@ import urllib.error
 import urllib.request
 from typing import Callable
 
-from lib.utility import start_thread
-from lib.utility import CommonLogger
+from lib.utility import CommonLogger, start_thread
 
 DEFAULT_TIMEOUT = 1.0
 DEFAULT_JSON_HEADER = {"Content-Type": "application/json; charset=UTF-8"}

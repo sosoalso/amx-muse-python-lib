@@ -1,8 +1,9 @@
 # 마지막 수정일 : 20260713
 import re
+
 from lib.event_manager import EventManager
-from lib.scheduler import Scheduler
 from lib.network_manager import DEFAULT_TCP_CLIENT_RECONNECT_TIME, TcpClient
+from lib.scheduler import Scheduler
 from lib.utility import CommonLogger, handle_exception
 
 
@@ -20,9 +21,9 @@ class ScUiMixer(CommonLogger, EventManager):
 
     @handle_exception
     def init(self):
-        self.dv.online(lambda *_args, **_kwargs: self.scheduler.set_timeout(1.0, lambda: self.send("GET /raw HTTP1.1\r\n")))
-        self.dv.online(lambda *_args, **_kwargs: self.scheduler.set_interval(10.0, self.ping))
-        self.dv.offline(lambda *_args, **_kwargs: self.scheduler.shutdown())
+        self.dv.online(lambda *args, **kwargs: self.scheduler.set_timeout(1.0, lambda: self.send("GET /raw HTTP1.1\r\n")))
+        self.dv.online(lambda *args, **kwargs: self.scheduler.set_interval(10.0, self.ping))
+        self.dv.offline(lambda *args, **kwargs: self.scheduler.shutdown())
         self.dv.receive.listen(self.parse_response)
         self.dv.connect()
 
@@ -358,14 +359,14 @@ ENUM_SCUI_INT_DB = {
 #         add_btn_ss(TP_LIST, TP_PORT_SCUI, btn, "repeat_0.2", lambda idx=idx: vol_down_input(idx))
 #
 # def add_evt_scuimixer():
-#     def refresh_tp_vol_by_input_idx(idx, *_args, **_kwargs):
+#     def refresh_tp_vol_by_input_idx(idx, *args, **kwargs):
 #         try:
 #             cur_value = scuimixer_instance.get_input_volume(idx)
 #             tp_send_lvl_ss(TP_LIST, TP_PORT_SCUI, 101 + idx, cur_value)
 #             tp_set_btn_txt_ss(TP_LIST, TP_PORT_SCUI, 101 + idx, f"{ENUM_SCUI_INT_DB.get(cur_value, 'NaN')} dB")
 #         except Exception as e:
 #             context.log.error(f"add_evt_scui refresh_tp_vol_by_input_idx {idx=} {e=}")
-#     def refresh_tp_mute_button_by_input_idx(idx, *_args, **_kwargs):
+#     def refresh_tp_mute_button_by_input_idx(idx, *args, **kwargs):
 #         try:
 #             cur_value = scuimixer_instance.get_input_mute(idx)
 #             tp_set_btn_ss(TP_LIST, TP_PORT_SCUI, 101 + idx, cur_value == 1)

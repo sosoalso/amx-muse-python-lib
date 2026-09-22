@@ -23,8 +23,8 @@ class NecVidprj(CommonLogger, EventManager):
     def init(self):
         self.dv.receive.listen(self.parse_response)
         self.start_poll()
-        # self.dv.online(lambda *_args, **_kwargs: self.start_poll())
-        # self.dv.offline(lambda *_args, **_kwargs: self.poll.shutdown())
+        # self.dv.online(lambda *args, **kwargs: self.start_poll())
+        # self.dv.offline(lambda *args, **kwargs: self.poll.shutdown())
 
     @handle_exception
     def send(self, msg):

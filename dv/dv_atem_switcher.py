@@ -64,12 +64,12 @@ class AtemSwitcher(CommonLogger, EventManager):
         self.dv.connect()
 
     @handle_exception
-    def _handle_dv_connected(self, *_args, **_kwargs):
+    def _handle_dv_connected(self, *args, **kwargs):
         self._reset_connection_state()
         self.say_hello()
 
     @handle_exception
-    def _handle_dv_disconnected(self, *_args, **_kwargs):
+    def _handle_dv_disconnected(self, *args, **kwargs):
         was_connected = self.connected
         self._reset_connection_state()
         if was_connected:
@@ -107,9 +107,9 @@ class AtemSwitcher(CommonLogger, EventManager):
         self.log_debug(f"parse_data() : {packet_size=} {packet_length=} {self.session_id=:04x} {self.last_remote_packet_id=:04x}")
         # note : phase 1
         if self.last_remote_packet_id < self.MAX_INIT_PACKAGE_COUNT:
-            self.missed_initialization_packages[self.last_remote_packet_id >> 3] = self.missed_initialization_packages[
-                self.last_remote_packet_id >> 3
-            ] & ~(1 << (self.last_remote_packet_id & 0x07))
+            self.missed_initialization_packages[self.last_remote_packet_id >> 3] = self.missed_initialization_packages[self.last_remote_packet_id >> 3] & ~(
+                1 << (self.last_remote_packet_id & 0x07)
+            )
         # note : phase 2
         if header & self.HEADERCMD_RESEND:
             self.log_debug("parse_data() : resent packet")

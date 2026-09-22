@@ -1,7 +1,7 @@
 # 마지막 수정일 : 20260713
 from lib.event_manager import EventManager
-from lib.utility import CommonLogger, handle_exception
 from lib.network_manager import DEFAULT_TCP_CLIENT_RECONNECT_TIME, TcpClient
+from lib.utility import CommonLogger, handle_exception
 
 
 class HyperdeckStudio(CommonLogger, EventManager):
@@ -21,8 +21,8 @@ class HyperdeckStudio(CommonLogger, EventManager):
     @handle_exception
     def init(self):
         self.dv.receive.listen(self.parse_response)
-        self.dv.online(lambda *_args, **_kwargs: self.send("notify: remote: true"))
-        self.dv.online(lambda *_args, **_kwargs: self.send("notify: transport: true"))
+        self.dv.online(lambda *args, **kwargs: self.send("notify: remote: true"))
+        self.dv.online(lambda *args, **kwargs: self.send("notify: transport: true"))
         self.dv.connect()
 
     @handle_exception

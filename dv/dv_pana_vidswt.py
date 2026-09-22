@@ -2,7 +2,6 @@
 from lib.event_manager import EventManager
 from lib.network_manager import TcpClient
 from lib.utility import CommonLogger, handle_exception
-from lib.network_manager import TcpClient
 
 
 class PanaVidswt(CommonLogger, EventManager):

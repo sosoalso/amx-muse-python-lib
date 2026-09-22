@@ -1,6 +1,6 @@
 # 마지막 수정일 : 20260713
 from lib.event_manager import EventManager
-from lib.network_manager import TcpClient, DEFAULT_TCP_CLIENT_RECONNECT_TIME
+from lib.network_manager import DEFAULT_TCP_CLIENT_RECONNECT_TIME, TcpClient
 from lib.scheduler import Scheduler
 from lib.utility import CommonLogger, handle_exception
 

@@ -6,6 +6,7 @@ Novastar TB Series LED Multimedia Player
 로그인 명령은 장치 SN/비밀번호 기반으로 계산되므로,
 "T카드 로그인 프로토콜 계산.exe" 도구로 생성한 HEX 문자열을 login_hex 파라미터로 전달한다.
 """
+
 import struct
 
 from lib.event_manager import EventManager
@@ -18,22 +19,14 @@ class NovastarTb(CommonLogger, EventManager):
 
     # ---------------------------------------------------------------------------- #
     # 페이지 전환: 문서에서 추출한 pre-computed 패킷 (field1이 command별로 고정값)
-    _CMD_PAGE_LAST = bytes.fromhex(
-        "41564f4e4307000051521e00280700000a000000000078027b2274797065223a337d"
-    )
-    _CMD_PAGE_PREV = bytes.fromhex(
-        "41564f4e4d07000051521e00280700000a000000000082027b2274797065223a307d"
-    )
-    _CMD_PAGE_NEXT = bytes.fromhex(
-        "41564f4e5a07000051521e00280700000a00000000008f027b2274797065223a317d"
-    )
-    _CMD_PAGE_HOME = bytes.fromhex(
-        "41564f4ea406000051521e00280700000a0000000000d8017b2274797065223a327d"
-    )
+    _CMD_PAGE_LAST = bytes.fromhex("41564f4e4307000051521e00280700000a000000000078027b2274797065223a337d")
+    _CMD_PAGE_PREV = bytes.fromhex("41564f4e4d07000051521e00280700000a000000000082027b2274797065223a307d")
+    _CMD_PAGE_NEXT = bytes.fromhex("41564f4e5a07000051521e00280700000a00000000008f027b2274797065223a317d")
+    _CMD_PAGE_HOME = bytes.fromhex("41564f4ea406000051521e00280700000a0000000000d8017b2274797065223a327d")
 
     # 음량 조절: 10% 단위 pre-computed 패킷 (0~90%)
     _CMD_VOLUME = {
-         0: bytes.fromhex("41564f4ea507000051522600040000000b0000000000b8017b22726174696f223a307d"),
+        0: bytes.fromhex("41564f4ea507000051522600040000000b0000000000b8017b22726174696f223a307d"),
         10: bytes.fromhex("41564f4eab07000051522600040000000c0000000000bf017b22726174696f223a31307d"),
         20: bytes.fromhex("41564f4eb507000051522600040000000c0000000000c9017b22726174696f223a32307d"),
         30: bytes.fromhex("41564f4ebc07000051522600040000000c0000000000d0017b22726174696f223a33307d"),
@@ -57,7 +50,7 @@ class NovastarTb(CommonLogger, EventManager):
     def init(self):
         self.dv.receive.listen(self._on_receive)
         self.dv.on("connected", self._on_connected)
-        self.dv.on("disconnected", lambda *_, **__: self.emit("disconnected"))
+        self.dv.on("disconnected", lambda *args, **kwargs: self.emit("disconnected"))
         self.dv.connect()
 
     # ---------------------------------------------------------------------------- #
@@ -66,7 +59,7 @@ class NovastarTb(CommonLogger, EventManager):
         self.dv.send(data)
         self.log_debug(f"_send: {data.hex()}")
 
-    def _on_connected(self, *_, **__):
+    def _on_connected(self, *args, **kwargs):
         self._send(self._login_cmd)
         self.emit("connected")
 
@@ -88,12 +81,12 @@ class NovastarTb(CommonLogger, EventManager):
         """
         header = (
             b"AVON"
-            + struct.pack("<I", 2)             # field1
-            + b"\x51\x52"                      # constant
-            + struct.pack("<H", 0x001E)        # cmd code
-            + struct.pack("<I", subcmd)        # sub-command
+            + struct.pack("<I", 2)  # field1
+            + b"\x51\x52"  # constant
+            + struct.pack("<H", 0x001E)  # cmd code
+            + struct.pack("<I", subcmd)  # sub-command
             + struct.pack("<I", len(payload))  # payload length
-            + b"\x00" * 5                      # padding
+            + b"\x00" * 5  # padding
         )
         checksum = sum(header) & 0xFFFF
         return header + struct.pack("<H", checksum) + payload

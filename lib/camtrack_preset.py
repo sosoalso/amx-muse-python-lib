@@ -5,6 +5,7 @@
 마이크가 켜지면 해당 좌석의 카메라 프리셋으로 이동시키는 회의실 카메라 트래킹에 사용.
 Userdata(JSON 파일)로 영속화되므로 컨트롤러 재시작 후에도 설정이 유지된다.
 """
+
 from lib.userdata import Userdata
 
 

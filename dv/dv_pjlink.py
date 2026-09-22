@@ -1,6 +1,6 @@
 # 마지막 수정일 : 20260713
 from lib.event_manager import EventManager
-from lib.network_manager import TcpClient, DEFAULT_TCP_CLIENT_RECONNECT_TIME
+from lib.network_manager import DEFAULT_TCP_CLIENT_RECONNECT_TIME, TcpClient
 from lib.scheduler import Scheduler
 from lib.utility import CommonLogger, handle_exception
 
@@ -23,8 +23,8 @@ class PjLink(CommonLogger, EventManager):
     @handle_exception
     def init(self):
         self.dv.receive.listen(self.parse_response)
-        self.dv.online(lambda *_args, **_kwargs: self.start_poll())
-        self.dv.offline(lambda *_args, **_kwargs: self.poll.shutdown())
+        self.dv.online(lambda *args, **kwargs: self.start_poll())
+        self.dv.offline(lambda *args, **kwargs: self.poll.shutdown())
         self.dv.connect()
 
     @handle_exception

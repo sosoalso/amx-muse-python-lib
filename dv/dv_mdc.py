@@ -1,6 +1,5 @@
-# 마지막 수정일 : 20260713
+# 마지막 수정일 : 20260901
 from lib.event_manager import EventManager
-
 from lib.utility import CommonLogger, handle_exception
 
 
@@ -35,16 +34,17 @@ class Mdc(CommonLogger, EventManager):
     def _checksum(self, data):
         return sum(data) & 0xFF
 
-    def _build_command(self, cmd, data=None):
+    def _build_command(self, cmd, data=None, id_all=False):
+        target_id = self.ID_ALL if id_all else self.id_mdc
         if data is None:
-            payload = bytes([cmd, self.id_mdc, 0x00])
+            payload = bytes([cmd, target_id, 0x00])
         else:
-            payload = bytes([cmd, self.id_mdc, 0x01, data])
+            payload = bytes([cmd, target_id, 0x01, data])
         return bytes([self.HEADER]) + payload + bytes([self._checksum(payload)])
 
     @handle_exception
-    def send(self, cmd, data=None):
-        msg = self._build_command(cmd, data)
+    def send(self, cmd, data=None, id_all=False):
+        msg = self._build_command(cmd, data, id_all=id_all)
         self.log_debug(f"send() msg={msg.hex(' ')}")
         self.dv.send(msg)
 
@@ -117,18 +117,26 @@ class Mdc(CommonLogger, EventManager):
                 self.emit("input", value=self.source)
 
     @handle_exception
-    def set_power(self, value):
-        self.send(self.CMD_PWR, 0x01 if value else 0x00)
+    def set_power(self, value: bool, id_all=False):
+        self.send(self.CMD_PWR, 0x01 if value else 0x00, id_all=id_all)
         self.power = value
         self.emit("power", value=self.power)
 
     @handle_exception
     def power_on(self):
-        self.set_power(True)
+        self.set_power(True, id_all=False)
 
     @handle_exception
     def power_off(self):
-        self.set_power(False)
+        self.set_power(False, id_all=False)
+
+    @handle_exception
+    def power_on_all(self):
+        self.set_power(True, id_all=True)
+
+    @handle_exception
+    def power_off_all(self):
+        self.set_power(False, id_all=True)
 
     @handle_exception
     def set_input(self, source):
