@@ -120,11 +120,11 @@ class PjLink(CommonLogger, EventManager):
 
     def init(self):
         self.dv.receive.listen(self.parse_response)        # 수신 데이터 → 파싱
-        self.dv.online(lambda *_: self.start_poll())        # 연결되면 폴링 시작
-        self.dv.offline(lambda *_: self.poll.shutdown())    # 끊기면 폴링 중단
+        self.dv.online(lambda *args: self.start_poll())        # 연결되면 폴링 시작
+        self.dv.offline(lambda *args: self.poll.shutdown())    # 끊기면 폴링 중단
         self.dv.connect()
 
-    def start_poll(self, *_):
+    def start_poll(self, *args):
         self.poll.set_interval(10.0, lambda: self.dv.send("%1POWR ?\r"))
 
     def parse_response(self, *args):
