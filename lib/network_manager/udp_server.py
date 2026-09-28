@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260713
+# 마지막 수정일 : 20260928
 """여러 상대로부터 UDP 를 받는 서버.
 
 TCP 서버와 달리 접속이라는 개념이 없어서, recvfrom 으로 받은 주소를 clients 에
@@ -70,7 +70,8 @@ class UdpServer(CommonLogger, EventManager):
             return
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            # SO_REUSEADDR 은 쓰지 않음 - Linux UDP 에서는 같은 포트에 여러 소켓이 에러 없이 bind 되어,
+            # 이전 인스턴스가 남아 있으면 패킷을 나눠 가져가는 문제가 bind 에러 없이 숨어버림 (UDP 는 TIME_WAIT 도 없음)
             self.socket.bind(("", self.port))
             self.socket.settimeout(0.2)
             self.running = True
@@ -149,9 +150,9 @@ class UdpServer(CommonLogger, EventManager):
                         self.log_error(f"_receive_loop() : socket {e=}")
                     break
                 except Exception as e:
+                    # 패킷 하나 처리 중 예외로 서버 전체가 멈추지 않게 - 로그만 남기고 계속 수신
                     if self.running:
                         self.log_error(f"_receive_loop() : message receive {e=}")
-                    break
         finally:
             # 자기 소켓일 때만 상태 정리 - stop() 직후 재시작된 새 서버의 소켓/상태를 건드리지 않음
             if self.socket is recv_sock:

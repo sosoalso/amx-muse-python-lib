@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260713
+# 마지막 수정일 : 20260928
 """다중 클라이언트를 받는 TCP 서버.
 
 외부 시스템(터치패널, 상위 제어기, 타 서버 등)이 이 컨트롤러로 접속해
@@ -85,7 +85,8 @@ class TcpServer(CommonLogger, EventManager):
             if server_sock:
                 self._close_socket(server_sock)
             if self._is_address_in_use_error(e):
-                self.log_warn("start() : Address already in use, ignoring")
+                # 이전 인스턴스 등이 포트를 잡고 있으면 서버 없이 프로그램만 돌게 되므로 error 로 남김
+                self.log_error(f"start() : port {self.port} already in use, server not started")
             else:
                 self.log_error(f"start() : failed to start {e=}")
             return

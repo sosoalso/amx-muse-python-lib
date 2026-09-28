@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260713
+# 마지막 수정일 : 20260928
 """자동 재연결을 지원하는 TCP 클라이언트.
 
 프로젝터, 스위처, 카메라 등 TCP 로 제어하는 AV 장비에 접속할 때 사용한다.
@@ -113,7 +113,7 @@ class TcpClient(CommonLogger, EventManager):
 
         if reconnect_enabled:
             if not (sock and is_connected):
-                self.log_debug(f"send() : not connected, dropped {msg=}")
+                self.log_warn(f"send() : not connected, dropped {msg=}")
                 return
             try:
                 self.log_debug(f"send() : sending {msg=}")
