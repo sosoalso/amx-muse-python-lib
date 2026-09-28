@@ -1,4 +1,4 @@
-# 마지막 수정일 : 20260713
+# 마지막 수정일 : 20260928
 """BSS Soundweb London 오디오 DSP 를 London DI(Direct Inject) 프로토콜로 제어하는 모듈.
 게인/뮤트/소스선택 등 state variable(SV)을 읽고 쓰며, 구독(subscribe)한 SV 의
 변경 피드백을 받아 내부 상태 저장소(LondonState)에 반영한다.
@@ -18,6 +18,7 @@ from lib.utility import CommonLogger, handler_loc
 MIN_VAL = -60  # 최소 값
 MAX_VAL = 10  # 최대 값
 UNIT_VAL = 1  # 단위 값2
+UNIT_PERCENT = 1  # 퍼센트 증감 단위 (set_gain_percent_up/down)
 
 
 class LondonObserver:
@@ -187,10 +188,10 @@ class LondonController(CommonLogger):
 
     DEFAULT_PORT = BLU_IP_PORT
 
-    def __init__(self, dv, min_val=MIN_VAL, max_val=MAX_VAL, unit_val=UNIT_VAL):
+    def __init__(self, dv, min_val=MIN_VAL, max_val=MAX_VAL, unit_val=UNIT_VAL, unit_percent=UNIT_PERCENT):
         """dv 는 send()/receive/online 을 제공하는 통신 디바이스.
-        min_val/max_val/unit_val 은 dB 편의 함수(set_gain_up 등)에서 쓰는
-        음량 범위와 증감 단위(dB).
+        min_val/max_val/unit_val 은 dB 편의 함수(set_gain_db_up 등)에서 쓰는
+        음량 범위와 증감 단위(dB). unit_percent 는 set_gain_percent_up/down 의 증감 단위(%).
         """
         self.dv = dv
         self.buffer = bytearray()
@@ -201,6 +202,7 @@ class LondonController(CommonLogger):
         self.MAX_VAL = max_val
         self.MIN_VAL = min_val
         self.UNIT_VAL = unit_val
+        self.UNIT_PERCENT = unit_percent
         self._init()
         # london 은 시리얼 쓸 일도 있으니까..
 
@@ -269,6 +271,12 @@ class LondonController(CommonLogger):
         """
         # 장비 컨트롤 값을 dB 값으로 변환
         return float(int_value / 10000) if int_value >= -100000 else float(-10 * (10 ** ((-int_value - 100000) / 200000)))
+
+    def convert_value_to_percent(self, int_value: int) -> int:
+        """퍼센트 피드백(SET_PERCENT 0x8D) 원시값 → 정수 퍼센트(0~100).
+        원시값은 16.16 고정소수점(percent x 65536). NetLinx 모듈처럼 소수부가 0.5 이상이면 올림.
+        """
+        return (int_value + 0x8000) >> 16
 
     def bump_up_on(self, node_addr: bytes | bytearray):
         # 상승 범프 온
@@ -371,6 +379,22 @@ class LondonController(CommonLogger):
             self.checksum_then_send(bytes(event + node_addr + s_v + my_data))
             self.checksum_then_send(bytes(get_event + node_addr + s_v + bytes([0x00, 0x00, 0x00, 0x00])))
 
+    def set_gain_percent(self, node_addr: bytes | bytearray, index_device: int, index_input: int, index_output: int, _: int, percent: int):
+        """게인을 퍼센트(0~100 정수)로 설정 (NetLinx blu_set_gain_percent 포팅).
+        SET_PERCENT(0x8D) 로 보내고 곧바로 SUBSCRIBE_PERCENT(0x8E) 를 보내 현재값 피드백을 받는다.
+        다섯 번째 인자(_)는 set_gain 과 시그니처를 맞추기 위한 자리로, 파라미터는 항상 GAIN.
+        """
+        if not isinstance(percent, int) or isinstance(percent, bool) or not 0 <= percent <= 100:
+            self.log_error(f"set_gain_percent() : percent must be int 0~100, not sent {percent=}")
+            return
+        s_v = self.get_sv(index_device, index_input, index_output, LondonParam.GAIN)
+        if not s_v:
+            self.log_error("set_gain_percent() : invalid s_v")
+            return
+        # 퍼센트는 16.16 고정소수점 - 정수 퍼센트는 두 번째 바이트에만 들어감
+        self.checksum_then_send(bytes(b"\x8d" + node_addr + s_v + bytes([0x00, percent, 0x00, 0x00])))
+        self.checksum_then_send(bytes(b"\x8e" + node_addr + s_v + bytes([0x00, 0x00, 0x00, 0x00])))
+
     def set_preset(self, preset_type: int, preset_number: int):
         # 프리셋 타입에 따라 파라미터 또는 디바이스 프리셋 설정
         if preset_type == LondonParam.PARAMETER_PRESET:
@@ -412,6 +436,32 @@ class LondonController(CommonLogger):
         self.states.remove_state(bytes(node_addr + s_v))
         # 구독 해제 명령 전송
         self.checksum_then_send(bytes(event + node_addr + s_v + my_data))
+
+    def subscribe_percent(self, node_addr: bytes | bytearray, index_device: int, index_input: int, index_output: int, index_param: int):
+        """SV 를 퍼센트로 구독 (SUBSCRIBE_PERCENT 0x8E, NetLinx blu_subscribe_percent 포팅).
+        피드백은 퍼센트 원시값(16.16 고정소수점)으로 states 에 들어오므로 convert_value_to_percent 로 변환해서 쓴다.
+        주의: states key 는 subscribe() 와 같아서, 같은 SV 를 일반/퍼센트 둘 다 구독하면 값 형식이 섞인다.
+        """
+        event = b"\x8e"
+        s_v = self.get_sv(index_device, index_input, index_output, index_param)
+        if not s_v:
+            self.log_error("subscribe_percent() : invalid s_v")
+            return
+        rate = self.meter_subscription_rate if index_param == LondonParam.METER else 0
+        my_data = rate.to_bytes(4, "big")
+        # subscribe() 와 같이 key 를 먼저 등록해야 process_feedback 이 값을 반영함
+        self.states.set_state(bytes(node_addr + s_v), 0)
+        self.checksum_then_send(bytes(event + node_addr + s_v + my_data))
+
+    def unsubscribe_percent(self, node_addr: bytes | bytearray, index_device: int, index_input: int, index_output: int, index_param: int):
+        """퍼센트 구독 해제 (UNSUBSCRIBE_PERCENT 0x8F). states 에서 해당 key 도 제거한다."""
+        event = b"\x8f"
+        s_v = self.get_sv(index_device, index_input, index_output, index_param)
+        if not s_v:
+            self.log_error("unsubscribe_percent() : invalid s_v")
+            return
+        self.states.remove_state(bytes(node_addr + s_v))
+        self.checksum_then_send(bytes(event + node_addr + s_v + bytes([0x00, 0x00, 0x00, 0x00])))
 
     def get_sv(self, index_device, index_input, index_output, index_param):
         """(디바이스, 입력, 출력, 파라미터) 조합을 SV 번호로 매핑한다.
@@ -716,7 +766,15 @@ class LondonController(CommonLogger):
         self.set_gain(node_addr, index_device, index_input, index_output, index_param, self.convert_db_to_value(value_db_float))
 
     def set_gain_up(self, node_addr, index_device, index_input, index_output, index_param):
-        # 게인값 상향 조정 (1 단위)
+        # 하위 호환용 이름 - set_gain_db_up 과 같음
+        self.set_gain_db_up(node_addr, index_device, index_input, index_output, index_param)
+
+    def set_gain_down(self, node_addr, index_device, index_input, index_output, index_param):
+        # 하위 호환용 이름 - set_gain_db_down 과 같음
+        self.set_gain_db_down(node_addr, index_device, index_input, index_output, index_param)
+
+    def set_gain_db_up(self, node_addr, index_device, index_input, index_output, index_param):
+        # 게인값 상향 조정 (UNIT_VAL dB 단위)
         self.set_gain(
             node_addr,
             index_device,
@@ -726,8 +784,8 @@ class LondonController(CommonLogger):
             self.val_add_unit(self.get_val_by_node_sv(node_addr, index_device, index_input, index_output, index_param)),
         )
 
-    def set_gain_down(self, node_addr, index_device, index_input, index_output, index_param):
-        # 게인값 하향 조정 (1 단위)
+    def set_gain_db_down(self, node_addr, index_device, index_input, index_output, index_param):
+        # 게인값 하향 조정 (UNIT_VAL dB 단위)
         self.set_gain(
             node_addr,
             index_device,
@@ -736,6 +794,26 @@ class LondonController(CommonLogger):
             index_param,
             self.val_sub_unit(self.get_val_by_node_sv(node_addr, index_device, index_input, index_output, index_param)),
         )
+
+    def set_gain_percent_up(self, node_addr, index_device, index_input, index_output, index_param):
+        # 게인 퍼센트 상향 (UNIT_PERCENT 단위, 100 에서 멈춤)
+        current = self._get_subscribed_percent(node_addr, index_device, index_input, index_output, index_param)
+        if current is not None:
+            self.set_gain_percent(node_addr, index_device, index_input, index_output, index_param, min(current + self.UNIT_PERCENT, 100))
+
+    def set_gain_percent_down(self, node_addr, index_device, index_input, index_output, index_param):
+        # 게인 퍼센트 하향 (UNIT_PERCENT 단위, 0 에서 멈춤)
+        current = self._get_subscribed_percent(node_addr, index_device, index_input, index_output, index_param)
+        if current is not None:
+            self.set_gain_percent(node_addr, index_device, index_input, index_output, index_param, max(current - self.UNIT_PERCENT, 0))
+
+    def _get_subscribed_percent(self, node_addr, index_device, index_input, index_output, index_param) -> int | None:
+        """subscribe_percent 로 받은 현재 퍼센트. 구독 안 한 SV 면 None (현재값을 모르는 채로 증감하면 값이 튐)."""
+        raw = self.states.get_state(self.get_key(node_addr, index_device, index_input, index_output, index_param))
+        if raw is None:
+            self.log_error("_get_subscribed_percent() : not subscribed - call subscribe_percent() first")
+            return None
+        return self.convert_value_to_percent(raw)
 
     def set_value_toggle(self, node_addr, index_device, index_input, index_output, index_param):
         # 토글 타입 파라미터 반전 (0 ↔ 1)
